@@ -13,9 +13,9 @@ import LoadingSpinner from './components/Common/LoadingSpinner';
 import { Footer } from './components/Layout/Footer';
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import { ConfirmationModal } from './components/Admin/ConfirmationModal'; // <-- ייבוא המודאל
+import { ConfirmationModal } from './components/Admin/ConfirmationModal'; // <-- Modal import
 import React, { useState } from 'react';
-import { Toaster, toast } from 'react-hot-toast'; // <--- שינוי כאן
+import { Toaster, toast } from 'react-hot-toast'; // <--- Change here
 import { FirebaseService } from './services/firebaseService';
 
 
@@ -33,9 +33,9 @@ import { FirebaseService } from './services/firebaseService';
 /*******  082bce00-3db0-46d3-ab25-193bdca2e3fe  *******/
 function App() {
   const { isLoading: isAuthLoading } = useAuth();
-  const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore(); // <-- קריאה למצב ולפונקציה
+  const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore(); // <-- Call to state and function
   
-  // לוגיקה למחיקת חשבון
+  // Account deletion logic
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleDeleteAccount = async () => {
@@ -75,7 +75,7 @@ function App() {
           
           <Route path="/event/:eventId" element={<EventPage />} />
 
-          {/* --- הוספת הראוטינג לעמודים החדשים --- */}
+          {/* --- Adding routing to new pages --- */}
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           
@@ -88,7 +88,7 @@ function App() {
         </Routes>
       </main>
       <Footer />
-      {/* הוספת המודאל כאן */}
+      {/* Adding the modal here */}
       {isDeleteAccountModalOpen && (
         <ConfirmationModal
           message={`האם אתה בטוח שברצונך למחוק את חשבונך?\nפעולה זו הינה **בלתי הפיכה** ותמחק את כל האירועים, הפריטים והשיבוצים המשויכים לך.`}

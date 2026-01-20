@@ -75,7 +75,7 @@ export function AdminUsersManagement() {
   };
 
   const handleDeleteAdmin = async (admin: Admin) => {
-    // --- בדיקה למניעת מחיקת מנהל-על ---
+    // --- Check to prevent deletion of super-admin ---
     if (admin.email === 'chagai33@gmail.com') {
       toast.error('לא ניתן למחוק את מנהל המערכת הראשי.');
       return;
@@ -89,7 +89,7 @@ export function AdminUsersManagement() {
   };
 
   const handleToggleActive = async (admin: Admin) => {
-    // --- בדיקה למניעת השבתת מנהל-על ---
+    // --- Check to prevent deactivation of super-admin ---
     if (admin.email === 'chagai33@gmail.com') {
       toast.error('לא ניתן לשנות את הסטטוס של מנהל המערכת הראשי.');
       return;

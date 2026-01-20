@@ -4,7 +4,7 @@ import { useStore } from '../../store/useStore';
 export function Footer() {
   const toggleDeleteAccountModal = useStore(state => state.toggleDeleteAccountModal);
   
-  // הוספת קריאה למצב המשתמש
+  // Adding call to user state
   const { user } = useStore();
   const isRegisteredUser = user && user.email;
 
@@ -20,14 +20,14 @@ export function Footer() {
             מדיניות פרטיות
           </Link>
            <span>|</span>
-          {/* כפתור "משוב" שמוצג תמיד */}
+          {/* "Feedback" button that is always displayed */}
           <button
             onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLSfoHsGWZj4ehj8YHwEQ2gpME5LAEtGRv8iuxkV7ioFIEw1AhA/viewform?usp=header', '_blank')}
             className="text-neutral-500 hover:text-neutral-700 transition-colors font-medium"
           >
             משוב
           </button>
-          {/* הוספת תנאי להצגת הכפתור */}
+          {/* Adding condition for displaying the button */}
           {isRegisteredUser && (
             <>
               <span>|</span>

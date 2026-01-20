@@ -26,24 +26,15 @@ export function formatTime(timeStr: string): string {
 
 export function isEventPast(dateStr: string, timeStr: string): boolean {
   try {
-    // בדיקה אם התאריך עבר (לא כולל את היום הנוכחי)
+    // Check if date has passed (not including current day)
     const eventDate = new Date(dateStr);
     const now = new Date();
     
-    // השוואה רק לפי תאריך, לא לפי שעה
+    // Compare only by date, not by time
     const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
     const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
     const isPast = eventDateOnly < nowDateOnly;
-    
-    console.log('Event date comparison:', {
-      eventDate: eventDateOnly.toDateString(),
-      nowDate: nowDateOnly.toDateString(),
-      isPast,
-      originalEventDate: dateStr,
-      originalEventTime: timeStr
-    });
-    
     return isPast;
   } catch (error) {
     console.error('Error checking if event is past:', error);
@@ -61,7 +52,7 @@ export function getNextFriday(): string {
   
   return nextFriday.toISOString().split('T')[0];
 }
-// פונקציה נוספת לבדיקה אם האירוע הסתיים (כולל שעה)
+// Additional function to check if event has ended (including time)
 export function isEventFinished(dateStr: string, timeStr: string): boolean {
   try {
     const eventDateTime = new Date(`${dateStr}T${timeStr}`);

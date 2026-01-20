@@ -24,12 +24,12 @@ const LoginPage: React.FC = () => {
 
     try {
       if (isLoginView) {
-        // --- לוגיקת התחברות ---
+        // --- Login logic ---
         await signInWithEmailAndPassword(auth, email, password);
         toast.success('התחברת בהצלחה!');
         navigate('/dashboard');
       } else {
-        // --- לוגיקת הרשמה ---
+        // --- Registration logic ---
         if (!agreedToTerms) {
           toast.error('יש לאשר את תנאי השימוש ומדיניות הפרטיות.');
           setIsLoading(false);

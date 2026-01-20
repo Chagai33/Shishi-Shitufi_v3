@@ -1,8 +1,8 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { MenuItem, Assignment } from '../../types'; // ודא שהנתיב לקבצי ה-types נכון
+import { MenuItem, Assignment } from '../../types'; // Make sure the path to types files is correct
 
-// הגדרת פרטי העיצוב עבור כל קטגוריה
+// Define design details for each category
 const categoryDetails: { [key: string]: { name: string; icon: string; color: string; glowClass: string } } = {
   starter: { name: 'מנות ראשונות', icon: '/Icons/2.gif', color: '#3498db', glowClass: 'glow-starter' },
   main: { name: 'מנות עיקריות', icon: '/Icons/1.gif', color: '#009688', glowClass: 'glow-main' },
@@ -12,7 +12,7 @@ const categoryDetails: { [key: string]: { name: string; icon: string; color: str
   other: { name: 'אחר', icon: '/Icons/5.gif', color: '#95a5a6', glowClass: 'glow-other' },
 };
 
-// הגדרת ה-Props שהרכיב מקבל
+// Definition of Props that the component receives
 interface CategorySelectorProps {
   menuItems: MenuItem[];
   assignments: Assignment[];
@@ -33,7 +33,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   MAX_USER_ITEMS,
 }) => {
 
-  // פונקציית עזר לחישוב סטטוס והתקדמות לכל קטגוריה
+  // Helper function to calculate status and progress for each category
   const getCategoryProgress = (category: string) => {
     const itemsInCategory = menuItems.filter(item => item.category === category);
     const assignedItemsInCategory = itemsInCategory.filter(item =>
@@ -49,14 +49,14 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
   return (
     <div>
-      {/* רשת הקטגוריות */}
+      {/* Categories grid */}
       <div className="grid grid-cols-רוצה לארגן אירוע משלך?
 
 1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {categoriesOrder.map(categoryKey => {
           const progress = getCategoryProgress(categoryKey);
           
-          // הצג את הקטגוריה רק אם יש בה פריטים
+          // Show category only if it has items
           if (progress.total === 0) {
             return null;
           }
@@ -68,13 +68,13 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             <div
               key={categoryKey}
               onClick={() => onSelectCategory(categoryKey)}
-              // `group` מאפשר לנו לשלוט על אלמנטים פנימיים ב-hover
+              // `group` allows us to control inner elements on hover
               className="group relative category-card-2025 p-6 rounded-xl cursor-pointer text-center overflow-hidden"
             >
-              {/* אלמנט הזוהר שמופעל ב-hover */}
+              {/* Glow element activated on hover */}
               <div className={`aurora-glow ${details.glowClass}`}></div>
               
-              {/* תוכן הקלף */}
+              {/* Card content */}
               <div className="relative z-10 flex flex-col items-center h-full">
                 <img 
                   src={details.icon} 
@@ -106,7 +106,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         })}
       </div>
 
-       {/* כפתור הוספת פריט */}
+       {/* Add item button */}
       <div className="mt-8">
         <button
           onClick={onAddItem}

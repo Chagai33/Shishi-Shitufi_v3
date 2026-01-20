@@ -4,11 +4,11 @@ import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, MenuItem, MenuCategory } from '../../types';
 import toast from 'react-hot-toast';
-import { useAuth } from '../../hooks/useAuth'; // 1. ייבוא
+import { useAuth } from '../../hooks/useAuth'; // 1. Import
 
 export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
   const { menuItems, updateMenuItem } = useStore();
-  const { user: authUser } = useAuth(); // 2. קבלת המשתמש המאומת
+  const { user: authUser } = useAuth(); // 2. Getting the authenticated user
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   
@@ -89,7 +89,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
           throw new Error('Failed to update menu item');
         }
       } else {
-        // 3. הוספת פרטי היוצר לפריט חדש
+        // 3. Adding creator details to new item
         const newItem = {
           ...itemData,
           createdAt: Date.now(),

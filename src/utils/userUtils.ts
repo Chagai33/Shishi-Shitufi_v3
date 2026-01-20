@@ -1,16 +1,16 @@
 import { User } from '../types';
 
-// שינוי: הוספת קידומת כדי למנוע התנגשות עם מפתחות אחרים
+// Change: Adding prefix to prevent collision with other keys
 const USER_STORAGE_KEY_PREFIX = 'shishi_shitufi_user_';
 
-// פונקציית עזר פנימית ליצירת המפתח
+// Internal helper function to create the key
 function getUserStorageKey(uid: string): string {
   return `${USER_STORAGE_KEY_PREFIX}${uid}`;
 }
 
 export function saveUserToLocalStorage(user: User): void {
   try {
-    // שמירה תחת מפתח ייחודי למשתמש
+    // Save under unique key for user
     if (!user.id) {
         console.error("Attempted to save user without ID.");
         return;
@@ -21,7 +21,7 @@ export function saveUserToLocalStorage(user: User): void {
   }
 }
 
-// שינוי: הפונקציה מקבלת uid כדי לדעת איזה משתמש לשלוף
+// Change: Function receives uid to know which user to retrieve
 export function getUserFromLocalStorage(uid: string): User | null {
   try {
     const userStr = localStorage.getItem(getUserStorageKey(uid));
@@ -32,7 +32,7 @@ export function getUserFromLocalStorage(uid: string): User | null {
   }
 }
 
-// שינוי: הפונקציה צריכה לדעת את ה-ID של המשתמש שמעדכנים
+// Change: Function needs to know the ID of the user being updated
 export function updateUserInLocalStorage(updates: Partial<User>): void {
   if (!updates.id) {
       console.error("Cannot update user in localStorage without a user ID.");

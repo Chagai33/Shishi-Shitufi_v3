@@ -37,8 +37,8 @@ export function EventForm({ event, onClose }: EventFormProps) {
     isActive: event?.details.isActive ?? true,
     endDate: event?.details.endDate || '',
     endTime: event?.details.endTime || '',
-    allowUserItems: event?.details.allowUserItems ?? true, // ברירת מחדל: מאושר
-    userItemLimit: event?.details.userItemLimit || 3, // ברירת מחדל: 3
+    allowUserItems: event?.details.allowUserItems ?? true, // Default: enabled
+    userItemLimit: event?.details.userItemLimit || 3, // Default: 3
   });
 
   const validateForm = (): boolean => {

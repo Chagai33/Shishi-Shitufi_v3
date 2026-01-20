@@ -30,7 +30,7 @@ export function useEventItems(eventId: string | null) {
         try {
           const data = snapshot.val();
           if (data) {
-            // סינון פריטים לפי eventId
+            // Filter items by eventId
             const allItems: MenuItem[] = Object.values(data);
             const eventItems = allItems.filter(item => item.eventId === eventId);
             setItems(eventItems);
@@ -82,12 +82,12 @@ export async function assignItem(
   try {
     const timestamp = Date.now();
     
-    // יצירת שיבוץ חדש
+    // Create new assignment
     const assignmentsRef = ref(database, 'assignments');
     const newAssignmentRef = push(assignmentsRef);
     
     const assignment: Omit<Assignment, 'id'> = {
-      eventId: '', // יתמלא מהפריט
+      eventId: '', // Will be filled from the item
       menuItemId: itemId,
       userId,
       userName,
@@ -98,13 +98,13 @@ export async function assignItem(
       updatedAt: timestamp
     };
 
-    // שמירת השיבוץ
+    // Save the assignment
     await set(newAssignmentRef, {
       ...assignment,
       id: newAssignmentRef.key
     });
 
-    // עדכון הפריט כמשובץ
+    // Update item as assigned
     const itemRef = ref(database, `menuItems/${itemId}`);
     await update(itemRef, {
       assignedTo: userId,
@@ -112,7 +112,6 @@ export async function assignItem(
       assignedAt: timestamp
     });
 
-    console.log('Item assigned successfully:', { itemId, userId, userName });
     return true;
   } catch (error) {
     console.error('Error assigning item:', error);
@@ -151,7 +150,7 @@ export async function createEvent(
       date,
       time,
       location: location.trim(),
-      hostId: 'admin', // ברירת מחדל למנהל
+      hostId: 'admin', // Default to admin
       hostName: hostName.trim(),
       isActive: true,
       createdAt: timestamp,
@@ -163,13 +162,6 @@ export async function createEvent(
       id: newEventRef.key
     });
 
-    console.log('Event created successfully:', { 
-      id: newEventRef.key, 
-      title, 
-      date, 
-      hostName 
-    });
-    
     return newEventRef.key;
   } catch (error) {
     console.error('Error creating event:', error);
@@ -195,7 +187,7 @@ export function useEvents() {
           const data = snapshot.val();
           if (data) {
             const eventsArray: ShishiEvent[] = Object.values(data);
-            // מיון לפי תאריך יצירה (החדשים ראשונים)
+            // Sort by creation date (newest first)
             eventsArray.sort((a, b) => b.createdAt - a.createdAt);
             setEvents(eventsArray);
           } else {

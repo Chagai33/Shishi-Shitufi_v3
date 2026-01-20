@@ -1,7 +1,7 @@
 // src/types/index.ts
 
 /**
- * מייצג משתמש רשום במערכת (מארגן אירועים).
+ * Represents a registered user in the system (event organizer).
  */
 export interface User {
   id: string; // Firebase Auth UID
@@ -11,7 +11,7 @@ export interface User {
 }
 
 /**
- * מייצג את פרטי הליבה של אירוע, כפי שהם נשמרים תחת event.details.
+ * Represents the core details of an event, as stored under event.details.
  */
 export interface EventDetails {
   title: string;
@@ -20,17 +20,17 @@ export interface EventDetails {
   location: string;
   description?: string;
   isActive: boolean;
-  allowUserItems?: boolean; // האם לאפשר למשתתפים להוסיף פריטים
-  userItemLimit?: number;   // מה המגבלה למשתמש
+  allowUserItems?: boolean; // Whether to allow participants to add items
+  userItemLimit?: number;   // User item limit
 }
 
 /**
- * מייצג פריט בתפריט של אירוע ספציפי.
- * שימו לב שכבר אין צורך בשדה eventId, כי הפריט מקונן תחת האירוע.
+ * Represents a menu item for a specific event.
+ * Note that the eventId field is no longer needed, as the item is nested under the event.
  */
 export interface MenuItem {
   id: string;
-  eventId: string; // הוספנו את מזהה האירוע לנוחות
+  eventId: string; // Added event ID for convenience
   name: string;
   category: 'starter' | 'main' | 'dessert' | 'drink' | 'other' | 'equipment';
   quantity: number;
@@ -39,7 +39,7 @@ export interface MenuItem {
   creatorId: string;
   creatorName: string;
   createdAt: number;
-  // שדות השיבוץ נשמרים ישירות על הפריט לגישה נוחה
+  // Assignment fields are stored directly on the item for easy access
   assignedTo?: string;
   assignedToName?: string;
   assignedAt?: number;
@@ -47,11 +47,11 @@ export interface MenuItem {
 
 
 /**
- * מייצג שיבוץ של משתמש לפריט.
+ * Represents an assignment of a user to an item.
  */
 export interface Assignment {
   id: string;
-  eventId: string; // הוספנו את מזהה האירוע
+  eventId: string; // Added event ID
   menuItemId: string;
   userId: string;
   userName: string;
@@ -67,17 +67,17 @@ export interface Assignment {
  * מייצג משתתף שנרשם לאירוע.
  */
 export interface Participant {
-    id: string; // Firebase Auth UID (יכול להיות גם של משתמש אנונימי)
+    id: string; // Firebase Auth UID (can belong to an anonymous user)
     name: string;
     joinedAt: number;
 }
 
 /**
- * מייצג את האובייקט המלא של אירוע, כפי שהוא מאוחסן בבסיס הנתונים.
- * זהו האובייקט הראשי שיכיל את כל המידע על אירוע בודד במודל השטוח.
+ * Represents the complete event object, as stored in the database.
+ * This is the main object that contains all information about a single event in the flat model.
  */
 export interface ShishiEvent {
-  id: string; // המזהה הייחודי של האירוע
+  id: string; // The unique identifier of the event
   organizerId: string;
   organizerName: string;
   createdAt: number;
@@ -90,10 +90,10 @@ export interface ShishiEvent {
 
 }
 
-// טיפוסים עבור ה-Store הגלובלי (Zustand)
+// Types for the global Store (Zustand)
 export interface AppState {
-  user: User | null; // המשתמש המחובר (תמיד יהיה מארגן)
-  organizerEvents: ShishiEvent[]; // רשימת האירועים של המארגן (עבור הדאשבורד)
-  currentEvent: ShishiEvent | null; // האירוע הספציפי שבו המשתמש צופה כרגע
+  user: User | null; // The logged-in user (always an organizer)
+  organizerEvents: ShishiEvent[]; // List of the organizer's events (for the dashboard)
+  currentEvent: ShishiEvent | null; // The specific event the user is currently viewing
   isLoading: boolean;
 }

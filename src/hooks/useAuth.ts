@@ -23,14 +23,14 @@ export function useAuth() {
       if (user) {
         setFirebaseUser(user);
         
-        // טעינת פרופיל המשתמש מ-Database
+        // Load user profile from Database
         const userProfileRef = ref(database, `users/${user.uid}`);
         const snapshot = await get(userProfileRef);
 
         if (snapshot.exists()) {
           setUser(snapshot.val() as User);
         } else {
-          // יצירת פרופיל חדש למשתמש חדש
+          // Create new profile for new user
           const newUserProfile: User = {
             id: user.uid,
             name: user.displayName || 'משתמש חדש',

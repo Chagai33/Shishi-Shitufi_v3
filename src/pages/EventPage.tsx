@@ -347,13 +347,13 @@ const EventPage: React.FC = () => {
     const participants = useStore(selectParticipants);
     const userCreatedItemsCount = useMemo(() => {
         if (!localUser || !currentEvent?.userItemCounts) return 0;
-        // קריאה ישירה מהמונה החדש שהוספנו
+        // Direct call from the new counter we added
         return currentEvent.userItemCounts[localUser.uid] || 0;
     }, [currentEvent, localUser]);
 
     const MAX_USER_ITEMS = currentEvent?.details.userItemLimit ?? 3;
     
-    // בדיקה משולבת: האם מותר להוסיף פריטים וגם האם המשתמש עומד במגבלה
+    // Combined check: Can items be added and does user meet the limit
     const canAddMoreItems = (currentEvent?.details.allowUserItems ?? false) && userCreatedItemsCount < MAX_USER_ITEMS;
     const assignmentStats = useMemo(() => {
         const requiredItems = menuItems.filter(item => item.isRequired);
@@ -439,7 +439,7 @@ const EventPage: React.FC = () => {
     const isCreator = item.creatorId === localUser.uid;
 
     if (isCreator) {
-        // המשתמש הוא גם היוצר וגם המשבץ - מוחקים את הפריט
+        // User is both creator and assigner - delete the item
         if (window.confirm("פעולה זו תמחק גם את הפריט וגם את השיבוץ")) {
             try {
                 await FirebaseService.deleteMenuItem(eventId, item.id);
@@ -449,7 +449,7 @@ const EventPage: React.FC = () => {
             }
         }
     } else {
-        // המשתמש רק משובץ - מבטלים רק את השיבוץ
+        // User is only assigned - cancel only the assignment
         if (window.confirm("האם לבטל את השיבוץ?")) {
             try {
                 await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
@@ -621,11 +621,11 @@ const EventPage: React.FC = () => {
             menuItems={menuItems} 
             assignments={assignments} 
             onSelectCategory={handleCategoryClick}
-            // אין יותר צורך להעביר את הפרמטרים הללו כי הם נבדקים במקום אחר
+            // No longer need to pass these parameters as they are checked elsewhere
         />
         <div className="max-w-4xl mx-auto px-4 mt-8">
             <div className="flex justify-center">
-              {/* התניית התצוגה: הצג את הכפתור רק אם מותר להוסיף פריטים */}
+              {/* Conditional display: Show button only if items can be added */}
               {currentEvent?.details.allowUserItems && (
                 <button
                   onClick={() => {
@@ -656,8 +656,8 @@ const EventPage: React.FC = () => {
   </h2>
   
 </div>
-  {/* --- השינוי --- */}
-  {/* הכפתור בתוך הקטגוריה מקבל את העיצוב והטקסט של הכפתור החיצוני */}
+  {/* --- The change --- */}
+  {/* The button within the category gets the style and text of the external button */}
   {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
     <button
       onClick={() => {
@@ -745,7 +745,7 @@ const EventPage: React.FC = () => {
     <UserMenuItemForm
         event={currentEvent}
         onClose={() => setModalState(null)}
-        category={modalState.category} // הוספנו את השורה הזו
+        category={modalState.category} // We added this line
     />
 )}
         </div>

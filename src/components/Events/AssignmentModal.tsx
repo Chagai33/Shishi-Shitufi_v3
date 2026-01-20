@@ -33,19 +33,19 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
 
-  // בודק אם המשתמש כבר רשום כמשתתף באירוע
+  // Check if user is already registered as event participant
   useEffect(() => {
     const participants = useStore.getState().currentEvent?.participants || {};
     const isParticipant = !!participants[user.uid];
     
-    // הצג שדה שם רק אם זה משתמש אנונימי שעדיין לא הצטרף
+    // Show name field only if it's an anonymous user who hasn't joined yet
     if (user.isAnonymous && !isParticipant) {
       setShowNameInput(true);
     }
   }, [user.uid, user.isAnonymous]);
 
   const handleSubmit = async () => {
-    // ולידציה
+    // Validation
     if (showNameInput && !participantName.trim()) {
       toast.error("כדי להשתבץ, יש להזין שם מלא.");
       return;
@@ -60,24 +60,24 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     try {
       let finalUserName = participantName.trim();
       
-      // אם המשתמש הזין שם, רשום אותו כמשתתף באירוע
+      // If user entered a name, register them as event participant
       if (showNameInput && finalUserName) {
         await FirebaseService.joinEvent(organizerId, eventId, user.uid, finalUserName);
       } else {
-        // אם הוא כבר משתתף, קח את השם הקיים שלו
+        // If they're already a participant, take their existing name
         const existingParticipant = useStore.getState().currentEvent?.participants[user.uid];
         finalUserName = existingParticipant?.name || user.displayName || 'אורח';
       }
 
       if (isEdit && existingAssignment) {
-        // --- לוגיקת עריכה ---
+        // --- Edit logic ---
         await FirebaseService.updateAssignment(organizerId, eventId, existingAssignment.id, {
           quantity,
           notes: notes.trim(),
         });
         toast.success("השיבוץ עודכן בהצלחה!");
       } else {
-        // --- לוגיקת יצירת שיבוץ חדש ---
+        // --- Create new assignment logic ---
         const assignmentData: Omit<Assignment, 'id'> = {
           menuItemId: item.id,
           userId: user.uid,

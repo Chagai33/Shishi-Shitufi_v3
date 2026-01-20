@@ -75,7 +75,7 @@ export function AdminPanel() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       
-      {/* שורת סטטיסטיקה קומפקטית */}
+      {/* Compact statistics row */}
       <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-sm text-gray-600 mb-6">
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           <p>סך אירועים:</p>
@@ -91,15 +91,15 @@ export function AdminPanel() {
         </div>
       </div>
 
-      {/* קונטיינר ראשי עם טאבים ותוכן */}
+      {/* Main container with tabs and content */}
       <div className="bg-white rounded-lg shadow-md">
-        {/* שורת כותרת וטאבים חדשה */}
+        {/* New title and tabs row */}
         <div className="border-b border-gray-200 flex justify-between items-center px-4 py-3">
           <div className="flex items-center gap-x-3">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800">
               {tabs.find(t => t.id === activeTab)?.label}
             </h2>
-            {/* כפתור '+' מופיע רק בטאב הרלוונטי */}
+            {/* '+' button appears only in relevant tab */}
             {activeTab === 'events' && (
               <button
                 onClick={() => setShowEventForm(true)}
@@ -111,7 +111,7 @@ export function AdminPanel() {
             )}
           </div>
           
-          {/* כפתורי הטאבים */}
+          {/* Tab buttons */}
           <nav className="flex space-x-1 rtl:space-x-reverse bg-gray-100 p-1 rounded-lg">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -133,7 +133,7 @@ export function AdminPanel() {
           </nav>
         </div>
 
-        {/* אזור התוכן */}
+        {/* Content area */}
         <div className="p-4 sm:p-6">
           {activeTab === 'events' && <EventsManagement setShowEventForm={setShowEventForm} setEditingEvent={setEditingEvent} setShowImportModal={setShowImportModal} setSelectedEventForImport={setSelectedEventForImport} />}
           {activeTab === 'stats' && <Statistics />}
@@ -143,7 +143,7 @@ export function AdminPanel() {
         </div>
       </div>
 
-      {/* מודל ליצירת אירוע */}
+      {/* Modal for creating event */}
       {showEventForm && (
         <EventForm
           event={editingEvent || undefined}

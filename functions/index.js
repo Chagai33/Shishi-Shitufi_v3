@@ -4,8 +4,8 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const db = admin.database();
 
-// הגדרת ה-UID של מנהל-העל. מומלץ לשמור אותו כאן או במשתנה סביבה.
-const SUPER_ADMIN_UID = "V2MYaKaCXVUblj0oK6v6AMmF8E42"; // <-- החלף ב-UID האמיתי שלך!
+// Super-admin UID definition from environment variable
+const SUPER_ADMIN_UID = process.env.SUPER_ADMIN_UID;
 
 /**
  * Deletes a user account and all associated data.
@@ -21,7 +21,7 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
 
   const uid = context.auth.uid;
   
-  // --- שכבת הגנה חדשה ---
+  // --- New protection layer ---
   if (uid === SUPER_ADMIN_UID) {
       console.warn(`Attempt to delete super-admin account (${uid}) was blocked.`);
       throw new functions.https.HttpsError(
@@ -33,7 +33,6 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
 
   try {
     await admin.auth().deleteUser(uid);
-    console.log(`Successfully initiated deletion for user ${uid}`);
     return { result: `Successfully initiated deletion for user ${uid}` };
   } catch (error) {
     console.error(`Error deleting user ${uid}:`, error);
@@ -51,8 +50,6 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
  */
 exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
     const uid = user.uid;
-    console.log(`Starting cleanup for deleted user: ${uid}`);
-
     const updates = {};
     const eventsToDelete = [];
 
@@ -63,7 +60,6 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
     if (snapshot.exists()) {
         snapshot.forEach(childSnapshot => {
             const eventId = childSnapshot.key;
-            console.log(`Marking event ${eventId} for deletion.`);
             updates[`/events/${eventId}`] = null; // Mark the entire event for deletion
             eventsToDelete.push(eventId);
         });
@@ -83,7 +79,6 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
             if (assignments) {
                 for (const assignmentId in assignments) {
                     if (assignments[assignmentId].userId === uid) {
-                        console.log(`Deleting assignment ${assignmentId} from event ${eventId}.`);
                         updates[`/events/${eventId}/assignments/${assignmentId}`] = null;
 
                         // Also un-assign the menu item
@@ -104,12 +99,9 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
     if (Object.keys(updates).length > 0) {
         try {
             await db.ref().update(updates);
-            console.log(`Successfully cleaned up data for user ${uid}.`);
         } catch (error) {
             console.error(`Error during database cleanup for user ${uid}:`, error);
         }
-    } else {
-        console.log(`No database data to clean up for user ${uid}.`);
     }
 
     return null;

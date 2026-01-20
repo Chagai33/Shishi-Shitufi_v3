@@ -45,12 +45,6 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose }: Ed
     setIsSubmitting(true);
 
     try {
-      console.log('Starting assignment update:', {
-        assignmentId: assignment.id,
-        quantity,
-        notes: notes.trim() || undefined
-      });
-
       const updates = {
         quantity,
         notes: notes.trim() || undefined,
@@ -62,8 +56,6 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose }: Ed
       if (success) {
         // Update local store immediately
         updateAssignment(assignment.id, updates);
-        console.log('Local store updated');
-        
         toast.success('השיבוץ עודכן בהצלחה!');
         onClose();
       } else {

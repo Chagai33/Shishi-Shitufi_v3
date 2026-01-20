@@ -22,7 +22,7 @@ interface FormErrors {
 
 export function UserMenuItemForm({ event, onClose, category, availableCategories }: UserMenuItemFormProps) {
   
-  const { user: authUser } = useAuth(); // <-- השורה שהוחזרה
+  const { user: authUser } = useAuth(); // <-- The line that was restored
   const { addMenuItem } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -46,25 +46,16 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
   ];
 
   useEffect(() => {
-    console.group('🔍 UserMenuItemForm.useEffect');
-    console.log('👤 Current authUser:', authUser);
-    console.log('📅 Current event:', event);
-    console.log('👥 Event participants:', event.participants);
-
     if (authUser?.isAnonymous) {
       const participants = event.participants || {};
       const isParticipant = !!participants[authUser.uid];
-      console.log('🔍 Is anonymous user already participant?', isParticipant);
       if (!isParticipant) {
-        console.log('📝 Showing name input for anonymous user');
         setShowNameInput(true);
       }
     }
-    console.groupEnd();
   }, [authUser, event.participants]);
 
   const validateForm = (): boolean => {
-    console.group('✅ UserMenuItemForm.validateForm');
     const newErrors: FormErrors = {};
 
     if (!formData.name.trim()) {
@@ -79,32 +70,14 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
       newErrors.quantity = 'הכמות לא יכולה להיות יותר מ-100';
     }
 
-    console.log('📋 Form data:', formData);
-    console.log('❌ Validation errors:', newErrors);
-
     setErrors(newErrors);
     const isValid = Object.keys(newErrors).length === 0;
-    console.log('✅ Form is valid:', isValid);
-    console.groupEnd();
     return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const allMenuItems = selectMenuItems(useStore.getState());
-
-
-    console.group('📝 UserMenuItemForm.handleSubmit');
-    
-    console.log('👤 Current user:', authUser);
-    console.log('📋 Form data:', formData);
-    console.log('🏷️ Participant name:', participantName);
-    console.log('📝 Show name input:', showNameInput);
-    console.log('📅 Event details:', {
-      id: event.id,
-      organizerId: event.organizerId,
-      title: event.details?.title
-    });
 
     if (!authUser) {
       console.error('❌ No authenticated user');
@@ -113,11 +86,9 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
       return;
     }
 
-    console.log('🔍 Validating form...');
     if (!validateForm()) {
       console.error('❌ Form validation failed');
       toast.error('יש לתקן את השגיאות בטופס');
-      console.groupEnd();
       return;
     }
 
@@ -129,38 +100,27 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     if (isDuplicate) {
         if (!window.confirm(`פריט בשם "${formData.name.trim()}" כבר קיים באירוע. האם להוסיף אותו בכל זאת?`)) {
             setIsSubmitting(false);
-            console.log('🛑 User cancelled duplicate item submission.');
-            console.groupEnd();
-            return; // עצירת הפונקציה אם המשתמש לחץ "ביטול"
+            return; // Stop the function if user clicked "Cancel"
         }
     }
 
     if (showNameInput && !participantName.trim()) {
       console.error('❌ Name required but not provided');
       toast.error('יש להזין שם כדי להוסיף פריט');
-      console.groupEnd();
       return;
     }
 
-    console.log('✅ All validations passed, starting submission...');
     setIsSubmitting(true);
 
     try {
       let finalUserName = participantName.trim();
 
       if (showNameInput && finalUserName) {
-        console.log('👥 Joining event with name:', finalUserName);
-        console.log('🔗 Event path for joining:', `events/${event.id}/participants/${authUser.uid}`);
-
         await FirebaseService.joinEvent(event.id, authUser.uid, finalUserName);
-        console.log('✅ Successfully joined event');
       } else {
         const existingParticipant = event.participants?.[authUser.uid];
         finalUserName = existingParticipant?.name || authUser.displayName || 'אורח';
-        console.log('👤 Using existing name:', finalUserName);
       }
-
-      console.log('🍽️ Preparing menu item data...');
       const newItemData: Omit<MenuItem, 'id'> = {
         name: formData.name.trim(),
         category: formData.category,
@@ -176,10 +136,6 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
         delete (newItemData as any).notes;
       }
 
-      console.log('📋 New item data:', newItemData);
-      console.log('🔗 Firebase path for item:', `events/${event.id}/menuItems`);
-
-      console.log('🎯 Adding item with self-assignment...');
       const itemId = await FirebaseService.addMenuItemAndAssign(
         event.id,
         newItemData,
@@ -188,7 +144,6 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
       );
 
       if (itemId) {
-        console.log('✅ Item added and assigned successfully, ID:', itemId);
         addMenuItem({ ...newItemData, id: itemId });
         toast.success('הפריט נוסף ושובץ בהצלחה!');
       } else {
@@ -196,8 +151,6 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
         throw new Error('לא התקבל מזהה פריט');
       }
 
-      console.log('🎉 Form submission completed successfully');
-      console.groupEnd();
       onClose();
     } catch (error: any) {
       console.error('❌ Error in form submission:', error);
@@ -222,21 +175,12 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
   };
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
-    console.log(`📝 Input changed: ${field} = ${value}`);
     setFormData(prev => ({ ...prev, [field]: value }));
 
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
-
-  console.log('🎨 Rendering UserMenuItemForm with:', {
-    authUser: authUser?.uid,
-    eventId: event.id,
-    organizerId: event.organizerId,
-    showNameInput,
-    isSubmitting
-  });
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

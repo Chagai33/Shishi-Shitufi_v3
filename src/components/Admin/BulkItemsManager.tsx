@@ -85,7 +85,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     );
   }, [realtimeEvents]);
 
-  // קבלת כל השיבוצים מכל האירועים
+  // Get all assignments from all events
   const allAssignments = useMemo(() => {
     if (!realtimeEvents) return [];
     return realtimeEvents.flatMap(e =>
@@ -146,7 +146,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       if (filterAssigned === 'unassigned' && isItemAssigned) return false;
       if (filterAddedBy !== 'all') {
         const eventData = realtimeEvents.find(e => e.id === item.eventId);
-        if (!eventData) return false; // אם לא נמצא אירוע, הסתר את הפריט
+        if (!eventData) return false; // If event not found, hide the item
         const isAdminItem = item.creatorId === eventData.organizerId;
         if (filterAddedBy === 'user' && isAdminItem) return false;
         if (filterAddedBy === 'admin' && !isAdminItem) return false;
@@ -325,16 +325,12 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             setIsLoading(false);
             return;
           }
-          
-          console.log('🔄 Starting assignment cancellation for items:', assignedItemsToCancel.map(i => i.name));
-          
+
           for (const item of assignedItemsToCancel) {
             const itemAssignments = allAssignments.filter(a => a.menuItemId === item.id);
-            console.log(`📋 Found ${itemAssignments.length} assignments for item ${item.name}:`, itemAssignments);
-            
+
             for (const assignment of itemAssignments) {
               try {
-                console.log(`🗑️ Cancelling assignment ${assignment.id} for item ${item.name}`);
                 await FirebaseService.cancelAssignment(item.eventId, assignment.id, item.id);
                 
                 // Update local store - remove assignment
@@ -346,9 +342,8 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                     ? { ...editItem, assignedTo: undefined, assignedToName: undefined, assignedAt: undefined }
                     : editItem
                 ));
-                
+
                 successCount++;
-                console.log(`✅ Successfully cancelled assignment ${assignment.id}`);
               } catch (error) {
                 console.error(`❌ Error canceling assignment ${assignment.id}:`, error);
                 errorCount++;
@@ -415,7 +410,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
 
   const toggleEditAll = () => {
     if (editAllMode) {
-      // יציאה ממצב עריכה - ביטול כל השינויים
+      // Exit edit mode - cancel all changes
       setEditableItems(prev => prev.map(item => ({
         ...item.originalData,
         isEditing: false,
@@ -424,7 +419,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         originalData: item.originalData
       })));
     } else {
-      // כניסה למצב עריכה - פתיחת כל הפריטים לעריכה
+      // Enter edit mode - open all items for editing
       setEditableItems(prev => prev.map(item => ({
         ...item,
         isEditing: true
@@ -444,7 +439,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       return;
     }
 
-    // בדיקת כפילויות
+    // Check for duplicates
     const existingItem = editableItems.find(item => 
       item.name.toLowerCase().trim() === newItem.name.toLowerCase().trim() && 
       item.eventId === event.id
@@ -504,15 +499,15 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
 
     setIsLoading(true);
     try {
-      // נקה ערכי undefined מהפריטים
+      // Clean undefined values from items
       const presetItems = selectedItems.map(item => ({
         name: item.name,
         category: item.category,
         quantity: item.quantity,
-        notes: item.notes || undefined, // המר null ל-undefined, ואז נסיר אותו
+        notes: item.notes || undefined, // Convert null to undefined, then remove it
         isRequired: item.isRequired
       })).map(item => {
-        // הסר שדות עם ערכי undefined
+        // Remove fields with undefined values
         const cleanItem: any = { ...item };
         if (cleanItem.notes === undefined || cleanItem.notes === null || cleanItem.notes === '') {
           delete cleanItem.notes;
@@ -526,14 +521,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         items: presetItems
       };
 
-      console.log('🧹 Cleaned preset items:', presetItems);
-      console.log('📋 Final list data:', listData);
-
       const listId = await FirebaseService.createPresetList(listData);
       
       if (listId) {
         toast.success(`רשימה "${listName.trim()}" נשמרה בהצלחה עם ${presetItems.length} פריטים`);
-        // ביטול בחירת הפריטים
+        // Cancel item selection
         setEditableItems(prev => prev.map(item => ({ ...item, isSelected: false })));
       } else {
         throw new Error('לא התקבל מזהה רשימה');
@@ -994,9 +986,9 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         <PresetListsManager
           onClose={() => setShowPresetManager(false)}
           onSelectList={(items) => {
-            // לא נעשה כלום כשבוחרים רשימה - זה רק למטרת שמירה
+            // Do nothing when selecting list - this is only for saving purposes
             setShowPresetManager(false);
-            // ביטול בחירת הפריטים לאחר השמירה
+            // Cancel item selection after saving
             setEditableItems(prev => prev.map(item => ({ ...item, isSelected: false })));
             toast.success('הרשימה נשמרה בהצלחה!');
           }}

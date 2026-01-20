@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { X, Lock, User, Eye, EyeOff, AlertCircle, Info, UserPlus } from 'lucide-react';
-import { signInWithEmailAndPassword, updateProfile } from 'firebase/auth'; // הוספת updateProfile
+import { signInWithEmailAndPassword, updateProfile } from 'firebase/auth'; // Adding updateProfile
 import { auth } from '../../lib/firebase';
 import { FirebaseService } from '../../services/firebaseService';
-import { useStore } from '../../store/useStore'; // שינוי
+import { useStore } from '../../store/useStore'; // Change
 import toast from 'react-hot-toast';
 
 interface AdminLoginProps {
@@ -95,9 +95,9 @@ export function AdminLogin({ onClose, onSuccess }: AdminLoginProps) {
     }
     setIsLoading(true);
     try {
-      // עדכון הפרופיל ב-Firebase Auth עצמו
+      // Update profile in Firebase Auth itself
       await updateProfile(auth.currentUser, { displayName: displayName.trim() });
-      // הוספת המשתמש לטבלת המנהלים במסד הנתונים
+      // Add user to admins table in database
       await FirebaseService.addCurrentUserAsAdmin(displayName.trim());
       
       setUserAdminStatus(true);

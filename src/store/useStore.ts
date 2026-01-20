@@ -3,21 +3,21 @@
 import { create } from 'zustand';
 import { User, ShishiEvent, MenuItem, Assignment, Participant } from '../types';
 
-// הגדרת המצב הגלובלי של האפליקציה - עכשיו הוא פשוט יותר ומותאם Multi-Tenant
+// Definition of the global application state - now it's simpler and adapted for Multi-Tenant
 interface AppState {
-  user: User | null; // המשתמש המחובר (מארגן או אורח אנונימי)
-  currentEvent: ShishiEvent | null; // האירוע הספציפי שבו המשתמש צופה כרגע
+  user: User | null; // The logged-in user (organizer or anonymous guest)
+  currentEvent: ShishiEvent | null; // The specific event the user is currently viewing
   isLoading: boolean;
-  isDeleteAccountModalOpen: boolean; // מצב חדש למודל מחיקת החשבון
+  isDeleteAccountModalOpen: boolean; // New state for account deletion modal
 
-  // פעולות לעדכון המצב
+  // Actions to update the state
   setUser: (user: User | null) => void;
   setCurrentEvent: (event: ShishiEvent | null) => void;
   setLoading: (loading: boolean) => void;
   clearCurrentEvent: () => void;
-  toggleDeleteAccountModal: () => void; // פעולה חדשה לניהול המודל
+  toggleDeleteAccountModal: () => void; // New action for modal management
 
-  // פעולות לעדכון נתונים בתוך האירוע הנוכחי
+  // Actions to update data within the current event
   updateMenuItem: (itemId: string, updates: Partial<MenuItem>) => void;
   addMenuItem: (item: MenuItem) => void;
   deleteMenuItem: (itemId: string) => void;
@@ -31,29 +31,29 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set, get) => ({
-  // מצב התחלתי
+  // Initial state
   user: null,
   currentEvent: null,
-  isLoading: true, // מתחילים במצב טעינה
-  isDeleteAccountModalOpen: false, // מצב התחלתי סגור
+  isLoading: true, // Start in loading state
+  isDeleteAccountModalOpen: false, // Initial state closed
 
-  // הגדרת הפעולות הבסיסיות
+  // Definition of basic actions
   setUser: (user) => set({ user }),
 
-  // פעולה זו תקבל עכשיו את כל אובייקט האירוע מ-Firebase
+  // This action will now receive the complete event object from Firebase
   setCurrentEvent: (event) => set({ currentEvent: event, isLoading: false }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 
-  // פעולה לניקוי נתוני האירוע הנוכחי בעת יציאה מהעמוד
+  // Action to clear current event data when leaving the page
   clearCurrentEvent: () => set({ currentEvent: null }),
   
-  // פעולה חדשה לניהול מצב המודל
+  // New action for modal state management
   toggleDeleteAccountModal: () => set((state) => ({ isDeleteAccountModalOpen: !state.isDeleteAccountModalOpen })),
 
 
   // ===============================
-  // פעולות לעדכון פריטי תפריט
+  // Menu item update actions
   // ===============================
 
   updateMenuItem: (itemId, updates) => set((state) => {
@@ -109,7 +109,7 @@ export const useStore = create<AppState>((set, get) => ({
     const updatedMenuItems = { ...state.currentEvent.menuItems };
     delete updatedMenuItems[itemId];
 
-    // גם מוחקים את כל השיבוצים הקשורים לפריט זה
+    // Also delete all assignments related to this item
     const updatedAssignments = { ...state.currentEvent.assignments };
     Object.keys(updatedAssignments).forEach(assignmentId => {
       if (updatedAssignments[assignmentId].menuItemId === itemId) {
@@ -127,7 +127,7 @@ export const useStore = create<AppState>((set, get) => ({
   }),
 
   // ===============================
-  // פעולות לעדכון שיבוצים
+  // Assignment update actions
   // ===============================
 
   updateAssignment: (assignmentId, updates) => set((state) => {
@@ -188,7 +188,7 @@ export const useStore = create<AppState>((set, get) => ({
   }),
 
   // ===============================
-  // פעולות לעדכון משתתפים
+  // Participant update actions
   // ===============================
 
   addParticipant: (participant) => set((state) => {
@@ -226,7 +226,7 @@ export const useStore = create<AppState>((set, get) => ({
 }));
 
 // ===============================
-// Selectors - סלקטורים מותאמים
+// Selectors - Adapted selectors
 // ===============================
 
 /**
@@ -236,11 +236,11 @@ export const selectMenuItems = (state: AppState): MenuItem[] => {
   const event = state.currentEvent;
   if (!event?.menuItems) return [];
 
-  // Firebase מחזיר אובייקט, אנחנו ממירים אותו למערך ומוסיפים את המזהה
+  // Firebase returns an object, we convert it to an array and add the ID
   return Object.entries(event.menuItems).map(([id, item]) => ({
     ...(item as Omit<MenuItem, 'id'>),
     id,
-    eventId: event.id, // מוסיפים את מזהה האירוע לנוחות
+    eventId: event.id, // Add event ID for convenience
   }));
 };
 

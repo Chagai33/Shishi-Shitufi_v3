@@ -3,32 +3,28 @@
 import { ref, push, set, get, onValue, off, remove, update, query, equalTo, orderByChild, runTransaction } from 'firebase/database';
 
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- הוספת import
+import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added import
 import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem } from '../types'; 
 
 import { toast } from 'react-hot-toast'; 
 
-const functions = getFunctions(); // <-- אתחול שירות הפונקציות
+const functions = getFunctions(); // <-- Functions service initialization
 
 /**
- * שירות Firebase מותאם למודל שטוח (Flat Model)
- * כל פעולה מתבצעת על אוספים גלובליים עם סינון לפי eventId או organizerId
+ * Firebase service adapted for flat model (Flat Model)
+ * All operations are performed on global collections with filtering by eventId or organizerId
  */
 export class FirebaseService {
   
   // ===============================
-  // פונקציות עזר פנימיות
+  // Internal helper functions
   // ===============================
   
   /**
-   * מוודא שלאירוע יש את כל המבנים הנדרשים
+   * Ensures the event has all required structures
    */
   private static async ensureEventStructure(eventId: string): Promise<void> {
-    console.group('🔧 FirebaseService.ensureEventStructure');
-    console.log('📥 Input parameters:', { eventId });
-    console.log('🔗 Event path:', `events/${eventId}`);
-    
     try {
       const eventRef = ref(database, `events/${eventId}`);
       const snapshot = await get(eventRef);
@@ -37,26 +33,19 @@ export class FirebaseService {
         const eventData = snapshot.val();
         const updates: { [key: string]: any } = {};
         
-        // וידוא שכל המבנים הנדרשים קיימים
+        // Ensure all required structures exist
         if (!eventData.menuItems) {
-          console.log('➕ Adding missing menuItems structure');
           updates[`events/${eventId}/menuItems`] = {};
         }
         if (!eventData.assignments) {
-          console.log('➕ Adding missing assignments structure');
           updates[`events/${eventId}/assignments`] = {};
         }
         if (!eventData.participants) {
-          console.log('➕ Adding missing participants structure');
           updates[`events/${eventId}/participants`] = {};
         }
         
         if (Object.keys(updates).length > 0) {
-          console.log('💾 Applying structure updates:', updates);
           await update(ref(database), updates);
-          console.log('✅ Structure updates applied');
-        } else {
-          console.log('✅ Event structure is already complete');
         }
       } else {
         console.warn('⚠️ Event does not exist:', `events/${eventId}`);
@@ -71,20 +60,20 @@ export class FirebaseService {
   }
 
   // ===============================
-  // ניהול מארגנים (Organizers)
+  // Organizer management
   // ===============================
 
   /**
-   * יוצר מארגן חדש במערכת
+   * Creates a new organizer in the system
    */
   static async createOrganizer(email: string, password: string, displayName: string): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
     
-    // עדכון פרופיל ב-Firebase Auth
+    // Update profile in Firebase Auth
     await updateProfile(newUser, { displayName });
     
-    // יצירת פרופיל משתמש ב-Database
+    // Create user profile in Database
     const userObject: User = {
       id: newUser.uid,
       name: displayName,
@@ -103,7 +92,6 @@ export class FirebaseService {
     const deleteUser = httpsCallable(functions, 'deleteUserAccount');
     try {
         const result = await deleteUser();
-        console.log('Deletion initiated:', result.data);
     } catch (error) {
         console.error("Error calling deleteUserAccount function:", error);
         throw new Error('שגיאה במחיקת החשבון.');
@@ -112,26 +100,21 @@ export class FirebaseService {
 
 
   // ===============================
-  // ניהול אירועים (Events)
+  // Event management
   // ===============================
 
   /**
-   * יוצר אירוע חדש עבור מארגן ספציפי
+   * Creates a new event for a specific organizer
    */
   static async createEvent(organizerId: string, eventDetails: EventDetails): Promise<string> {
-    console.group('📅 FirebaseService.createEvent');
-    console.log('📥 Input parameters:', { organizerId, eventDetails });
-    
     try {
-      // קבלת שם המארגן
+      // Get organizer name
       const organizerSnapshot = await get(ref(database, `users/${organizerId}/name`));
       const organizerName = organizerSnapshot.val() || 'מארגן';
-      console.log('👤 Organizer name:', organizerName);
 
-      // יצירת אירוע חדש באוסף הגלובלי
+      // Create new event in global collection
       const newEventRef = push(ref(database, 'events'));
       const newEventId = newEventRef.key!;
-      console.log('🆔 Generated event ID:', newEventId);
 
       const fullEventData: Omit<ShishiEvent, 'id'> = {
         organizerId,
@@ -143,13 +126,7 @@ export class FirebaseService {
         participants: {}
       };
 
-      console.log('📋 Event data to save:', fullEventData);
-      console.log('🔗 Firebase path:', `events/${newEventId}`);
-
       await set(newEventRef, fullEventData);
-      console.log('✅ Event created successfully!');
-      console.groupEnd();
-      
       return newEventId;
     } catch (error) {
       console.error('❌ Error in createEvent:', error);
@@ -198,39 +175,28 @@ export class FirebaseService {
     const eventRef = ref(database, `events/${eventId}`);
     
     const onValueChange = async (snapshot: any) => {
-      console.log('📡 Received data update for event:', eventId);
-      
       if (snapshot.exists()) {
-        // וידוא מבנה תקין לפני החזרת הנתונים
+        // Ensure valid structure before returning data
         await this.ensureEventStructure(eventId);
-        
+
         const eventData = snapshot.val();
-        console.log('📋 Current event data:', eventData);
-        
         const fullEvent: ShishiEvent = {
           id: eventId,
           ...eventData
         };
-        
-        console.log('✅ Calling callback with event data');
+
         callback(fullEvent);
       } else {
-        console.log('❌ Event not found');
         callback(null);
       }
     };
 
-    console.log('🎧 Setting up listener...');
     onValue(eventRef, onValueChange, (error) => {
       console.error(`❌ Error subscribing to event ${eventId}:`, error);
       callback(null);
     });
 
-    console.log('✅ Listener set up successfully');
-    console.groupEnd();
-
     return () => {
-      console.log('🔇 Unsubscribing from event:', eventId);
       off(eventRef, 'value', onValueChange);
     };
   }
@@ -239,13 +205,8 @@ export class FirebaseService {
    * מוחק אירוע ספציפי
    */
   static async deleteEvent(eventId: string): Promise<void> {
-    console.group('🗑️ FirebaseService.deleteEvent');
-    console.log('📥 Input parameters:', { eventId });
-    
     try {
       await remove(ref(database, `events/${eventId}`));
-      console.log('✅ Event deleted successfully');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in deleteEvent:', error);
       console.groupEnd();
@@ -257,14 +218,9 @@ export class FirebaseService {
    * מעדכן פרטי אירוע
    */
   static async updateEventDetails(eventId: string, updates: Partial<EventDetails>): Promise<void> {
-    console.group('📝 FirebaseService.updateEventDetails');
-    console.log('📥 Input parameters:', { eventId, updates });
-    
     try {
       const detailsRef = ref(database, `events/${eventId}/details`);
       await update(detailsRef, updates);
-      console.log('✅ Event details updated successfully');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in updateEventDetails:', error);
       console.groupEnd();
@@ -273,51 +229,36 @@ export class FirebaseService {
   }
 
   // ===============================
-  // ניהול פריטי תפריט (Menu Items)
+  // Menu items management
   // ===============================
 
   /**
-   * מוסיף פריט חדש לתפריט
+   * Adds a new item to the menu
    */
   static async addMenuItem(
-    eventId: string, 
+    eventId: string,
     itemData: Omit<MenuItem, 'id'>
   ): Promise<string> {
-    console.group('🍽️ FirebaseService.addMenuItem');
-    console.log('📥 Input parameters:', { eventId, itemData });
-    console.log('🔗 Event path:', `events/${eventId}`);
-    
     try {
-      console.log('🔧 Ensuring event structure...');
       await this.ensureEventStructure(eventId);
-      console.log('✅ Event structure ensured');
-      
-      console.log('📝 Creating new item reference...');
       const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
       const newItemId = newItemRef.key!;
-      console.log('🆔 Generated item ID:', newItemId);
       
-      // נקה ערכי undefined לפני השמירה
+      // Clean undefined values before saving
       const finalItemData = {
         ...itemData,
         id: newItemId,
-        notes: itemData.notes || null // המר undefined ל-null או הסר לגמרי
+        notes: itemData.notes || null // Convert undefined to null or remove completely
       };
       
-      // הסר שדות עם ערכי null/undefined
+      // Remove fields with null/undefined values
       Object.keys(finalItemData).forEach(key => {
         if (finalItemData[key as keyof typeof finalItemData] === undefined) {
           delete finalItemData[key as keyof typeof finalItemData];
         }
       });
-      
-      console.log('📋 Final item data to save:', finalItemData);
-      console.log('💾 Saving to Firebase...');
-      
+
       await set(newItemRef, finalItemData);
-      console.log('✅ Menu item saved successfully!');
-      console.groupEnd();
-      
       return newItemId;
     } catch (error) {
       console.error('❌ Error in addMenuItem:', error);
@@ -327,7 +268,7 @@ export class FirebaseService {
   }
 
   /**
-   * מוסיף פריט חדש ומשבץ אותו למשתמש (אופציונלי)
+   * Adds a new item and assigns it to a user (optional)
    */
   static async addMenuItemAndAssign(
     eventId: string,
@@ -335,12 +276,8 @@ export class FirebaseService {
     assignToUserId: string | null,
     assignToUserName: string
   ): Promise<string> {
-    console.group('🍽️➕👤 FirebaseService.addMenuItemAndAssign (Transactional)');
-    console.log('📥 Input parameters:', { eventId, itemData, assignToUserId, assignToUserName });
-
     if (!assignToUserId) {
       console.error('❌ Transaction aborted: assignToUserId is null.');
-      console.groupEnd();
       throw new Error('לא ניתן להוסיף פריט ללא שיבוץ למשתמש.');
     }
 
@@ -350,43 +287,38 @@ export class FirebaseService {
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
         if (currentEventData === null) {
-          // אם האירוע לא קיים, הטרנזקציה תיכשל והשגיאה תתפס ב-catch.
-          // אין צורך לזרוק שגיאה מכאן.
+          // If the event doesn't exist, the transaction will fail and the error will be caught in catch.
+          // No need to throw an error from here.
           return; 
         }
 
-        console.log('🔧 Transaction started. Current event data:', currentEventData);
-
-        // --- לוגיקת הבדיקות החדשה ---
+        // --- New validation logic ---
         const details = currentEventData.details;
         const userItemCount = currentEventData.userItemCounts?.[assignToUserId] || 0;
 
-        // בדיקה #1: האם למנהל מותר להוסיף פריטים
-        // (הערה: לוגיקה זו נאכפת גם ב-Security Rules)
-        if (details.allowUserItems === false) { // בדיקה מפורשת ל-false
+        // Check #1: Can the organizer add items
+        // (Note: This logic is also enforced in Security Rules)
+        if (details.allowUserItems === false) { // Explicit check for false
           throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
         }
 
-        // בדיקה #2: האם המשתמש עבר את המגבלה
+        // Check #2: Has the user exceeded the limit
         if (userItemCount >= (details.userItemLimit ?? 3)) {
           throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
         }
-        console.log(`✅ User count validation passed (${userItemCount} < ${details.userItemLimit ?? 3})`);
 
-        // --- שמירה על הלוגיקה המקורית ליצירת הנתונים ---
-        console.log('📝 Creating new item reference...');
+        // --- Preserve original data creation logic ---
         const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
-        newItemId = newItemRef.key!; // שמירת המזהה מחוץ לטרנזקציה
-        console.log('🆔 Generated item ID:', newItemId);
+        newItemId = newItemRef.key!; // Store ID outside the transaction
 
-        // וידוא מבנה נתונים תקין (מחליף את ensureEventStructure)
+        // Ensure valid data structure (replaces ensureEventStructure)
         if (!currentEventData.menuItems) currentEventData.menuItems = {};
         if (!currentEventData.assignments) currentEventData.assignments = {};
         if (!currentEventData.participants) currentEventData.participants = {};
         if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
         console.log('✅ Event structure ensured');
 
-        // הכנת אובייקט הפריט
+        // Prepare item object
         const finalItemData: any = {
           ...itemData,
           id: newItemId,
@@ -398,8 +330,7 @@ export class FirebaseService {
           delete finalItemData.notes;
         }
 
-        // הכנת אובייקט השיבוץ
-        console.log('📋 Creating separate assignment...');
+        // Prepare assignment object
         const newAssignmentRef = push(ref(database, `events/${eventId}/assignments`));
         const assignmentData: Omit<Assignment, 'id'> = {
           menuItemId: newItemId,
@@ -412,19 +343,16 @@ export class FirebaseService {
         };
         console.log('📋 Assignment data:', assignmentData);
 
-        // --- עדכון ישיר של הנתונים בטרנזקציה ---
+        // --- Direct data update in transaction ---
         currentEventData.menuItems[newItemId] = finalItemData;
         currentEventData.assignments[newAssignmentRef.key!] = assignmentData;
         
-        // --- עדכון המונה החדש ---
+        // --- Update the new counter ---
         currentEventData.userItemCounts[assignToUserId] = userItemCount + 1;
-        console.log(`📈 Incremented item count for user ${assignToUserId} to ${userItemCount + 1}`);
 
         return currentEventData;
       });
 
-      console.log('✅ Transaction committed successfully!');
-      console.groupEnd();
       if (!newItemId) {
         throw new Error("Failed to generate a new item ID during the transaction.");
       }
@@ -433,7 +361,7 @@ export class FirebaseService {
     } catch (error) {
       console.error('❌ Error in addMenuItemAndAssign Transaction:', error);
       console.groupEnd();
-      throw error; // זריקת השגיאה הלאה כדי ש-toast יציג אותה
+      throw error; // Re-throw error so toast displays it
     }
   }
   /**
@@ -444,9 +372,6 @@ export class FirebaseService {
     itemId: string,
     updates: Partial<MenuItem>
   ): Promise<void> {
-    console.group('📝 FirebaseService.updateMenuItem');
-    console.log('📥 Input parameters:', { eventId, itemId, updates });
-    
     try {
       // Sanitize updates to remove undefined values and convert empty strings to null
       const sanitizedUpdates: { [key: string]: any } = {};
@@ -459,13 +384,9 @@ export class FirebaseService {
           sanitizedUpdates[key] = value;
         }
       });
-      
-      console.log('🧹 Sanitized updates:', sanitizedUpdates);
-      
+
       const itemRef = ref(database, `events/${eventId}/menuItems/${itemId}`);
       await update(itemRef, sanitizedUpdates);
-      console.log('✅ Menu item updated successfully');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in updateMenuItem:', error);
       console.groupEnd();
@@ -485,7 +406,7 @@ export class FirebaseService {
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
         if (currentEventData === null || !currentEventData.menuItems?.[itemId]) {
-          // אם האירוע או הפריט לא קיימים, אין מה לעשות.
+          // If event or item don't exist, nothing to do.
           console.log('Transaction aborted: Event or menu item not found.');
           return; 
         }
@@ -495,22 +416,22 @@ export class FirebaseService {
         const itemToDelete = currentEventData.menuItems[itemId];
         const creatorId = itemToDelete.creatorId;
 
-        // שלב 1: עדכון המונה (אם רלוונטי)
+        // Step 1: Update counter (if relevant)
         if (creatorId && currentEventData.userItemCounts?.[creatorId]) {
           currentEventData.userItemCounts[creatorId]--;
           console.log(`📉 Decremented item count for user ${creatorId} to ${currentEventData.userItemCounts[creatorId]}`);
-          // אם המונה הגיע לאפס, נקה את הרשומה
+          // If counter reaches zero, clean up the entry
           if (currentEventData.userItemCounts[creatorId] <= 0) {
             delete currentEventData.userItemCounts[creatorId];
             console.log(`🧹 Cleaned up zero-count entry for user ${creatorId}`);
           }
         }
         
-        // שלב 2: מחיקת הפריט עצמו
+        // Step 2: Delete the item itself
         delete currentEventData.menuItems[itemId];
         console.log(`🗑️ Marked menu item ${itemId} for deletion.`);
 
-        // שלב 3: מחיקת כל השיבוצים הקשורים לפריט
+        // Step 3: Delete all assignments related to the item
         if (currentEventData.assignments) {
           Object.keys(currentEventData.assignments).forEach(assignmentId => {
             if (currentEventData.assignments[assignmentId].menuItemId === itemId) {
@@ -520,7 +441,7 @@ export class FirebaseService {
           });
         }
         
-        // החזרת האובייקט המעודכן כדי שהטרנזקציה תכתוב אותו
+        // Return the updated object so the transaction writes it
         return currentEventData;
       });
 
@@ -534,7 +455,7 @@ export class FirebaseService {
   }
 
   // ===============================
-  // ניהול משתתפים (Participants)
+  // Participant management
   // ===============================
 
   /**
@@ -590,7 +511,7 @@ export class FirebaseService {
   }
 
   // ===============================
-  // ניהול שיבוצים (Assignments)
+  // Assignment management
   // ===============================
 
   /**
@@ -606,7 +527,7 @@ export class FirebaseService {
     try {
       await this.ensureEventStructure(eventId);
       
-      // בדיקה שהפריט לא כבר משובץ
+      // Check that the item is not already assigned
       const menuItemRef = ref(database, `events/${eventId}/menuItems/${assignmentData.menuItemId}`);
       const snapshot = await get(menuItemRef);
       
@@ -617,10 +538,10 @@ export class FirebaseService {
       const newAssignmentRef = push(ref(database, `events/${eventId}/assignments`));
       const updates: { [key: string]: any } = {};
       
-      // הוספת השיבוץ
+      // Add the assignment
       updates[`events/${eventId}/assignments/${newAssignmentRef.key}`] = assignmentData;
       
-      // עדכון הפריט כמשובץ
+      // Update item as assigned
       updates[`events/${eventId}/menuItems/${assignmentData.menuItemId}/assignedTo`] = assignmentData.userId;
       updates[`events/${eventId}/menuItems/${assignmentData.menuItemId}/assignedToName`] = assignmentData.userName;
       updates[`events/${eventId}/menuItems/${assignmentData.menuItemId}/assignedAt`] = Date.now();
@@ -639,8 +560,8 @@ export class FirebaseService {
 
 // src/services/firebaseService.ts
 
-/**
-   * מעדכן שיבוץ קיים. אם שם המשתמש משתנה, הפונקציה תעדכן את השם בכל השיבוצים והפריטים של אותו משתמש באירוע הנוכחי.
+  /**
+   * Updates an existing assignment. If the username changes, the function will update the name across all assignments and items of that user in the current event.
    */
 static async updateAssignment(
   eventId: string,
@@ -743,10 +664,10 @@ static async updateAssignment(
     try {
       const updates: { [key: string]: null } = {};
       
-      // מחיקת השיבוץ
+      // Delete the assignment
       updates[`events/${eventId}/assignments/${assignmentId}`] = null;
       
-      // הסרת השיבוץ מהפריט
+      // Remove assignment from item
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
@@ -763,7 +684,7 @@ static async updateAssignment(
   }
 
   // ===================================
-  // ניהול רשימות מוכנות (Preset Lists)
+  // Preset lists management
   // ===================================
 
   /**
@@ -773,7 +694,7 @@ static async updateAssignment(
     callback: (lists: PresetList[]) => void,
     organizerId?: string
   ): () => void {
-    // תמיד נשתמש בנתיב הפרטי של המשתמש
+    // Always use the user's private path
     if (!organizerId) {
       console.warn('No organizerId provided for preset lists subscription');
       callback([]);
@@ -789,7 +710,7 @@ static async updateAssignment(
           ...(list as Omit<PresetList, 'id'>)
         }));
         
-        // הוסף רשימות ברירת מחדל אם הן לא קיימות
+        // Add default lists if they don't exist
         const hasDefaultParticipants = listsArray.some(list => list.id === 'default-participants');
         const hasDefaultSalon = listsArray.some(list => list.id === 'default-salon');
         
@@ -842,7 +763,7 @@ static async updateAssignment(
         
         callback(listsArray);
       } else {
-        // אם אין רשימות, צור את רשימות ברירת המחדל
+        // If no lists exist, create the default lists
         const defaultLists: PresetList[] = [
           {
             id: 'default-participants',
@@ -911,7 +832,7 @@ static async updateAssignment(
     }
     
     try {
-      // תמיד שמירה תחת המארגן הספציפי
+      // Always save under the specific organizer
       const basePath = `users/${organizerId}/presetLists`;
       const newListRef = push(ref(database, basePath));
       
@@ -962,7 +883,7 @@ static async updateAssignment(
   }
 
   // ===============================
-  // פונקציות תחזוקה ואבחון
+  // Maintenance and diagnostics functions
   // ===============================
 
   /**
@@ -988,12 +909,12 @@ static async updateAssignment(
       
       const eventData = eventSnapshot.val();
       
-      // בדיקת מבנה בסיסי
+      // Basic structure check
       if (!eventData.details) issues.push('חסרים פרטי האירוע');
       if (!eventData.organizerId) issues.push('חסר מזהה מארגן');
       if (!eventData.organizerName) issues.push('חסר שם מארגן');
       
-      // בדיקת עקביות שיבוצים
+      // Assignment consistency check
       const menuItems = eventData.menuItems || {};
       const assignments = eventData.assignments || {};
       

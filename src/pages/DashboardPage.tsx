@@ -14,7 +14,7 @@ import { BulkItemsManager } from '../components/Admin/BulkItemsManager';
 import { PresetListsManager } from '../components/Admin/PresetListsManager';
 import { ConfirmationModal } from '../components/Admin/ConfirmationModal';
 
-// --- רכיב כרטיס אירוע ---
+// --- Event card component ---
 const EventCard: React.FC<{
     event: ShishiEvent,
     onDelete: (eventId: string, title: string) => void,
@@ -40,7 +40,7 @@ const EventCard: React.FC<{
     };
 
     const handleCardClick = () => {
-        // במקום לעבור לעמוד האירוע, נעבור ישירות לניהול מרוכז
+        // Instead of going to event page, go directly to centralized management
         onBulkEdit(event);
     };
     const menuItemsCount = event.menuItems ? Object.keys(event.menuItems).length : 0;
@@ -130,7 +130,7 @@ const EventCard: React.FC<{
 };
 
 
-// --- רכיב טופס יצירת אירוע ---
+// --- Event creation form component ---
 const EventFormModal: React.FC<{ onClose: () => void, onEventCreated: () => void, editingEvent?: ShishiEvent }> = ({ onClose, onEventCreated, editingEvent }) => {
     const user = useStore(state => state.user);
     const [details, setDetails] = useState<Omit<EventDetails, 'stats'>>({
@@ -242,7 +242,7 @@ const EventFormModal: React.FC<{ onClose: () => void, onEventCreated: () => void
 };
 
 
-// --- רכיב הדאשבורד הראשי ---
+// --- Main dashboard component ---
 const DashboardPage: React.FC = () => {
     const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore();
     const [events, setEvents] = useState<ShishiEvent[]>([]);
@@ -258,7 +258,7 @@ const DashboardPage: React.FC = () => {
     const [showPresetManager, setShowPresetManager] = useState(false);
     const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
     
-    // בצע מחיקה של המצב המקומי
+    // Perform deletion of local state
     // const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 

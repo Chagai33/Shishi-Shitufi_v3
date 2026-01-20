@@ -88,7 +88,6 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
     }
     
     const unsubscribe = FirebaseService.subscribeToPresetLists((lists) => {
-      console.log('Received preset lists from Firebase:', lists);
       setPresetLists(lists);
       setIsLoading(false);
     }, organizerId);
@@ -114,7 +113,7 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
           : newListType === 'salon' ? [...defaultSalonList] : [...defaultParticipantsList]
       };
 
-      // העבר את organizerId כדי לשמור תחת המארגן הספציפי
+      // Pass organizerId to save under specific organizer
       const organizerId = user?.id || authUser?.uid;
       
       if (!organizerId) {
@@ -128,7 +127,7 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
         toast.success(`רשימה "${newListName.trim()}" נשמרה בהצלחה עם ${newList.items.length} פריטים`);
         setShowCreateForm(false);
         setNewListName('');
-        onClose(); // סגירת המודל
+        onClose(); // Closing the modal
       } else {
         throw new Error('לא התקבל מזהה רשימה מהשרת');
       }

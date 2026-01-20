@@ -7,7 +7,7 @@ import { AssignmentModal } from './AssignmentModal';
 import { EditAssignmentModal } from './EditAssignmentModal';
 import { UserInfoModal } from './UserInfoModal';
 import { BulkItemsManager } from '../Admin/BulkItemsManager';
-import { UserMenuItemForm } from './UserMenuItemForm'; // 1. ייבוא הקומפוננטה החדשה
+import { UserMenuItemForm } from './UserMenuItemForm'; // 1. Importing the new component
 import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, MenuItem, Assignment } from '../../types';
 import { formatDate, formatTime, isEventPast, isEventFinished } from '../../utils/dateUtils';
@@ -25,7 +25,7 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
   const [editingAssignment, setEditingAssignment] = useState<{ item: MenuItem; assignment: Assignment } | null>(null);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showBulkManager, setShowBulkManager] = useState(false);
-  const [showUserItemForm, setShowUserItemForm] = useState(false); // 2. הוספת State לטופס החדש
+  const [showUserItemForm, setShowUserItemForm] = useState(false); // 2. Adding State for the new form
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -40,7 +40,7 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
     [assignments, event.id]
   );
 
-  // 3. לוגיקה לספירת פריטים שהמשתמש יצר
+  // 3. Logic for counting items created by the user
   const userCreatedItemsCount = useMemo(() => {
     if (!user) return 0;
     return eventMenuItems.filter(item => item.creatorId === user.id).length;
@@ -183,7 +183,7 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
                 <h2 className="text-lg font-semibold text-gray-900">פריטים לשיבוץ{filteredItems.length > 0 && (<span className="text-gray-500 text-sm mr-2">({filteredItems.filter(item => item.assignedTo).length}/{filteredItems.length} משובצים)</span>)}</h2>
             </div>
 
-            {/* 4. הוספת כפתורים חדשים למנהל ולמשתמש */}
+            {/* 4. Adding new buttons for admin and user */}
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
               {!isAdmin && canAssign && (
                 <button
@@ -215,7 +215,7 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
       {selectedMenuItem && (<AssignmentModal menuItem={selectedMenuItem} event={event} onClose={() => setSelectedMenuItem(null)}/>)}
       {editingAssignment && (<EditAssignmentModal menuItem={editingAssignment.item} event={event} assignment={editingAssignment.assignment} onClose={() => setEditingAssignment(null)}/>)}
       
-      {/* 5. הוספת המודל של הטופס החדש */}
+      {/* 5. Adding the modal for the new form */}
       {showUserItemForm && (
         <UserMenuItemForm
           event={event}

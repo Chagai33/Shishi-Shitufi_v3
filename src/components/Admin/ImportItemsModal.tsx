@@ -29,7 +29,7 @@ interface ImportItem {
 type ImportMethod = 'excel' | 'csv' | 'text' | 'preset';
 
 export function ImportItemsModal({ event, onClose }: ImportItemsModalProps) {
-  // *** תיקון: הסרנו את menuItems מהשורה הזו ***
+  // *** Fix: Removed menuItems from this line ***
   const { addMenuItem } = useStore();
   const { user: authUser } = useAuth();
   const [activeMethod, setActiveMethod] = useState<ImportMethod>('preset');
@@ -227,7 +227,7 @@ export function ImportItemsModal({ event, onClose }: ImportItemsModalProps) {
       return;
     }
     
-    // *** תיקון: שימוש ב-event.menuItems במקום menuItems מה-Store ***
+    // *** Fix: Using event.menuItems instead of menuItems from Store ***
     const eventMenuItems = event.menuItems ? Object.values(event.menuItems) : [];
     const existingNames = new Set(eventMenuItems.map(mi => mi.name.trim().toLowerCase()));
     

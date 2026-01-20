@@ -137,8 +137,8 @@ export function EventsList() {
   };
   
   if (showBulkManager) {
-    // *** התיקון נמצא כאן ***
-    // העברת רשימת כל האירועים לרכיב
+    // *** The fix is here ***
+    // Passing list of all events to component
     return <BulkItemsManager 
               onBack={() => setShowBulkManager(false)} 
               allEvents={events} 

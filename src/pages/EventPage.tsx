@@ -31,19 +31,20 @@ const categoryNames: { [key: string]: string } = {
 const MenuItemCard: React.FC<{
     item: MenuItemType;
     assignment: AssignmentType | undefined;
-    assignments: AssignmentType[];
+    assignments?: AssignmentType[]; // Restored optional assignments array
     onAssign: () => void;
     onEdit: () => void;
     onCancel: (a?: AssignmentType) => void;
+    onEditAssignment?: (a: AssignmentType) => void; // New prop for editing specific assignment
     isMyAssignment: boolean;
     isEventActive: boolean;
     currentUserId?: string;
-}> = ({ item, assignment, assignments = [], onAssign, onEdit, onCancel, isMyAssignment, isEventActive, currentUserId }) => {
+}> = ({ item, assignment, assignments = [], onAssign, onEdit, onEditAssignment, onCancel, isMyAssignment, isEventActive, currentUserId }) => {
     const assignedByOther = assignment && !isMyAssignment;
-    const isSplittable = item.isSplittable;
+    const isSplittable = item.isSplittable || item.quantity > 1; // Enforce splittable if quantity > 1
     const totalQuantity = item.quantity;
 
-    // Calculate filled quantity
+    // Calculate filled quantity for splittable items
     const filledQuantity = isSplittable
         ? assignments.reduce((acc, curr) => acc + (curr.quantity || 0), 0)
         : (assignment ? item.quantity : 0);
@@ -51,35 +52,46 @@ const MenuItemCard: React.FC<{
     const isFull = filledQuantity >= totalQuantity;
     const progressPercent = Math.min(100, (filledQuantity / totalQuantity) * 100);
 
-    // My assignments for this item
+    // My assignments for this item (for splittable view)
     const myAssignments = currentUserId
         ? assignments.filter(a => a.userId === currentUserId)
         : (isMyAssignment && assignment ? [assignment] : []);
 
     const hasMyAssignment = myAssignments.length > 0;
 
-    const cardStyles = hasMyAssignment
-        ? 'bg-blue-50 border-blue-200'
-        : assignedByOther
-            ? 'bg-green-50 border-green-200'
-            : 'bg-white border-gray-200';
+    // Visual style based on status
+    const cardStyles = isMyAssignment || hasMyAssignment
+        ? 'bg-blue-50 border-blue-200 shadow-sm'
+        : (assignedByOther || (isFull && !hasMyAssignment))
+            ? 'bg-gray-50 border-gray-200 opacity-90'
+            : 'bg-white border-gray-200 hover:border-orange-300 shadow-sm';
 
     return (
-        <div className={`border-2 flex flex-col rounded-xl ${cardStyles}`}>
+        <div className={`border-2 flex flex-col rounded-xl transition-all ${cardStyles}`}>
+            {/* Upper Part: Item Details */}
             <div className="p-4 flex-grow">
                 <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-gray-900 text-base">{item.name}</h4>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-current text-gray-700">{categoryNames[item.category]}</span>
+                    <h4 className="font-bold text-gray-800 text-lg leading-tight">{item.name}</h4>
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
+                        {categoryNames[item.category]}
+                    </span>
                 </div>
-                <p className="text-sm text-gray-700 font-medium">
-                    {isSplittable ? `סה"כ נדרש: ${item.quantity}` : `כמות נדרשת: ${item.quantity}`}
-                </p>
-                {item.creatorName && <p className="text-xs text-gray-500 mt-1">נוצר ע"י: {item.creatorName}</p>}
-                {item.notes && <p className="text-xs text-gray-600 mt-2 italic bg-gray-50 p-2 rounded border border-gray-100">הערות: {item.notes}</p>}
+
+                <div className="text-sm text-gray-600 space-y-1">
+                    <p>כמות נדרשת: <span className="font-semibold">{item.quantity}</span></p>
+                    {item.creatorName && (
+                        <p className="text-xs text-gray-400">נוצר ע"י: {item.creatorName}</p>
+                    )}
+                    {item.notes && (
+                        <p className="text-xs bg-yellow-50 text-yellow-800 p-2 rounded mt-2 border border-yellow-100">
+                            📝 {item.notes}
+                        </p>
+                    )}
+                </div>
 
                 {/* Progress Bar for Splittable Items */}
                 {isSplittable && (
-                    <div className="mt-3">
+                    <div className="mt-4">
                         <div className="flex justify-between text-xs mb-1 text-gray-700 font-medium">
                             <span>התקדמות: {filledQuantity}/{totalQuantity}</span>
                             <span>{Math.round(progressPercent)}%</span>
@@ -90,13 +102,14 @@ const MenuItemCard: React.FC<{
                                 style={{ width: `${progressPercent}%` }}
                             ></div>
                         </div>
+                        {/* List of OTHER contributors */}
                         {assignments.length > 0 && (
-                            <div className="mt-2 text-xs text-gray-700">
-                                <p className="font-semibold mb-1 text-gray-800">משובצים:</p>
-                                <ul className="list-disc list-inside space-y-1">
+                            <div className="mt-3 text-xs text-gray-600">
+                                <ul className="space-y-1">
                                     {assignments.map(a => (
-                                        <li key={a.id}>
-                                            <span className="font-medium">{a.userName}</span> ({a.quantity}) {a.notes && <span className="italic text-gray-500">- {a.notes}</span>}
+                                        <li key={a.id} className="flex items-center gap-1">
+                                            <UserIcon size={10} />
+                                            <span className="font-medium">{a.userName}</span>: {a.quantity}
                                         </li>
                                     ))}
                                 </ul>
@@ -104,35 +117,44 @@ const MenuItemCard: React.FC<{
                         )}
                     </div>
                 )}
-                {!isSplittable && (
-                    <>
-                        <p className="text-sm text-neutral-500">כמות נדרשת: {item.quantity}</p>
-                        {item.creatorName && <p className="text-xs text-neutral-400 mt-1">נוצר ע"י: {item.creatorName}</p>}
-                        {item.notes && <p className="text-xs text-neutral-500 mt-2 italic">הערות: {item.notes}</p>}
-                    </>
-                )}
             </div>
-            <div className="border-t border-gray-100 p-3 bg-gray-50/50 rounded-b-xl">
+
+            {/* Lower Part: Action / Status */}
+            <div className="border-t border-gray-100 p-3 bg-white/50 rounded-b-xl">
                 {isSplittable ? (
+                    // --- SPLITTABLE LOGIC ---
                     <div className="space-y-3">
                         {hasMyAssignment && (
                             <div className="bg-white p-2 rounded-lg border border-blue-200 shadow-sm">
-                                <p className="text-xs font-bold text-blue-800 mb-2">התרומה שלי:</p>
+                                <p className="text-xs font-bold text-blue-800 mb-2">אני מביא:</p>
                                 <ul className="space-y-2">
                                     {myAssignments.map(myAss => (
                                         <li key={myAss.id} className="flex justify-between items-center text-sm group">
-                                            <span>
+                                            <div className="flex items-center gap-2">
                                                 <span className="font-bold text-blue-700">{myAss.quantity} יח'</span>
-                                                {myAss.notes && <span className="text-xs text-gray-600 mr-2">- {myAss.notes}</span>}
-                                            </span>
+                                                {isEventActive && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onEditAssignment && onEditAssignment(myAss);
+                                                        }}
+                                                        className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
+                                                        title="ערוך כמות"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                )}
+                                            </div>
                                             {isEventActive && (
                                                 <button
-                                                    onClick={() => onCancel(myAss)}
-                                                    className="text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 focus:ring-2 focus:ring-red-500"
-                                                    title="בטל שיבוץ זה"
-                                                    aria-label="בטל שיבוץ"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onCancel(myAss);
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors"
+                                                    title="בטל"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash2 size={14} />
                                                 </button>
                                             )}
                                         </li>
@@ -144,10 +166,10 @@ const MenuItemCard: React.FC<{
                         {isEventActive && !isFull && (
                             <button
                                 onClick={onAssign}
-                                className="w-full bg-orange-600 text-white py-3 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm focus:ring-2 focus:ring-orange-500 focus:ring-offset-1"
-                                aria-label="שבץ אותי לפריט זה"
+                                className="w-full bg-orange-600 text-white py-2 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
                             >
-                                {hasMyAssignment ? 'הוסף עוד' : 'שבץ אותי'}
+                                <Plus size={16} />
+                                {hasMyAssignment ? 'הוסף עוד' : 'אני אשתתף בזה'}
                             </button>
                         )}
 
@@ -156,57 +178,50 @@ const MenuItemCard: React.FC<{
                         )}
                     </div>
                 ) : (
-                    <>
-                        {isMyAssignment && assignment ? (
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center text-sm bg-white p-2 rounded border border-blue-100">
-                                    <span className="font-semibold text-blue-700">השיבוץ שלי</span>
-                                    <span className="font-bold text-gray-900">{assignment.quantity}</span>
-                                </div>
-                                {assignment.notes && <p className="text-xs text-gray-700 bg-white p-2 rounded border border-gray-100">הערה: {assignment.notes}</p>}
-                                {isEventActive && (
-                                    <div className="flex space-x-2 rtl:space-x-reverse pt-2">
-                                        <button
-                                            onClick={onEdit}
-                                            className="flex-1 text-sm bg-white border border-gray-300 hover:bg-gray-50 py-2 rounded flex items-center justify-center focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
-                                            aria-label="ערוך שיבוץ"
-                                        >
-                                            <Edit size={14} className="ml-1" /> ערוך
-                                        </button>
-                                        <button
-                                            onClick={() => onCancel(assignment)}
-                                            className="flex-1 text-sm bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2 rounded flex items-center justify-center focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                                            aria-label="בטל שיבוץ"
-                                        >
-                                            <Trash2 size={14} className="ml-1" /> {item.creatorId === assignment.userId ? 'מחק פריט' : 'בטל שיבוץ'}
-                                        </button>
-                                    </div>
-                                )}
+                    // --- NON-SPLITTABLE LOGIC (Original Clean Logic) ---
+                    assignment ? (
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className={`font-semibold ${isMyAssignment ? 'text-blue-700' : 'text-green-700'}`}>
+                                    {isMyAssignment ? 'אני מביא:' : `נלקח ע"י ${assignment.userName}:`}
+                                </span>
+                                <span className="font-bold text-lg">{assignment.quantity}</span>
                             </div>
-                        ) : (
-                            assignment ? (
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-sm bg-green-50/50 p-2 rounded border border-green-100">
-                                        <span className="font-semibold text-green-700">שובץ ל: {assignment.userName}</span>
-                                        <span className="font-bold text-gray-900">{assignment.quantity}</span>
-                                    </div>
-                                    {assignment.notes && <p className="text-xs text-gray-600 bg-white p-2 rounded border border-gray-100">הערה: {assignment.notes}</p>}
-                                </div>
-                            ) : (
-                                isEventActive ? (
+
+                            {assignment.notes && (
+                                <p className="text-xs text-gray-500 italic">"{assignment.notes}"</p>
+                            )}
+
+                            {isMyAssignment && isEventActive && (
+                                <div className="flex gap-2 pt-1">
                                     <button
-                                        onClick={onAssign}
-                                        className="w-full bg-orange-600 text-white py-3 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm focus:ring-2 focus:ring-orange-500 focus:ring-offset-1"
-                                        aria-label="שבץ אותי לפריט זה"
+                                        onClick={onEdit}
+                                        className="flex-1 text-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-1.5 rounded flex items-center justify-center transition-colors"
                                     >
-                                        שבץ אותי
+                                        <Edit size={12} className="ml-1" /> ערוך
                                     </button>
-                                ) : (
-                                    <p className="text-sm text-center text-gray-500">האירוע אינו פעיל</p>
-                                )
-                            )
-                        )}
-                    </>
+                                    <button
+                                        onClick={() => onCancel(assignment)}
+                                        className="flex-1 text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded flex items-center justify-center transition-colors"
+                                    >
+                                        <Trash2 size={12} className="ml-1" /> מחק
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        isEventActive ? (
+                            <button
+                                onClick={onAssign}
+                                className="w-full bg-orange-600 text-white py-2 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
+                            >
+                                <Plus size={16} />
+                                אני אביא את זה
+                            </button>
+                        ) : (
+                            <p className="text-sm text-center text-gray-400">האירוע הסתיים</p>
+                        )
+                    )
                 )}
             </div>
         </div>
@@ -232,7 +247,8 @@ const AssignmentModal: React.FC<{
 
     const assignments = useStore(selectAssignments);
     const maxQuantity = useMemo(() => {
-        if (!item.isSplittable) return 1;
+        const effectivelySplittable = item.isSplittable || item.quantity > 1;
+        if (!effectivelySplittable) return 1;
 
         const itemAssignments = assignments.filter(a => a.menuItemId === item.id && a.eventId === eventId);
         const currentTotal = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
@@ -247,12 +263,15 @@ const AssignmentModal: React.FC<{
     }, [item, assignments, eventId, isEdit, existingAssignment]);
 
     useEffect(() => {
-        if (!item.isSplittable) {
+        // Fix: Treat as splittable if quantity > 1, even if isSplittable is undefined/false
+        const effectivelySplittable = item.quantity > 1 || item.isSplittable;
+
+        if (!effectivelySplittable) {
             setQuantity(1);
         } else if (!existingAssignment) {
             setQuantity(Math.min(1, maxQuantity));
         }
-    }, [item.isSplittable, maxQuantity, existingAssignment]);
+    }, [item.isSplittable, item.quantity, maxQuantity, existingAssignment]);
 
     useEffect(() => {
         const currentEvent = useStore.getState().currentEvent;
@@ -376,13 +395,24 @@ const AssignmentModal: React.FC<{
 
                         {/* Stepper UI for Quantity */}
                         <div>
-                            <div className="flex justify-between mb-2">
+                            <div className="flex justify-between mb-2 items-center">
                                 <label className="block text-sm font-medium text-neutral-700">כמות שאביא*</label>
-                                {item.isSplittable && (
-                                    <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
-                                        נותרו: {maxQuantity}
-                                    </span>
-                                )}
+                                <div className="flex gap-2 items-center">
+                                    {(item.isSplittable || item.quantity > 1) && quantity < maxQuantity && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setQuantity(maxQuantity)}
+                                            className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
+                                        >
+                                            אביא הכל
+                                        </button>
+                                    )}
+                                    {item.isSplittable && (
+                                        <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                                            נותרו: {maxQuantity}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden h-12">
                                 <button
@@ -885,6 +915,7 @@ const EventPage: React.FC = () => {
                                                                 assignments={assignments.filter(a => a.menuItemId === item.id)}
                                                                 onAssign={() => handleAssignClick(item)}
                                                                 onEdit={() => handleEditClick(item, assignment!)}
+                                                                onEditAssignment={(a) => handleEditClick(item, a)} // Fix: Pass this prop here too
                                                                 onCancel={(a) => handleCancelClick(a || assignment!)}
                                                                 isMyAssignment={localUser?.uid === assignment?.userId}
                                                                 isEventActive={isEventActive}

@@ -78,7 +78,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
         name: formData.name.trim(),
         notes: formData.notes.trim() || undefined,
         eventId: event.id,
-        isSplittable: formData.quantity > 1 ? formData.isSplittable : false
+        isSplittable: formData.quantity > 1 // Auto-calculated based on quantity
       };
 
       if (item) {
@@ -180,14 +180,11 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
             <p className="text-xs text-gray-500 mt-1">פריטים חובה מסומנים באופן מיוחד למשתתפים</p>
           </div>
 
+          {/* Auto-calculated: Items with quantity > 1 are automatically splittable */}
           {formData.quantity > 1 && (
-            <div className="mb-6">
-              <label className="flex items-center">
-                <input type="checkbox" checked={formData.isSplittable} onChange={(e) => handleInputChange('isSplittable', e.target.checked)} className="rounded border-gray-300 text-green-600 focus:ring-green-500" disabled={isSubmitting} />
-                <span className="mr-2 text-sm text-gray-700">אפשר חלוקה בין משתתפים</span>
-              </label>
-              <p className="text-xs text-gray-500 mt-1">אם מסומן, מספר אנשים יוכלו להירשם לפריט זה במשותף (למשל: כל אחד יביא 2 אבטיחים מתוך 4)</p>
-            </div>
+            <p className="text-xs text-blue-600 mb-4 bg-blue-50 p-2 rounded">
+              ℹ️ הפריט יוגדר אוטומטית כ"ניתן לחלוקה" כי הכמות גדולה מ-1.
+            </p>
           )}
 
           <div className="flex space-x-3 rtl:space-x-reverse">

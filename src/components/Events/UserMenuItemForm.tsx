@@ -1,7 +1,7 @@
 // src/components/Events/UserMenuItemForm.tsx
 
 import React, { useState, useEffect } from 'react';
-import { X, ChefHat, Hash, MessageSquare, User as UserIcon, AlertCircle } from 'lucide-react';
+import { X, ChefHat, MessageSquare, User as UserIcon, AlertCircle, Plus, Minus } from 'lucide-react';
 import { useStore, selectMenuItems } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, MenuItem, MenuCategory } from '../../types';
@@ -23,11 +23,20 @@ interface FormErrors {
 export function UserMenuItemForm({ event, onClose, category, availableCategories }: UserMenuItemFormProps) {
 
   const { user: authUser } = useAuth(); // <-- The line that was restored
-  const { addMenuItem } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
+  const [myQuantity, setMyQuantity] = useState(1);
+
+  // Helper Stepper Component
+  const Stepper = ({ value, onChange, max }: { value: number, onChange: (val: number) => void, max?: number }) => (
+    <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden h-10 w-full dir-ltr">
+      <button type="button" onClick={() => onChange(Math.max(1, value - 1))} className="w-10 h-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 border-r border-gray-200"><Minus size={16} /></button>
+      <div className="flex-1 flex items-center justify-center bg-white font-semibold text-gray-800">{value}</div>
+      <button type="button" onClick={() => onChange(max ? Math.min(max, value + 1) : value + 1)} className="w-10 h-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 border-l border-gray-200"><Plus size={16} /></button>
+    </div>
+  );
 
   const [formData, setFormData] = useState({
     name: '',
@@ -127,7 +136,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
         category: formData.category,
         quantity: formData.quantity,
         notes: formData.notes.trim() || '',
-        isSplittable: formData.isSplittable,
+        isSplittable: formData.quantity > 1, // Auto-split if more than 1 item needed
         isRequired: false,
         createdAt: Date.now(),
         creatorId: authUser.uid,
@@ -139,16 +148,30 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
         delete (newItemData as any).notes;
       }
 
-      const itemId = await FirebaseService.addMenuItemAndAssign(
-        event.id,
-        newItemData,
-        authUser.uid,
-        finalUserName
-      );
+      // 1. Create Item (Total Quantity)
+      const itemId = await FirebaseService.addMenuItem(event.id, {
+        ...newItemData,
+        quantity: formData.quantity, // Total needed
+      });
+
+      // 2. Create Assignment (My Contribution) - only if > 0
+      if (itemId && myQuantity > 0) {
+        await FirebaseService.createAssignment(event.id, {
+          eventId: event.id,
+          menuItemId: itemId,
+          userId: authUser.uid,
+          userName: finalUserName,
+          quantity: myQuantity, // What I bring
+          status: 'confirmed' as const,
+          assignedAt: Date.now(),
+          notes: formData.notes
+        });
+      }
 
       if (itemId) {
-        addMenuItem({ ...newItemData, id: itemId });
-        toast.success('הפריט נוסף ושובץ בהצלחה!');
+        // We can't immediately add to store without fetching, but we assume subscription handles it or we do optimistic update
+        // For now, simpler to just close
+        toast.success('הפריט נוסף בהצלחה!');
       } else {
         console.error('❌ Failed to get item ID');
         throw new Error('לא התקבל מזהה פריט');
@@ -269,30 +292,48 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                כמות *
-              </label>
-              <div className="relative">
-                <Hash className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
+            <div className="col-span-2 grid grid-cols-2 gap-4">
+              {/* Total Needed */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">כמות נדרשת (סה"כ)</label>
+                <Stepper
                   value={formData.quantity}
-                  onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 1)}
-                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.quantity ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  disabled={isSubmitting}
-                  required
+                  onChange={(val) => {
+                    handleInputChange('quantity', val);
+                    const newMyQty = myQuantity > val ? val : myQuantity;
+                    if (myQuantity > val) setMyQuantity(val);
+
+                    // UX Auto-Logic: If Total > My Contribution, enable splitting automatically
+                    if (val > newMyQty) {
+                      handleInputChange('isSplittable', true);
+                    }
+                  }}
                 />
               </div>
-              {errors.quantity && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <AlertCircle className="h-4 w-4 ml-1" />
-                  {errors.quantity}
-                </p>
-              )}
+
+              {/* My Contribution */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-gray-700">אני מביא</label>
+                  {myQuantity < formData.quantity && (
+                    <button
+                      type="button"
+                      onClick={() => setMyQuantity(formData.quantity)}
+                      className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
+                    >
+                      אביא הכל
+                    </button>
+                  )}
+                </div>
+                <Stepper
+                  value={myQuantity}
+                  onChange={setMyQuantity}
+                  max={formData.quantity}
+                />
+              </div>
+              <div className="col-span-2 text-xs text-gray-500 text-center -mt-2">
+                {myQuantity < formData.quantity ? `נותרו ${formData.quantity - myQuantity} לאחרים` : 'אתה מביא את הכל'}
+              </div>
             </div>
           </div>
           <div className="mb-6">
@@ -312,21 +353,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
             </div>
           </div>
 
-          {formData.quantity > 1 && (
-            <div className="mb-6 flex items-center">
-              <input
-                type="checkbox"
-                id="isSplittable"
-                checked={formData.isSplittable}
-                onChange={(e) => handleInputChange('isSplittable', e.target.checked)}
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                disabled={isSubmitting}
-              />
-              <label htmlFor="isSplittable" className="mr-2 block text-sm text-gray-900">
-                אפשר לאחרים להצטרף לפריט זה (שיהיה ניתן לחלוקה)
-              </label>
-            </div>
-          )}
+          {/* Auto-split logic applied implicitly for quantity > 1 */}
           <div className="flex space-x-3 rtl:space-x-reverse">
             <button
               type="submit"

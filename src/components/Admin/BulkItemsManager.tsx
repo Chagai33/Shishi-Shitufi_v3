@@ -114,8 +114,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     category: 'main' as MenuCategory,
     quantity: 1,
     notes: '',
-    isRequired: false,
-    isSplittable: false
+    isRequired: false
   });
 
   useEffect(() => {
@@ -211,8 +210,9 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         name: item.name,
         category: item.category,
         quantity: item.quantity,
-        notes: item.notes === undefined || item.notes === '' ? null : item.notes,
-        isRequired: item.isRequired
+        notes: (item.notes === undefined || item.notes === '') ? null : item.notes as any,
+        isRequired: item.isRequired,
+        isSplittable: item.quantity > 1 // Auto-calculated
       };
       // Fix: Pass eventId as first parameter for Multi-Tenant model
       await FirebaseService.updateMenuItem(item.eventId, item.id, updates);
@@ -249,8 +249,9 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             name: item.name,
             category: item.category,
             quantity: item.quantity,
-            notes: item.notes === undefined || item.notes === '' ? null : item.notes,
-            isRequired: item.isRequired
+            notes: (item.notes === undefined || item.notes === '') ? null : item.notes as any,
+            isRequired: item.isRequired,
+            isSplittable: item.quantity > 1 // Auto-calculated
           };
 
           await FirebaseService.updateMenuItem(item.eventId, item.id, updates);
@@ -459,7 +460,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         quantity: newItem.quantity,
         notes: newItem.notes.trim() || undefined,
         isRequired: newItem.isRequired,
-        isSplittable: newItem.isSplittable,
+        isSplittable: newItem.quantity > 1, // Auto-calculated
         createdAt: Date.now(),
         creatorId: 'admin',
         creatorName: 'Admin',
@@ -475,8 +476,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           category: 'main',
           quantity: 1,
           notes: '',
-          isRequired: false,
-          isSplittable: false
+          isRequired: false
         });
       }
     } catch (error) {
@@ -720,13 +720,12 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                 <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                       <span className={`w-2 h-6 rounded-full ${
-                        category === 'starter' ? 'bg-orange-400' :
+                      <span className={`w-2 h-6 rounded-full ${category === 'starter' ? 'bg-orange-400' :
                         category === 'main' ? 'bg-blue-400' :
-                        category === 'dessert' ? 'bg-pink-400' :
-                        'bg-gray-400'
-                       }`}></span>
-                       {categoryLabel}
+                          category === 'dessert' ? 'bg-pink-400' :
+                            'bg-gray-400'
+                        }`}></span>
+                      {categoryLabel}
                     </h3>
                     <div className="flex items-center space-x-6 rtl:space-x-reverse text-sm">
                       <div className="flex items-center gap-2 text-gray-500">
@@ -848,11 +847,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                               {item.isEditing ? (
                                 <div className="flex justify-center">
                                   <label className="relative inline-flex items-center cursor-pointer">
-                                    <input 
-                                      type="checkbox" 
-                                      checked={item.isRequired} 
+                                    <input
+                                      type="checkbox"
+                                      checked={item.isRequired}
                                       onChange={(e) => updateItemField(item.id, 'isRequired', e.target.checked)}
-                                      className="sr-only peer" 
+                                      className="sr-only peer"
                                       aria-label="האם חובה"
                                     />
                                     <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
@@ -872,11 +871,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                               {item.isEditing ? (
                                 <div className="flex justify-center">
                                   <label className="relative inline-flex items-center cursor-pointer">
-                                    <input 
-                                      type="checkbox" 
-                                      checked={item.isSplittable} 
+                                    <input
+                                      type="checkbox"
+                                      checked={item.isSplittable}
                                       onChange={(e) => updateItemField(item.id, 'isSplittable', e.target.checked)}
-                                      className="sr-only peer" 
+                                      className="sr-only peer"
                                       aria-label="האם ניתן לחלוקה"
                                     />
                                     <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
@@ -984,7 +983,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                     autoFocus
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">קטגוריה</label>
@@ -1016,15 +1015,15 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                         const val = parseInt(e.target.value) || 1;
                         setNewItem(prev => ({
                           ...prev,
-                          quantity: val,
-                          isSplittable: val <= 1 ? false : prev.isSplittable
+                          quantity: val
+                          // isSplittable auto-calculated
                         }));
                       }}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">הערות</label>
                   <input
@@ -1050,22 +1049,17 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                     </div>
                   </label>
 
-                  <label className={`flex-1 flex items-center p-4 rounded-xl border cursor-pointer transition-all ${newItem.quantity <= 1 ? 'opacity-50 cursor-not-allowed bg-gray-50' : newItem.isSplittable ? 'bg-green-50 border-green-200 ring-1 ring-green-200' : 'bg-gray-50 border-gray-200 hover:bg-white'}`}>
-                    <input
-                      type="checkbox"
-                      checked={newItem.isSplittable}
-                      onChange={(e) => newItem.quantity > 1 && setNewItem(prev => ({ ...prev, isSplittable: e.target.checked }))}
-                      disabled={newItem.quantity <= 1}
-                      className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                    />
-                    <div className="mr-3">
-                      <span className={`block text-sm font-bold ${newItem.isSplittable ? 'text-green-800' : 'text-gray-700'}`}>ניתן לחלוקה</span>
-                      <span className="text-xs text-gray-500">מספר משתתפים</span>
+                  {newItem.quantity > 1 && (
+                    <div className="flex-1 flex items-center p-4 rounded-xl border border-blue-200 bg-blue-50 ring-1 ring-blue-200 transition-all">
+                      <div className="mr-3">
+                        <span className="block text-sm font-bold text-blue-900">ניתן לחלוקה</span>
+                        <span className="text-xs text-blue-700">יוגדר אוטומטית כי הכמות {'>'} 1</span>
+                      </div>
                     </div>
-                  </label>
+                  )}
                 </div>
               </div>
-              
+
               <div className="flex space-x-4 rtl:space-x-reverse mt-8">
                 <button
                   onClick={handleAddItem}

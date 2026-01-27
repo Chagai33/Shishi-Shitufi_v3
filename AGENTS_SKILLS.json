@@ -1,0 +1,62 @@
+{
+  "project_context": {
+    "name": "Shishi-Shitufi V3",
+    "architecture_style": "Service-Oriented with Single Source of Truth",
+    "data_flow": "User Action -> Service Layer -> Firebase (Write) -> Listener -> Store Update (Read) -> UI",
+    "key_files": {
+      "service": "src/services/firebaseService.ts",
+      "state": "src/store/useStore.ts",
+      "types": "src/types/index.ts"
+    }
+  },
+  "skills": [
+    {
+      "name": "manage_data_mutation",
+      "description": "Handles all write operations to the database. Use this map to find the correct method for each action instead of writing raw Firebase code.",
+      "implementation_guide": {
+        "file": "src/services/firebaseService.ts",
+        "method_map": {
+          "create_event": "createEvent",
+          "add_item": "addMenuItem (Use 'addMenuItemAndAssign' if user is adding for themselves to handle limits)",
+          "update_item": "updateMenuItem",
+          "delete_item": "deleteMenuItem (Handles cascading delete of assignments)",
+          "add_assignment": "createAssignment",
+          "update_assignment": "updateAssignment (Handles sync of user names)",
+          "cancel_assignment": "cancelAssignment"
+        },
+        "critical_rules": [
+          "NEVER update the generic 'currentEvent' in Zustand directly.",
+          "ALWAYS await the service call.",
+          "Handle transactional logic (like userItemLimit) inside the Service class, not components."
+        ]
+      }
+    },
+    {
+      "name": "access_application_state",
+      "description": "Retrieves the current state of the application for decision making and UI rendering.",
+      "implementation_guide": {
+        "file": "src/store/useStore.ts",
+        "selectors": {
+          "get_menu_items": "selectMenuItems(state)",
+          "get_assignments": "selectAssignments(state)",
+          "get_participants": "selectParticipants(state)"
+        },
+        "usage_tip": "The store is a READ-ONLY reflection of Firebase. Do not try to 'fix' the store manually; fix the data in Firebase instead."
+      }
+    },
+    {
+      "name": "validate_data_types",
+      "description": "Ensures all data structures strictly follow the TypeScript definitions before being sent to the Service.",
+      "implementation_guide": {
+        "file": "src/types/index.ts",
+        "entities": [
+          "MenuItem",
+          "Assignment",
+          "ShishiEvent",
+          "User"
+        ],
+        "rule": "Do not invent new fields (like 'priority' or 'color') without first adding them to the interface in types/index.ts"
+      }
+    }
+  ]
+}

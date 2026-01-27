@@ -384,51 +384,49 @@ const AssignmentModal: React.FC<{
                                     </span>
                                 )}
                             </div>
-<<<<<<< HEAD
-    <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden h-12">
-        <button
-            type="button"
-            onClick={handleDecrement}
-            disabled={quantity <= 1}
-            className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-l border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-            <Minus size={20} />
-        </button>
+                            <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden h-12">
+                                <button
+                                    type="button"
+                                    onClick={handleDecrement}
+                                    disabled={quantity <= 1}
+                                    className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-l border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <Minus size={20} />
+                                </button>
 
-        <div className="flex-1 flex items-center justify-center h-full bg-white font-bold text-xl text-neutral-800">
-            {quantity}
-        </div>
+                                <div className="flex-1 flex items-center justify-center h-full bg-white font-bold text-xl text-neutral-800">
+                                    {quantity}
+                                </div>
 
-        <button
-            type="button"
-            onClick={handleIncrement}
-            disabled={quantity >= (item.isSplittable ? maxQuantity : item.quantity)}
-            className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-r border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-            <Plus size={20} />
-    </div>
-                        </div >
-            </div >
-        </div >
-    <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-2">הערות (אופציונלי)</label>
-        <div className="relative">
-            <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
-            <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
-                rows={3}
-                placeholder="לדוגמה: ללא גלוטן, טבעוני..."
-            />
-        </div>
-    </div>
-                    </div >
-                </div >
-    <div className="bg-neutral-50 px-6 py-4 flex justify-end space-x-3 rtl:space-x-reverse rounded-b-xl">
-        <button onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300 font-medium">ביטול</button>
-        <button onClick={handleSubmit} disabled={isLoading} className="px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent/90 disabled:bg-neutral-300 font-medium">{isLoading ? 'מעדכן...' : isEdit ? 'שמור שינויים' : 'אשר שיבוץ'}</button>
-    </div>
+                                <button
+                                    type="button"
+                                    onClick={handleIncrement}
+                                    disabled={quantity >= (item.isSplittable ? maxQuantity : item.quantity)}
+                                    className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-r border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-neutral-700 mb-2">הערות (אופציונלי)</label>
+                            <div className="relative">
+                                <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
+                                <textarea
+                                    value={notes}
+                                    onChange={e => setNotes(e.target.value)}
+                                    className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
+                                    rows={3}
+                                    placeholder="לדוגמה: ללא גלוטן, טבעוני..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-neutral-50 px-6 py-4 flex justify-end space-x-3 rtl:space-x-reverse rounded-b-xl">
+                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300 font-medium">ביטול</button>
+                    <button onClick={handleSubmit} disabled={isLoading} className="px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent/90 disabled:bg-neutral-300 font-medium">{isLoading ? 'מעדכן...' : isEdit ? 'שמור שינויים' : 'אשר שיבוץ'}</button>
+                </div>
             </div >
         </div >
     );
@@ -802,141 +800,140 @@ const EventPage: React.FC = () => {
                         <div className="max-w-4xl mx-auto px-4 mt-8">
                             {/* Button removed as it is now inside CategorySelector */}
                         </div>
-                            </div>
-                        </>
-                        ) : (
-                        <div>
-                            <button onClick={handleBackToCategories} className="flex items-center text-sm font-semibold text-accent hover:underline mb-4"><ArrowRight size={16} className="ml-1" />חזור לקטגוריות</button>
+                    </>
+                ) : (
+                    <div>
+                        <button onClick={handleBackToCategories} className="flex items-center text-sm font-semibold text-accent hover:underline mb-4"><ArrowRight size={16} className="ml-1" />חזור לקטגוריות</button>
+                        <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-xl font-bold text-neutral-800">
-                                        {searchTerm ? 'תוצאות חיפוש' : selectedCategory === 'my-assignments' ? 'השיבוצים שלי' : categoryNames[selectedCategory!]}
-                                    </h2>
+                                <h2 className="text-xl font-bold text-neutral-800">
+                                    {searchTerm ? 'תוצאות חיפוש' : selectedCategory === 'my-assignments' ? 'השיבוצים שלי' : categoryNames[selectedCategory!]}
+                                </h2>
 
-                                </div>
-                                {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
-                                    <button
-                                        onClick={() => {
-                                            if (canAddMoreItems) {
-                                                setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
-                                            } else {
-                                                toast.error(`הגעת למכסת ${MAX_USER_ITEMS} הפריטים שניתן להוסיף.`);
-                                            }
-                                        }}
-                                        title={canAddMoreItems ? "הוסף פריט חדש לקטגוריה זו" : `הגעת למכסת ${MAX_USER_ITEMS} הפריטים`}
-                                        className="bg-success text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center"
-                                        disabled={!canAddMoreItems}
-                                    >
-                                        <Plus size={16} className="inline-block ml-1" />
-                                        הוסף פריט ({userCreatedItemsCount}/{MAX_USER_ITEMS})
-                                    </button>
-                                )}
                             </div>
-                            {itemsToDisplay.length > 0 ? (
-                                <div className="space-y-6">
-                                    {(() => {
-                                        const isItemCompleted = (item: MenuItemType) => {
-                                            const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
-                                            if (itemAssignments.length === 0) return false;
-
-                                            if (item.isSplittable) {
-                                                const totalAssigned = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
-                                                return totalAssigned >= item.quantity;
-                                            }
-
-                                            return true;
-                                        };
-
-                                        const availableItems = itemsToDisplay.filter(item => !isItemCompleted(item));
-                                        const assignedItems = itemsToDisplay.filter(item => isItemCompleted(item));
-
-                                        return (
-                                            <>
-                                                {availableItems.length > 0 && (
-                                                    <div>
-                                                        <h3 className="text-md font-semibold text-neutral-700 mb-3">פריטים פנויים</h3>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            {availableItems.map(item => {
-                                                                const assignment = assignments.find(a => a.menuItemId === item.id);
-                                                                return <MenuItemCard
-                                                                    key={item.id}
-                                                                    item={item}
-                                                                    assignment={assignment}
-                                                                    assignments={assignments.filter(a => a.menuItemId === item.id)}
-                                                                    onAssign={() => handleAssignClick(item)}
-                                                                    onEdit={() => handleEditClick(item, assignment!)}
-                                                                    onCancel={(a) => handleCancelClick(a || assignment!)}
-                                                                    isMyAssignment={localUser?.uid === assignment?.userId}
-                                                                    isEventActive={isEventActive}
-                                                                    currentUserId={localUser?.uid}
-                                                                />
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {assignedItems.length > 0 && (
-                                                    <div className={availableItems.length > 0 ? 'pt-6 border-t' : ''}>
-                                                        <h3 className="text-md font-semibold text-neutral-700 mb-3">פריטים שהושלמו</h3>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            {assignedItems.map(item => {
-                                                                const assignment = assignments.find(a => a.menuItemId === item.id);
-                                                                return <MenuItemCard
-                                                                    key={item.id}
-                                                                    item={item}
-                                                                    assignment={assignment}
-                                                                    assignments={assignments.filter(a => a.menuItemId === item.id)}
-                                                                    onAssign={() => handleAssignClick(item)}
-                                                                    onEdit={() => handleEditClick(item, assignment!)}
-                                                                    onCancel={(a) => handleCancelClick(a || assignment!)}
-                                                                    isMyAssignment={localUser?.uid === assignment?.userId}
-                                                                    isEventActive={isEventActive}
-                                                                    currentUserId={localUser?.uid}
-                                                                />
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            ) : <p className="text-center text-neutral-500 py-8">לא נמצאו פריטים.</p>}
+                            {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
+                                <button
+                                    onClick={() => {
+                                        if (canAddMoreItems) {
+                                            setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
+                                        } else {
+                                            toast.error(`הגעת למכסת ${MAX_USER_ITEMS} הפריטים שניתן להוסיף.`);
+                                        }
+                                    }}
+                                    title={canAddMoreItems ? "הוסף פריט חדש לקטגוריה זו" : `הגעת למכסת ${MAX_USER_ITEMS} הפריטים`}
+                                    className="bg-success text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center"
+                                    disabled={!canAddMoreItems}
+                                >
+                                    <Plus size={16} className="inline-block ml-1" />
+                                    הוסף פריט ({userCreatedItemsCount}/{MAX_USER_ITEMS})
+                                </button>
+                            )}
                         </div>
-                )}
-                    </main>
+                        {itemsToDisplay.length > 0 ? (
+                            <div className="space-y-6">
+                                {(() => {
+                                    const isItemCompleted = (item: MenuItemType) => {
+                                        const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+                                        if (itemAssignments.length === 0) return false;
 
-                <div className="max-w-4xl mx-auto px-4 mt-8 mb-8">
-                    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 text-center">
-                        <div className="flex justify-center mb-3">
-                            <div className="bg-orange-100 rounded-full p-3">
-                                <ChefHat className="h-6 w-6 text-orange-500" />
+                                        if (item.isSplittable) {
+                                            const totalAssigned = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+                                            return totalAssigned >= item.quantity;
+                                        }
+
+                                        return true;
+                                    };
+
+                                    const availableItems = itemsToDisplay.filter(item => !isItemCompleted(item));
+                                    const assignedItems = itemsToDisplay.filter(item => isItemCompleted(item));
+
+                                    return (
+                                        <>
+                                            {availableItems.length > 0 && (
+                                                <div>
+                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">פריטים פנויים</h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {availableItems.map(item => {
+                                                            const assignment = assignments.find(a => a.menuItemId === item.id);
+                                                            return <MenuItemCard
+                                                                key={item.id}
+                                                                item={item}
+                                                                assignment={assignment}
+                                                                assignments={assignments.filter(a => a.menuItemId === item.id)}
+                                                                onAssign={() => handleAssignClick(item)}
+                                                                onEdit={() => handleEditClick(item, assignment!)}
+                                                                onCancel={(a) => handleCancelClick(a || assignment!)}
+                                                                isMyAssignment={localUser?.uid === assignment?.userId}
+                                                                isEventActive={isEventActive}
+                                                                currentUserId={localUser?.uid}
+                                                            />
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {assignedItems.length > 0 && (
+                                                <div className={availableItems.length > 0 ? 'pt-6 border-t' : ''}>
+                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">פריטים שהושלמו</h3>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {assignedItems.map(item => {
+                                                            const assignment = assignments.find(a => a.menuItemId === item.id);
+                                                            return <MenuItemCard
+                                                                key={item.id}
+                                                                item={item}
+                                                                assignment={assignment}
+                                                                assignments={assignments.filter(a => a.menuItemId === item.id)}
+                                                                onAssign={() => handleAssignClick(item)}
+                                                                onEdit={() => handleEditClick(item, assignment!)}
+                                                                onCancel={(a) => handleCancelClick(a || assignment!)}
+                                                                isMyAssignment={localUser?.uid === assignment?.userId}
+                                                                isEventActive={isEventActive}
+                                                                currentUserId={localUser?.uid}
+                                                            />
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                             </div>
-                        </div>
-                        <h2 className="text-lg font-bold text-gray-800 mb-1">רוצה ליצור אירוע משלך?</h2>
-                        <p className="text-gray-600 text-sm mb-4">זה לוקח דקה להירשם, וזה לגמרי בחינם.</p>
-                        <Link
-                            to="/"
-                            className="inline-block bg-orange-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-orange-600 transition-colors shadow hover:shadow-md text-sm"
-                        >
-                            הירשם עכשיו
-                        </Link>
+                        ) : <p className="text-center text-neutral-500 py-8">לא נמצאו פריטים.</p>}
                     </div>
+                )}
+            </main>
+
+            <div className="max-w-4xl mx-auto px-4 mt-8 mb-8">
+                <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 text-center">
+                    <div className="flex justify-center mb-3">
+                        <div className="bg-orange-100 rounded-full p-3">
+                            <ChefHat className="h-6 w-6 text-orange-500" />
+                        </div>
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-800 mb-1">רוצה ליצור אירוע משלך?</h2>
+                    <p className="text-gray-600 text-sm mb-4">זה לוקח דקה להירשם, וזה לגמרי בחינם.</p>
+                    <Link
+                        to="/"
+                        className="inline-block bg-orange-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-orange-600 transition-colors shadow hover:shadow-md text-sm"
+                    >
+                        הירשם עכשיו
+                    </Link>
                 </div>
+            </div>
 
-                { showNameModal && (<NameModal isLoading={isJoining} onSave={handleJoinEvent} onClose={() => setShowNameModal(false)} />) }
+            {showNameModal && (<NameModal isLoading={isJoining} onSave={handleJoinEvent} onClose={() => setShowNameModal(false)} />)}
 
-    { localUser && modalState?.type === 'assign' && modalState.item && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} />) }
-    { localUser && modalState?.type === 'edit' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} existingAssignment={modalState.assignment} />) }
-    {
-        modalState?.type === 'add-user-item' && currentEvent && (
-            <UserMenuItemForm
-                event={currentEvent}
-                onClose={() => setModalState(null)}
-                category={modalState.category}
-            />
-        )
-    }
+            {localUser && modalState?.type === 'assign' && modalState.item && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} />)}
+            {localUser && modalState?.type === 'edit' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} existingAssignment={modalState.assignment} />)}
+            {
+                modalState?.type === 'add-user-item' && currentEvent && (
+                    <UserMenuItemForm
+                        event={currentEvent}
+                        onClose={() => setModalState(null)}
+                        category={modalState.category}
+                    />
+                )
+            }
         </div >
     );
 };

@@ -8,12 +8,10 @@ import { auth } from '../lib/firebase';
 import { signInAnonymously, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
 import { ShishiEvent, MenuItem as MenuItemType, Assignment as AssignmentType } from '../types';
-import { Calendar, Clock, MapPin, ChefHat, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Hash, Plus } from 'lucide-react';
+import { CalendarPlus, Clock, MapPin, ChefHat, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Shield, Minus } from 'lucide-react';
 import { isEventFinished } from '../utils/dateUtils';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
-
-
 
 // Category names mapping
 const categoryNames: { [key: string]: string } = {
@@ -41,16 +39,7 @@ const CategorySelector: React.FC<{
 
     const getCategoryProgress = (category: string) => {
         const itemsInCategory = menuItems.filter(item => item.category === category);
-        const assignedItemsInCategory = itemsInCategory.filter(item => {
-            const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
-            if (itemAssignments.length === 0) return false;
-
-            if (item.isSplittable) {
-                const totalAssigned = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
-                return totalAssigned >= item.quantity;
-            }
-            return true;
-        });
+        const assignedItemsInCategory = itemsInCategory.filter(item => assignments.some(a => a.menuItemId === item.id));
         return { assigned: assignedItemsInCategory.length, total: itemsInCategory.length };
     };
 
@@ -98,43 +87,34 @@ const CategorySelector: React.FC<{
 const MenuItemCard: React.FC<{
     item: MenuItemType;
     assignment: AssignmentType | undefined;
-    assignments?: AssignmentType[];
+    assignments: AssignmentType[];
     onAssign: () => void;
     onEdit: () => void;
-    onCancel: (assignment: AssignmentType) => void;
+    onCancel: (a?: AssignmentType) => void;
     isMyAssignment: boolean;
     isEventActive: boolean;
     currentUserId?: string;
-}> = ({ item, assignment, assignments = [], onAssign, onEdit, onCancel, isMyAssignment, isEventActive, currentUserId }) => {
-    const assignedByOther = assignment && !isMyAssignment;
-    const isSplittable = item.isSplittable;
-    const totalQuantity = item.quantity;
-
-    // Calculate filled quantity
-    const filledQuantity = isSplittable
-        ? assignments.reduce((acc, curr) => acc + (curr.quantity || 0), 0)
-        : (assignment ? item.quantity : 0);
-
-    const isFull = filledQuantity >= totalQuantity;
-    const progressPercent = Math.min(100, (filledQuantity / totalQuantity) * 100);
-
-    // My assignments for this item
-    const myAssignments = currentUserId
-        ? assignments.filter(a => a.userId === currentUserId)
-        : (isMyAssignment && assignment ? [assignment] : []);
-
-    // For non-splittable, we rely on the single assignment passed or finding it.
-    // For splittable, we typically have multiple.
-
-    // Determine card style
-    // If I have ANY assignment in this item, I want it to look "mine" or at least friendly?
-    // Current logic: if `isMyAssignment` (single bool) -> blue.
-    // Let's stick to: if `myAssignments.length > 0` -> blue.
+}> = ({ item, assignment, assignments, onAssign, onEdit, onCancel, isMyAssignment, isEventActive, currentUserId }) => {
+    const isSplittable = item.isSplittable || false;
+    const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+    const myAssignments = itemAssignments.filter(a => a.userId === currentUserId);
     const hasMyAssignment = myAssignments.length > 0;
+
+    const totalAssigned = isSplittable
+        ? itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0)
+        : (assignment ? 1 : 0);
+
+    const isFull = isSplittable
+        ? totalAssigned >= item.quantity
+        : !!assignment;
+
+    const progressPercent = isSplittable
+        ? Math.min((totalAssigned / item.quantity) * 100, 100)
+        : (assignment ? 100 : 0);
 
     const cardStyles = hasMyAssignment
         ? 'bg-blue-50 border-info'
-        : assignedByOther
+        : assignment
             ? 'bg-green-50 border-success'
             : 'bg-white border-neutral-200';
 
@@ -145,26 +125,18 @@ const MenuItemCard: React.FC<{
                     <h4 className="font-bold text-neutral-800 text-base">{item.name}</h4>
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-current">{categoryNames[item.category]}</span>
                 </div>
-                <p className="text-sm text-neutral-500">
-                    {isSplittable ? `סה"כ נדרש: ${item.quantity}` : `כמות נדרשת: ${item.quantity}`}
-                </p>
-                {item.creatorName && <p className="text-xs text-neutral-400 mt-1">נוצר ע"י: {item.creatorName}</p>}
-                {item.notes && <p className="text-xs text-neutral-500 mt-2 italic">הערות: {item.notes}</p>}
-
-                {/* Progress Bar for Splittable Items */}
                 {isSplittable && (
                     <div className="mt-3">
-                        <div className="flex justify-between text-xs mb-1">
-                            <span>התקדמות: {filledQuantity}/{totalQuantity}</span>
-                            <span>{Math.round(progressPercent)}%</span>
+                        <div className="flex justify-between text-xs text-neutral-600 mb-1">
+                            <span>שובץ: {totalAssigned} מתוך {item.quantity}</span>
+                            <span>{isFull ? '✅ הושלם' : `נותרו: ${item.quantity - totalAssigned}`}</span>
                         </div>
-                        <div className="w-full bg-neutral-200 rounded-full h-2.5">
+                        <div className="w-full bg-neutral-300 rounded-full h-2 overflow-hidden">
                             <div
-                                className="bg-green-500 h-2.5 rounded-full"
+                                className={`h-2 transition-all duration-300 ${isFull ? 'bg-green-500' : 'bg-blue-500'}`}
                                 style={{ width: `${progressPercent}%` }}
                             ></div>
                         </div>
-                        {/* List of assignees for splittable items */}
                         {assignments.length > 0 && (
                             <div className="mt-2 text-xs text-neutral-600">
                                 <p className="font-semibold mb-1">משובצים:</p>
@@ -179,12 +151,17 @@ const MenuItemCard: React.FC<{
                         )}
                     </div>
                 )}
+                {!isSplittable && (
+                    <>
+                        <p className="text-sm text-neutral-500">כמות נדרשת: {item.quantity}</p>
+                        {item.creatorName && <p className="text-xs text-neutral-400 mt-1">נוצר ע"י: {item.creatorName}</p>}
+                        {item.notes && <p className="text-xs text-neutral-500 mt-2 italic">הערות: {item.notes}</p>}
+                    </>
+                )}
             </div>
             <div className="border-t p-3">
                 {isSplittable ? (
-                    // Logic for Splittable Items
                     <div className="space-y-3">
-                        {/* 1. My Contribution Section */}
                         {hasMyAssignment && (
                             <div className="bg-blue-100/50 p-2 rounded-lg border border-blue-200">
                                 <p className="text-xs font-bold text-blue-800 mb-2">התרומה שלי:</p>
@@ -210,20 +187,17 @@ const MenuItemCard: React.FC<{
                             </div>
                         )}
 
-                        {/* 2. Join Button (if not full) */}
                         {isEventActive && !isFull && (
                             <button onClick={onAssign} className="w-full bg-accent text-white py-2 text-sm rounded-lg hover:bg-accent/90 font-semibold transition-colors">
                                 {hasMyAssignment ? 'הוסף עוד' : 'שבץ אותי'}
                             </button>
                         )}
 
-                        {/* 3. Full Status */}
                         {isFull && (
                             <p className="text-sm text-center text-green-600 font-medium">הפריט הושלם ✔️</p>
                         )}
                     </div>
                 ) : (
-                    // Logic for Non-Splittable (Original Logic)
                     <>
                         {isMyAssignment && assignment ? (
                             <div className="space-y-2">
@@ -286,7 +260,6 @@ const AssignmentModal: React.FC<{
     const [currentUserName, setCurrentUserName] = useState('');
     const [useNewName, setUseNewName] = useState(false);
 
-    // Calculate max quantity for splittable items
     const assignments = useStore(selectAssignments);
     const maxQuantity = useMemo(() => {
         if (!item.isSplittable) return 1;
@@ -296,7 +269,6 @@ const AssignmentModal: React.FC<{
 
         let available = item.quantity - currentTotal;
 
-        // If we are editing, we can reuse our own quantity
         if (isEdit && existingAssignment) {
             available += existingAssignment.quantity;
         }
@@ -305,11 +277,9 @@ const AssignmentModal: React.FC<{
     }, [item, assignments, eventId, isEdit, existingAssignment]);
 
     useEffect(() => {
-        // If not splittable, always 1. If splittable, default to 1 but check max.
         if (!item.isSplittable) {
             setQuantity(1);
         } else if (!existingAssignment) {
-            // New assignment: default to 1, but if only 0 available (shouldn't happen if button enabled), 0.
             setQuantity(Math.min(1, maxQuantity));
         }
     }, [item.isSplittable, maxQuantity, existingAssignment]);
@@ -373,6 +343,12 @@ const AssignmentModal: React.FC<{
         finally { setIsLoading(false); }
     };
 
+    const handleIncrement = () => setQuantity(q => {
+        const max = item.isSplittable ? maxQuantity : item.quantity;
+        return Math.min(q + 1, max);
+    });
+    const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
@@ -428,6 +404,7 @@ const AssignmentModal: React.FC<{
                             </div>
                         )}
 
+                        {/* Stepper UI for Quantity */}
                         <div>
                             <div className="flex justify-between mb-2">
                                 <label className="block text-sm font-medium text-neutral-700">כמות שאביא*</label>
@@ -437,24 +414,28 @@ const AssignmentModal: React.FC<{
                                     </span>
                                 )}
                             </div>
-                            <div className="relative">
-                                <Hash className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                                <input
-                                    type="number"
-                                    value={quantity}
-                                    onChange={e => {
-                                        const val = parseInt(e.target.value, 10);
-                                        // Allow clearing the input (isNaN) but don't set to 0 strictly if user is typing
-                                        if (isNaN(val)) {
-                                            setQuantity(0); // or handle as empty string if state allows
-                                            return;
-                                        }
-                                        setQuantity(val);
-                                    }}
-                                    className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
-                                    min="1"
-                                    max={item.isSplittable ? maxQuantity : undefined}
-                                />
+                            <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden h-12">
+                                <button
+                                    type="button"
+                                    onClick={handleDecrement}
+                                    disabled={quantity <= 1}
+                                    className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-l border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <Minus size={20} />
+                                </button>
+
+                                <div className="flex-1 flex items-center justify-center h-full bg-white font-bold text-xl text-neutral-800">
+                                    {quantity}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleIncrement}
+                                    disabled={quantity >= (item.isSplittable ? maxQuantity : item.quantity)}
+                                    className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-r border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <Plus size={20} />
+                                </button>
                             </div>
                         </div>
                         <div>
@@ -511,19 +492,18 @@ const EventPage: React.FC = () => {
     const [isJoining, setIsJoining] = useState(false);
     const [isEventLoading, setIsEventLoading] = useState(true);
 
-    const { currentEvent, setCurrentEvent, clearCurrentEvent, isLoading } = useStore();
+    const { currentEvent, setCurrentEvent, clearCurrentEvent, isLoading, user: storeUser } = useStore();
+
     const menuItems = useStore(selectMenuItems);
     const assignments = useStore(selectAssignments);
     const participants = useStore(selectParticipants);
     const userCreatedItemsCount = useMemo(() => {
         if (!localUser || !currentEvent?.userItemCounts) return 0;
-        // Direct call from the new counter we added
         return currentEvent.userItemCounts[localUser.uid] || 0;
     }, [currentEvent, localUser]);
 
     const MAX_USER_ITEMS = currentEvent?.details.userItemLimit ?? 3;
 
-    // Combined check: Can items be added and does user meet the limit
     const canAddMoreItems = (currentEvent?.details.allowUserItems ?? false) && userCreatedItemsCount < MAX_USER_ITEMS;
     const assignmentStats = useMemo(() => {
         const requiredItems = menuItems.filter(item => item.isRequired);
@@ -609,7 +589,6 @@ const EventPage: React.FC = () => {
         const isCreator = item.creatorId === localUser.uid;
 
         if (isCreator) {
-            // User is both creator and assigner - delete the item
             if (window.confirm("פעולה זו תמחק גם את הפריט וגם את השיבוץ")) {
                 try {
                     await FirebaseService.deleteMenuItem(eventId, item.id);
@@ -619,7 +598,6 @@ const EventPage: React.FC = () => {
                 }
             }
         } else {
-            // User is only assigned - cancel only the assignment
             if (window.confirm("האם לבטל את השיבוץ?")) {
                 try {
                     await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
@@ -684,6 +662,22 @@ const EventPage: React.FC = () => {
     const participantName = participants.find(p => p.id === localUser?.uid)?.name || 'אורח';
     const isEventActive = currentEvent.details.isActive && !isEventFinished(currentEvent.details.date, currentEvent.details.time);
 
+    const showAdminButton = storeUser?.isAdmin || (localUser && currentEvent.organizerId === localUser.uid);
+
+    const handleAddToCalendar = () => {
+        if (!currentEvent) return;
+        const { title, date, time, location } = currentEvent.details;
+
+        const startDateTime = new Date(`${date}T${time}`);
+        const endDateTime = new Date(startDateTime.getTime() + (2 * 60 * 60 * 1000));
+
+        const formatTime = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+
+        const gCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatTime(startDateTime)}/${formatTime(endDateTime)}&details=${encodeURIComponent("נוצר באמצעות שישי שיתופי")}&location=${encodeURIComponent(location)}`;
+
+        window.open(gCalUrl, '_blank');
+    };
+
     if (!isEventActive) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-background text-center p-4">
@@ -704,11 +698,26 @@ const EventPage: React.FC = () => {
         <div className="min-h-screen bg-background">
             <header className="bg-white shadow-sm p-3 sticky top-0 z-40">
                 <div className="max-w-4xl mx-auto flex justify-between items-center">
-                    <div>
-                        <h1 className="font-bold text-lg text-accent">שישי שיתופי</h1>
-                        <p className="text-xs text-neutral-500">ניהול ארוחות משותפות</p>
-                    </div>
-                    <div className="text-left">
+
+                    <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                        <div>
+                            <h1 className="font-bold text-lg text-accent">שישי שיתופי</h1>
+                            <p className="text-xs text-neutral-500">ניהול ארוחות משותפות</p>
+                        </div>
+                    </Link>
+
+                    <div className="text-left flex items-center gap-3">
+                        {showAdminButton && (
+                            <Link
+                                to="/"
+                                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
+                                title="מעבר לפאנל ניהול"
+                            >
+                                <Shield size={16} />
+                                <span className="hidden sm:inline">פאנל ניהול</span>
+                            </Link>
+                        )}
+
                         <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
                             {localUser && !localUser.isAnonymous ? (
                                 <Link to="/dashboard" className="text-sm font-medium text-accent hover:underline">
@@ -721,14 +730,7 @@ const EventPage: React.FC = () => {
                             )}
                             <UserIcon size={16} className="text-neutral-500" />
                         </div>
-                        <a
-                            href="https://www.linkedin.com/in/chagai-yechiel/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            פותח על ידי חגי יחיאל
-                        </a>
+
                     </div>
                 </div>
             </header>
@@ -750,10 +752,33 @@ const EventPage: React.FC = () => {
                             )}
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-neutral-600">
-                        <p className="flex items-center"><Calendar size={14} className="ml-1.5 flex-shrink-0" /> {new Date(currentEvent.details.date).toLocaleDateString('he-IL')}</p>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-600">
+                        {/* Interactive Date -> Add to Calendar */}
+                        <button
+                            onClick={handleAddToCalendar}
+                            className="flex items-center hover:text-accent hover:font-medium transition-colors group"
+                            title="הוסף ליומן גוגל"
+                        >
+                            <CalendarPlus size={14} className="ml-1.5 flex-shrink-0 group-hover:text-accent" />
+                            {new Date(currentEvent.details.date).toLocaleDateString('he-IL')}
+                        </button>
+
+                        {/* Time (Static) */}
                         <p className="flex items-center"><Clock size={14} className="ml-1.5 flex-shrink-0" /> {currentEvent.details.time}</p>
-                        <p className="flex items-center"><MapPin size={14} className="ml-1.5 flex-shrink-0" /> {currentEvent.details.location}</p>
+
+                        {/* Interactive Location -> Google Maps */}
+                        <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentEvent.details.location)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center hover:text-blue-600 hover:underline transition-colors group"
+                            title="נווט עם Google Maps / Waze"
+                        >
+                            <MapPin size={14} className="ml-1.5 flex-shrink-0 group-hover:text-blue-500" />
+                            {currentEvent.details.location}
+                        </a>
+
+                        {/* Organizer (Static) */}
                         <p className="flex items-center"><UserIcon size={14} className="ml-1.5 flex-shrink-0" /> מארגן: {currentEvent.organizerName}</p>
                     </div>
                 </div>
@@ -791,11 +816,9 @@ const EventPage: React.FC = () => {
                             menuItems={menuItems}
                             assignments={assignments}
                             onSelectCategory={handleCategoryClick}
-                        // No longer need to pass these parameters as they are checked elsewhere
                         />
                         <div className="max-w-4xl mx-auto px-4 mt-8">
                             <div className="flex justify-center">
-                                {/* Conditional display: Show button only if items can be added */}
                                 {currentEvent?.details.allowUserItems && (
                                     <button
                                         onClick={() => {
@@ -826,8 +849,6 @@ const EventPage: React.FC = () => {
                                 </h2>
 
                             </div>
-                            {/* --- The change --- */}
-                            {/* The button within the category gets the style and text of the external button */}
                             {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
                                 <button
                                     onClick={() => {
@@ -849,7 +870,6 @@ const EventPage: React.FC = () => {
                         {itemsToDisplay.length > 0 ? (
                             <div className="space-y-6">
                                 {(() => {
-                                    // Helper to check if an item is fully completed
                                     const isItemCompleted = (item: MenuItemType) => {
                                         const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
                                         if (itemAssignments.length === 0) return false;
@@ -859,13 +879,10 @@ const EventPage: React.FC = () => {
                                             return totalAssigned >= item.quantity;
                                         }
 
-                                        return true; // Non-splittable and has assignment -> completed
+                                        return true;
                                     };
 
-                                    // "Available" means not fully completed (so partial items show here)
                                     const availableItems = itemsToDisplay.filter(item => !isItemCompleted(item));
-
-                                    // "Assigned" means fully completed
                                     const assignedItems = itemsToDisplay.filter(item => isItemCompleted(item));
 
                                     return (
@@ -924,8 +941,6 @@ const EventPage: React.FC = () => {
                 )}
             </main>
 
-
-
             <div className="max-w-4xl mx-auto px-4 mt-8 mb-8">
                 <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 text-center">
                     <div className="flex justify-center mb-3">
@@ -936,7 +951,7 @@ const EventPage: React.FC = () => {
                     <h2 className="text-lg font-bold text-gray-800 mb-1">רוצה ליצור אירוע משלך?</h2>
                     <p className="text-gray-600 text-sm mb-4">זה לוקח דקה להירשם, וזה לגמרי בחינם.</p>
                     <Link
-                        to="/login"
+                        to="/"
                         className="inline-block bg-orange-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-orange-600 transition-colors shadow hover:shadow-md text-sm"
                     >
                         הירשם עכשיו
@@ -946,14 +961,13 @@ const EventPage: React.FC = () => {
 
             {showNameModal && (<NameModal isLoading={isJoining} onSave={handleJoinEvent} onClose={() => setShowNameModal(false)} />)}
 
-
             {localUser && modalState?.type === 'assign' && modalState.item && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} />)}
             {localUser && modalState?.type === 'edit' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} existingAssignment={modalState.assignment} />)}
             {modalState?.type === 'add-user-item' && currentEvent && (
                 <UserMenuItemForm
                     event={currentEvent}
                     onClose={() => setModalState(null)}
-                    category={modalState.category} // We added this line
+                    category={modalState.category}
                 />
             )}
         </div>

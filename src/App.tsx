@@ -7,6 +7,7 @@ import { useStore } from './store/useStore';
 import DashboardPage from './pages/DashboardPage';
 import EventPage from './pages/EventPage';
 import LoginPage from './pages/LoginPage';
+import LandingPage from './pages/LandingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 
@@ -14,7 +15,7 @@ import { Footer } from './components/Layout/Footer';
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import { ConfirmationModal } from './components/Admin/ConfirmationModal'; // <-- Modal import
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Toaster, toast } from 'react-hot-toast'; // <--- Change here
 import { FirebaseService } from './services/firebaseService';
 
@@ -34,22 +35,22 @@ import { FirebaseService } from './services/firebaseService';
 function App() {
   const { isLoading: isAuthLoading } = useAuth();
   const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore(); // <-- Call to state and function
-  
+
   // Account deletion logic
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleDeleteAccount = async () => {
-      setIsDeletingAccount(true);
-      toast.loading('מוחק את החשבון והנתונים...', { id: 'delete-toast' });
-      try {
-          await FirebaseService.deleteCurrentUserAccount();
-          toast.success('החשבון נמחק בהצלחה. תודה שהשתמשת בשירות!', { id: 'delete-toast' });
-      } catch (error: any) {
-          toast.error(error.message || 'שגיאה במחיקת החשבון.', { id: 'delete-toast' });
-      } finally {
-          toggleDeleteAccountModal();
-          setIsDeletingAccount(false);
-      }
+    setIsDeletingAccount(true);
+    toast.loading('מוחק את החשבון והנתונים...', { id: 'delete-toast' });
+    try {
+      await FirebaseService.deleteCurrentUserAccount();
+      toast.success('החשבון נמחק בהצלחה. תודה שהשתמשת בשירות!', { id: 'delete-toast' });
+    } catch (error: any) {
+      toast.error(error.message || 'שגיאה במחיקת החשבון.', { id: 'delete-toast' });
+    } finally {
+      toggleDeleteAccountModal();
+      setIsDeletingAccount(false);
+    }
   };
 
   if (isAuthLoading) {
@@ -63,27 +64,27 @@ function App() {
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
       <main className="flex-grow">
         <Routes>
-          <Route 
-            path="/login" 
-            element={isRegisteredUser ? <Navigate to="/dashboard" /> : <LoginPage />} 
+          <Route
+            path="/login"
+            element={isRegisteredUser ? <Navigate to="/dashboard" /> : <LoginPage />}
           />
-          
-          <Route 
-            path="/dashboard" 
-            element={isRegisteredUser ? <DashboardPage /> : <Navigate to="/login" />} 
+
+          <Route
+            path="/dashboard"
+            element={isRegisteredUser ? <DashboardPage /> : <Navigate to="/login" />}
           />
-          
+
           <Route path="/event/:eventId" element={<EventPage />} />
 
           {/* --- Adding routing to new pages --- */}
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
-          
-          <Route 
-            path="/" 
-            element={<Navigate to={isRegisteredUser ? "/dashboard" : "/login"} />} 
+
+          <Route
+            path="/"
+            element={isRegisteredUser ? <Navigate to="/dashboard" /> : <LandingPage />}
           />
-          
+
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>

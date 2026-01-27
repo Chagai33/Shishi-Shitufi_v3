@@ -12,6 +12,7 @@ import { Calendar, Clock, MapPin, ChefHat, User as UserIcon, AlertCircle, Edit, 
 import { isEventFinished } from '../utils/dateUtils';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
+import { CategorySelector } from '../components/Events/CategorySelector';
 
 
 
@@ -24,75 +25,7 @@ const categoryNames: { [key: string]: string } = {
     other: 'אחר'
 };
 
-// --- Component: CategorySelector ---
-const CategorySelector: React.FC<{
-    menuItems: MenuItemType[];
-    assignments: AssignmentType[];
-    onSelectCategory: (category: string) => void;
-}> = ({ menuItems, assignments, onSelectCategory }) => {
-    const categoryDetails: { [key: string]: { name: string; icon: string; color: string; glowClass: string } } = {
-        starter: { name: 'מנות ראשונות', icon: '/Icons/2.gif', color: '#3498db', glowClass: 'glow-starter' },
-        main: { name: 'מנות עיקריות', icon: '/Icons/1.gif', color: '#ff8a00', glowClass: 'glow-main' },
-        dessert: { name: 'קינוחים', icon: '/Icons/3.gif', color: '#9b59b6', glowClass: 'glow-dessert' },
-        drink: { name: 'משקאות', icon: '/Icons/4.gif', color: '#2ecc71', glowClass: 'glow-drink' },
-        other: { name: 'אחר', icon: '/Icons/5.gif', color: '#95a5a6', glowClass: 'glow-other' },
-    };
-    const categoriesOrder = ['starter', 'main', 'dessert', 'drink', 'other'];
-
-    const getCategoryProgress = (category: string) => {
-        const itemsInCategory = menuItems.filter(item => item.category === category);
-        const assignedItemsInCategory = itemsInCategory.filter(item => {
-            const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
-            if (itemAssignments.length === 0) return false;
-
-            if (item.isSplittable) {
-                const totalAssigned = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
-                return totalAssigned >= item.quantity;
-            }
-            return true;
-        });
-        return { assigned: assignedItemsInCategory.length, total: itemsInCategory.length };
-    };
-
-    return (
-        <div>
-            <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-neutral-800">מה בא לך להביא לארוחה?</h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {categoriesOrder.map(categoryKey => {
-                    const progress = getCategoryProgress(categoryKey);
-                    if (progress.total === 0) return null;
-                    const details = categoryDetails[categoryKey];
-                    const percentage = progress.total > 0 ? (progress.assigned / progress.total) * 100 : 0;
-                    return (
-                        <div key={categoryKey} onClick={() => onSelectCategory(categoryKey)} className="group relative category-card-2025 p-4 rounded-xl cursor-pointer text-center overflow-hidden">
-                            <div className={`aurora-glow ${details.glowClass}`}></div>
-                            <div className="relative z-10 flex flex-col items-center h-full">
-                                <img src={details.icon} alt={details.name} className="w-16 h-16 mx-auto mb-2 object-contain transition-transform duration-300 group-hover:scale-110" />
-                                <h3 className="text-lg font-bold text-neutral-800 mb-2">{details.name}</h3>
-                                <div className="flex-grow"></div>
-                                <div className="w-full mt-2">
-                                    <p className="text-center text-neutral-500 text-xs mb-2">{progress.assigned} / {progress.total} שובצו</p>
-                                    <div className="w-full bg-neutral-200 rounded-full h-2">
-                                        <div
-                                            className="h-2 rounded-full"
-                                            style={{
-                                                width: `${percentage}%`,
-                                                backgroundColor: details.color,
-                                                transition: 'width 0.5s ease-in-out'
-                                            }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
+// --- Component: CategorySelector removed, using imported component ---
 
 // --- Component: MenuItemCard ---
 const MenuItemCard: React.FC<{
@@ -123,42 +56,35 @@ const MenuItemCard: React.FC<{
         ? assignments.filter(a => a.userId === currentUserId)
         : (isMyAssignment && assignment ? [assignment] : []);
 
-    // For non-splittable, we rely on the single assignment passed or finding it.
-    // For splittable, we typically have multiple.
-
-    // Determine card style
-    // If I have ANY assignment in this item, I want it to look "mine" or at least friendly?
-    // Current logic: if `isMyAssignment` (single bool) -> blue.
-    // Let's stick to: if `myAssignments.length > 0` -> blue.
     const hasMyAssignment = myAssignments.length > 0;
 
     const cardStyles = hasMyAssignment
-        ? 'bg-blue-50 border-info'
+        ? 'bg-blue-50 border-blue-200'
         : assignedByOther
-            ? 'bg-green-50 border-success'
-            : 'bg-white border-neutral-200';
+            ? 'bg-green-50 border-green-200'
+            : 'bg-white border-gray-200';
 
     return (
         <div className={`border-2 flex flex-col rounded-xl ${cardStyles}`}>
             <div className="p-4 flex-grow">
                 <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-neutral-800 text-base">{item.name}</h4>
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-current">{categoryNames[item.category]}</span>
+                    <h4 className="font-bold text-gray-900 text-base">{item.name}</h4>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-current text-gray-700">{categoryNames[item.category]}</span>
                 </div>
-                <p className="text-sm text-neutral-500">
+                <p className="text-sm text-gray-700 font-medium">
                     {isSplittable ? `סה"כ נדרש: ${item.quantity}` : `כמות נדרשת: ${item.quantity}`}
                 </p>
-                {item.creatorName && <p className="text-xs text-neutral-400 mt-1">נוצר ע"י: {item.creatorName}</p>}
-                {item.notes && <p className="text-xs text-neutral-500 mt-2 italic">הערות: {item.notes}</p>}
+                {item.creatorName && <p className="text-xs text-gray-500 mt-1">נוצר ע"י: {item.creatorName}</p>}
+                {item.notes && <p className="text-xs text-gray-600 mt-2 italic bg-gray-50 p-2 rounded border border-gray-100">הערות: {item.notes}</p>}
 
                 {/* Progress Bar for Splittable Items */}
                 {isSplittable && (
                     <div className="mt-3">
-                        <div className="flex justify-between text-xs mb-1">
+                        <div className="flex justify-between text-xs mb-1 text-gray-700 font-medium">
                             <span>התקדמות: {filledQuantity}/{totalQuantity}</span>
                             <span>{Math.round(progressPercent)}%</span>
                         </div>
-                        <div className="w-full bg-neutral-200 rounded-full h-2.5">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
                             <div
                                 className="bg-green-500 h-2.5 rounded-full"
                                 style={{ width: `${progressPercent}%` }}
@@ -166,12 +92,12 @@ const MenuItemCard: React.FC<{
                         </div>
                         {/* List of assignees for splittable items */}
                         {assignments.length > 0 && (
-                            <div className="mt-2 text-xs text-neutral-600">
-                                <p className="font-semibold mb-1">משובצים:</p>
-                                <ul className="list-disc list-inside">
+                            <div className="mt-2 text-xs text-gray-700">
+                                <p className="font-semibold mb-1 text-gray-800">משובצים:</p>
+                                <ul className="list-disc list-inside space-y-1">
                                     {assignments.map(a => (
                                         <li key={a.id}>
-                                            {a.userName} ({a.quantity}) {a.notes && <span className="italic text-neutral-400">- {a.notes}</span>}
+                                            <span className="font-medium">{a.userName}</span> ({a.quantity}) {a.notes && <span className="italic text-gray-500">- {a.notes}</span>}
                                         </li>
                                     ))}
                                 </ul>
@@ -180,28 +106,29 @@ const MenuItemCard: React.FC<{
                     </div>
                 )}
             </div>
-            <div className="border-t p-3">
+            <div className="border-t border-gray-100 p-3 bg-gray-50/50 rounded-b-xl">
                 {isSplittable ? (
                     // Logic for Splittable Items
                     <div className="space-y-3">
                         {/* 1. My Contribution Section */}
                         {hasMyAssignment && (
-                            <div className="bg-blue-100/50 p-2 rounded-lg border border-blue-200">
+                            <div className="bg-white p-2 rounded-lg border border-blue-200 shadow-sm">
                                 <p className="text-xs font-bold text-blue-800 mb-2">התרומה שלי:</p>
                                 <ul className="space-y-2">
                                     {myAssignments.map(myAss => (
-                                        <li key={myAss.id} className="flex justify-between items-center text-sm">
+                                        <li key={myAss.id} className="flex justify-between items-center text-sm group">
                                             <span>
                                                 <span className="font-bold text-blue-700">{myAss.quantity} יח'</span>
-                                                {myAss.notes && <span className="text-xs text-neutral-500 mr-2">- {myAss.notes}</span>}
+                                                {myAss.notes && <span className="text-xs text-gray-600 mr-2">- {myAss.notes}</span>}
                                             </span>
                                             {isEventActive && (
                                                 <button
                                                     onClick={() => onCancel(myAss)}
-                                                    className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                                                    className="text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 focus:ring-2 focus:ring-red-500"
                                                     title="בטל שיבוץ זה"
+                                                    aria-label="בטל שיבוץ"
                                                 >
-                                                    <Trash2 size={14} />
+                                                    <Trash2 size={16} />
                                                 </button>
                                             )}
                                         </li>
@@ -212,14 +139,18 @@ const MenuItemCard: React.FC<{
 
                         {/* 2. Join Button (if not full) */}
                         {isEventActive && !isFull && (
-                            <button onClick={onAssign} className="w-full bg-accent text-white py-2 text-sm rounded-lg hover:bg-accent/90 font-semibold transition-colors">
+                            <button
+                                onClick={onAssign}
+                                className="w-full bg-orange-600 text-white py-3 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm focus:ring-2 focus:ring-orange-500 focus:ring-offset-1"
+                                aria-label="שבץ אותי לפריט זה"
+                            >
                                 {hasMyAssignment ? 'הוסף עוד' : 'שבץ אותי'}
                             </button>
                         )}
 
                         {/* 3. Full Status */}
                         {isFull && (
-                            <p className="text-sm text-center text-green-600 font-medium">הפריט הושלם ✔️</p>
+                            <p className="text-sm text-center text-green-700 font-medium">הפריט הושלם ✔️</p>
                         )}
                     </div>
                 ) : (
@@ -227,18 +158,26 @@ const MenuItemCard: React.FC<{
                     <>
                         {isMyAssignment && assignment ? (
                             <div className="space-y-2">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="font-semibold text-info">השיבוץ שלי</span>
-                                    <span className="font-bold">{assignment.quantity}</span>
+                                <div className="flex justify-between items-center text-sm bg-white p-2 rounded border border-blue-100">
+                                    <span className="font-semibold text-blue-700">השיבוץ שלי</span>
+                                    <span className="font-bold text-gray-900">{assignment.quantity}</span>
                                 </div>
-                                {assignment.notes && <p className="text-xs text-neutral-600 bg-neutral-100 p-2 rounded">הערה: {assignment.notes}</p>}
+                                {assignment.notes && <p className="text-xs text-gray-700 bg-white p-2 rounded border border-gray-100">הערה: {assignment.notes}</p>}
                                 {isEventActive && (
                                     <div className="flex space-x-2 rtl:space-x-reverse pt-2">
-                                        <button onClick={onEdit} className="flex-1 text-xs bg-neutral-200 hover:bg-neutral-300 py-1 rounded flex items-center justify-center">
-                                            <Edit size={12} className="ml-1" /> ערוך
+                                        <button
+                                            onClick={onEdit}
+                                            className="flex-1 text-sm bg-white border border-gray-300 hover:bg-gray-50 py-2 rounded flex items-center justify-center focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                                            aria-label="ערוך שיבוץ"
+                                        >
+                                            <Edit size={14} className="ml-1" /> ערוך
                                         </button>
-                                        <button onClick={() => onCancel(assignment)} className="flex-1 text-xs bg-red-100 text-error hover:bg-red-200 py-1 rounded flex items-center justify-center">
-                                            <Trash2 size={12} className="ml-1" /> {item.creatorId === assignment.userId ? 'מחק פריט' : 'בטל שיבוץ'}
+                                        <button
+                                            onClick={() => onCancel(assignment)}
+                                            className="flex-1 text-sm bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2 rounded flex items-center justify-center focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                                            aria-label="בטל שיבוץ"
+                                        >
+                                            <Trash2 size={14} className="ml-1" /> {item.creatorId === assignment.userId ? 'מחק פריט' : 'בטל שיבוץ'}
                                         </button>
                                     </div>
                                 )}
@@ -246,19 +185,23 @@ const MenuItemCard: React.FC<{
                         ) : (
                             assignment ? (
                                 <div className="space-y-2">
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="font-semibold text-success">שובץ ל: {assignment.userName}</span>
-                                        <span className="font-bold">{assignment.quantity}</span>
+                                    <div className="flex justify-between items-center text-sm bg-green-50/50 p-2 rounded border border-green-100">
+                                        <span className="font-semibold text-green-700">שובץ ל: {assignment.userName}</span>
+                                        <span className="font-bold text-gray-900">{assignment.quantity}</span>
                                     </div>
-                                    {assignment.notes && <p className="text-xs text-neutral-600 bg-neutral-100 p-2 rounded">הערה: {assignment.notes}</p>}
+                                    {assignment.notes && <p className="text-xs text-gray-600 bg-white p-2 rounded border border-gray-100">הערה: {assignment.notes}</p>}
                                 </div>
                             ) : (
                                 isEventActive ? (
-                                    <button onClick={onAssign} className="w-full bg-accent text-white py-2 text-sm rounded-lg hover:bg-accent/90 font-semibold transition-colors">
+                                    <button
+                                        onClick={onAssign}
+                                        className="w-full bg-orange-600 text-white py-3 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm focus:ring-2 focus:ring-orange-500 focus:ring-offset-1"
+                                        aria-label="שבץ אותי לפריט זה"
+                                    >
                                         שבץ אותי
                                     </button>
                                 ) : (
-                                    <p className="text-sm text-center text-neutral-500">האירוע אינו פעיל</p>
+                                    <p className="text-sm text-center text-gray-500">האירוע אינו פעיל</p>
                                 )
                             )
                         )}
@@ -409,7 +352,7 @@ const AssignmentModal: React.FC<{
                                         value={participantName}
                                         onChange={e => setParticipantName(e.target.value)}
                                         placeholder={useNewName ? "השם החדש שיוצג" : "השם שיוצג לכולם"}
-                                        className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                                        className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
                                     />
                                 </div>
                                 {useNewName && (
@@ -451,7 +394,7 @@ const AssignmentModal: React.FC<{
                                         }
                                         setQuantity(val);
                                     }}
-                                    className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                                    className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm"
                                     min="1"
                                     max={item.isSplittable ? maxQuantity : undefined}
                                 />
@@ -464,7 +407,7 @@ const AssignmentModal: React.FC<{
                                 <textarea
                                     value={notes}
                                     onChange={e => setNotes(e.target.value)}
-                                    className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                                    className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
                                     rows={3}
                                     placeholder="לדוגמה: ללא גלוטן, טבעוני..."
                                 />
@@ -488,8 +431,8 @@ const NameModal: React.FC<{ onSave: (name: string) => void, isLoading: boolean, 
             <div className="bg-white rounded-xl shadow-xl max-w-sm w-full">
                 <div className="p-6 text-center">
                     <h2 className="text-xl font-bold text-neutral-900 mb-2">ברוכים הבאים!</h2>
-                    <p className="text-neutral-600 mb-4">כדי להשתתף באירוע, אנא הזן את שמך.</p>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="השם שלך" className="w-full p-2 border border-neutral-300 rounded-lg mb-4 focus:ring-2 focus:ring-accent focus:border-transparent" />
+                    <p className="text-gray-600 mb-4">כדי להשתתף באירוע, אנא הזן את שמך.</p>
+                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="השם שלך" className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500" />
                     <div className="flex space-x-3 rtl:space-x-reverse mt-6">
                         <button type="button" onClick={onClose} disabled={isLoading} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">
                             ביטול
@@ -767,7 +710,7 @@ const EventPage: React.FC = () => {
                                 value={searchTerm}
                                 onChange={(e) => { setSearchTerm(e.target.value); setView('items'); setSelectedCategory(null); }}
                                 placeholder="חפש פריט..."
-                                className="w-full pr-9 pl-3 py-1.5 border border-neutral-300 rounded-lg focus:ring-1 focus:ring-accent focus:border-transparent text-sm"
+                                className="w-full pr-9 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 shadow-sm"
                             />
                             {searchTerm && (
                                 <button
@@ -791,29 +734,19 @@ const EventPage: React.FC = () => {
                             menuItems={menuItems}
                             assignments={assignments}
                             onSelectCategory={handleCategoryClick}
-                        // No longer need to pass these parameters as they are checked elsewhere
+                            onAddItem={() => {
+                                if (canAddMoreItems) {
+                                    setModalState({ type: 'add-user-item' });
+                                } else {
+                                    toast.error(`הגעת למכסת ${MAX_USER_ITEMS} הפריטים שניתן להוסיף.`);
+                                }
+                            }}
+                            canAddMoreItems={canAddMoreItems}
+                            userCreatedItemsCount={userCreatedItemsCount}
+                            MAX_USER_ITEMS={MAX_USER_ITEMS}
                         />
                         <div className="max-w-4xl mx-auto px-4 mt-8">
-                            <div className="flex justify-center">
-                                {/* Conditional display: Show button only if items can be added */}
-                                {currentEvent?.details.allowUserItems && (
-                                    <button
-                                        onClick={() => {
-                                            if (canAddMoreItems) {
-                                                setModalState({ type: 'add-user-item' });
-                                            } else {
-                                                toast.error(`הגעת למכסת ${MAX_USER_ITEMS} הפריטים שניתן להוסיף.`);
-                                            }
-                                        }}
-                                        title={canAddMoreItems ? "הוסף פריט חדש לארוחה" : `הגעת למכסת ${MAX_USER_ITEMS} הפריטים`}
-                                        className="bg-success text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center"
-                                        disabled={!canAddMoreItems}
-                                    >
-                                        <Plus size={22} className="inline-block ml-2" />
-                                        הוסף פריט משלך ({userCreatedItemsCount}/{MAX_USER_ITEMS})
-                                    </button>
-                                )}
-                            </div>
+                            {/* Button removed as it is now inside CategorySelector */}
                         </div>
                     </>
                 ) : (

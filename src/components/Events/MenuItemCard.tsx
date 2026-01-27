@@ -124,15 +124,16 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                     <div key={myAss.id} className="flex justify-between items-center text-sm group">
                       <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <span className="font-bold text-gray-800">{myAss.quantity} יח'</span>
-                        {myAss.notes && <span className="text-xs text-gray-500 border-r border-gray-300 pr-2 mr-2">{myAss.notes}</span>}
+                        {myAss.notes && <span className="text-xs text-gray-600 border-r border-gray-300 pr-2 mr-2">{myAss.notes}</span>}
                       </div>
                       {isEventActive && (
                         <button
                           onClick={() => onCancel(myAss)}
-                          className="text-red-400 hover:text-red-600 p-1.5 rounded-full hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                          className="text-red-600 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
                           title="בטל שיבוץ זה"
+                          aria-label={`בטל שיבוץ של ${myAss.quantity} יחידות`}
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={18} />
                         </button>
                       )}
                     </div>
@@ -144,7 +145,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             {isEventActive && !isFull && (
               <button
                 onClick={onAssign}
-                className="w-full bg-orange-500 text-white py-2.5 text-sm rounded-xl hover:bg-orange-600 font-semibold shadow-sm hover:shadow transition-all active:scale-[0.98]"
+                className="w-full bg-orange-600 text-white py-3 text-sm rounded-xl hover:bg-orange-700 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                aria-label={hasMyAssignment ? 'הוסף עוד לפריט זה' : 'שבץ אותי לפריט זה'}
               >
                 {hasMyAssignment ? 'הוסף עוד' : 'שבץ אותי'}
               </button>
@@ -154,7 +156,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               <div className="text-center py-1">
                 <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full inline-flex items-center">
                   <span className="mr-1.5">הושלם</span>
-                  <span className="text-xs">✔️</span>
+                  <span className="text-xs" aria-hidden="true">✔️</span>
                 </span>
               </div>
             )}
@@ -167,16 +169,24 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                   <span className="font-semibold text-blue-700">השיבוץ שלי</span>
                   <span className="font-bold text-gray-900">{assignment.quantity}</span>
                 </div>
-                {assignment.notes && <p className="text-xs text-gray-600 bg-white p-2.5 rounded-lg border border-gray-100">הערה: {assignment.notes}</p>}
+                {assignment.notes && <p className="text-xs text-gray-700 bg-white p-2.5 rounded-lg border border-gray-100">הערה: {assignment.notes}</p>}
 
                 {isEventActive && (
                   <div className="flex space-x-3 rtl:space-x-reverse pt-1">
-                    <button onClick={onEdit} className="flex-1 text-xs bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 py-2 rounded-lg flex items-center justify-center transition-all shadow-sm hover:shadow">
-                      <Edit size={12} className="ml-1.5" />
+                    <button
+                      onClick={onEdit}
+                      className="flex-1 text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm hover:shadow focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
+                      aria-label="ערוך שיבוץ"
+                    >
+                      <Edit size={16} className="ml-1.5" />
                       ערוך
                     </button>
-                    <button onClick={() => onCancel(assignment)} className="flex-1 text-xs bg-white border border-red-100 text-red-600 hover:bg-red-50 py-2 rounded-lg flex items-center justify-center transition-all shadow-sm hover:shadow">
-                      <Trash2 size={12} className="ml-1.5" />
+                    <button
+                      onClick={() => onCancel(assignment)}
+                      className="flex-1 text-sm bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm hover:shadow focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
+                      aria-label={item.creatorId === assignment.userId ? 'מחק פריט' : 'בטל שיבוץ'}
+                    >
+                      <Trash2 size={16} className="ml-1.5" />
                       {item.creatorId === assignment.userId ? 'מחק פריט' : 'בטל'}
                     </button>
                   </div>
@@ -186,21 +196,22 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               <>
                 {!isSplittable && assignment ? (
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center text-sm p-2 bg-green-50/50 rounded-lg">
-                      <span className="font-semibold text-green-700 flex items-center">
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full ml-2"></div>
+                    <div className="flex justify-between items-center text-sm p-3 bg-green-50/80 border border-green-100 rounded-lg">
+                      <span className="font-semibold text-green-800 flex items-center">
+                        <div className="w-1.5 h-1.5 bg-green-600 rounded-full ml-2"></div>
                         שובץ ל: {assignment.userName}
                       </span>
-                      <span className="font-bold">{assignment.quantity}</span>
+                      <span className="font-bold text-gray-900">{assignment.quantity}</span>
                     </div>
-                    {assignment.notes && <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">הערה: {assignment.notes}</p>}
+                    {assignment.notes && <p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">הערה: {assignment.notes}</p>}
                   </div>
                 ) : (
                   isEventActive ? (
                     (!isFull || (isSplittable && !isFull)) ? (
                       <button
                         onClick={onAssign}
-                        className="w-full bg-orange-500 text-white py-2.5 text-sm rounded-xl hover:bg-orange-600 font-semibold shadow-sm hover:shadow transition-all active:scale-[0.98]"
+                        className="w-full bg-orange-600 text-white py-3 text-sm rounded-xl hover:bg-orange-700 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                        aria-label="שבץ אותי לפריט זה"
                       >
                         {isSplittable ? 'שבץ אותי (הוסף)' : 'שבץ אותי'}
                       </button>
@@ -208,12 +219,12 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                       <div className="text-center py-1">
                         <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full inline-flex items-center">
                           <span className="mr-1.5">הושלם</span>
-                          <span className="text-xs">✔️</span>
+                          <span className="text-xs" aria-hidden="true">✔️</span>
                         </span>
                       </div>
                     )
                   ) : (
-                    <p className="text-sm text-center text-gray-400 py-1">האירוע אינו פעיל</p>
+                    <p className="text-sm text-center text-gray-500 py-1">האירוע אינו פעיל</p>
                   )
                 )}
               </>

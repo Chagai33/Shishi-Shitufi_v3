@@ -2,14 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
-  height: 100%;
-  overflow-x: hidden;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+@layer base {
+  body {
+    @apply font-sans font-light antialiased bg-background text-text;
+  }
 }
 
-body {
-  @apply bg-background text-text;
+html,
+body,
+#root {
+  height: 100%;
+  overflow-x: hidden;
 }
 
 /* Glassmorphism Card Style for Category Selector */
@@ -45,18 +48,23 @@ body {
 .glow-main {
   background-image: radial-gradient(circle at 50% 0%, #009688, transparent 70%);
 }
+
 .glow-starter {
   background-image: radial-gradient(circle at 50% 0%, #3498db, transparent 70%);
 }
+
 .glow-dessert {
   background-image: radial-gradient(circle at 50% 0%, #9b59b6, transparent 70%);
 }
+
 .glow-drink {
   background-image: radial-gradient(circle at 50% 0%, #2ecc71, transparent 70%);
 }
+
 .glow-equipment {
   background-image: radial-gradient(circle at 50% 0%, #2ecc71, transparent 70%);
 }
+
 .glow-other {
   background-image: radial-gradient(circle at 50% 0%, #95a5a6, transparent 70%);
 }
@@ -69,18 +77,25 @@ body {
 .prose {
   @apply max-w-none text-neutral-700;
 }
+
 .prose h1 {
   @apply text-2xl font-bold text-neutral-900 mb-4;
 }
+
 .prose h2 {
   @apply text-xl font-semibold text-neutral-800 mt-6 mb-3 border-b pb-2;
 }
-.prose p, .prose ul, .prose li {
+
+.prose p,
+.prose ul,
+.prose li {
   @apply text-base leading-relaxed;
 }
+
 .prose ul {
   @apply list-disc pl-5 space-y-2;
 }
+
 .prose a {
   @apply text-primary hover:underline;
 }

@@ -39,6 +39,7 @@ export interface MenuItem {
   creatorId: string;
   creatorName: string;
   createdAt: number;
+  isSplittable?: boolean; // If true, multiple users can sign up for partial quantities
   // Assignment fields are stored directly on the item for easy access
   assignedTo?: string;
   assignedToName?: string;

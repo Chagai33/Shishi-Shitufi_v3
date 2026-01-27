@@ -45,18 +45,18 @@ export function EventsList() {
 
   const eventMenuItems = useMemo(() => {
     if (!activeEvent) return [];
-    
+
     return menuItems.filter(item => {
       if (item.eventId !== activeEvent.id) return false;
-      
-      if (!isAdmin && item.category === 'other' && 
-          (item.name.includes('שולחן') || item.name.includes('כיסא') || 
-           item.name.includes('צלחת') || item.name.includes('כוס') || 
-           item.name.includes('סכו"ם') || item.name.includes('מגש') ||
-           item.name.includes('מפית') || item.name.includes('מפה'))) {
+
+      if (!isAdmin && item.category === 'other' &&
+        (item.name.includes('שולחן') || item.name.includes('כיסא') ||
+          item.name.includes('צלחת') || item.name.includes('כוס') ||
+          item.name.includes('סכו"ם') || item.name.includes('מגש') ||
+          item.name.includes('מפית') || item.name.includes('מפה'))) {
         return false;
       }
-      
+
       return true;
     });
   }, [menuItems, activeEvent, isAdmin]);
@@ -69,7 +69,7 @@ export function EventsList() {
   const MAX_USER_ITEMS = 3;
   const canAddMoreItems = userCreatedItemsCount < MAX_USER_ITEMS;
 
-  const eventAssignments = useMemo(() => 
+  const eventAssignments = useMemo(() =>
     activeEvent ? assignments.filter(assignment => assignment.eventId === activeEvent.id) : [],
     [assignments, activeEvent]
   );
@@ -135,15 +135,15 @@ export function EventsList() {
       setEditingAssignment({ item, assignment });
     }
   };
-  
+
   if (showBulkManager) {
     // *** The fix is here ***
     // Passing list of all events to component
-    return <BulkItemsManager 
-              onBack={() => setShowBulkManager(false)} 
-              allEvents={events} 
-              event={activeEvent || undefined} 
-           />;
+    return <BulkItemsManager
+      onBack={() => setShowBulkManager(false)}
+      allEvents={events}
+      event={activeEvent || undefined}
+    />;
   }
 
   return (
@@ -179,7 +179,7 @@ export function EventsList() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               <div className="flex-grow">
@@ -211,11 +211,10 @@ export function EventsList() {
                     setShowMyAssignments(!showMyAssignments);
                     setSelectedCategory(null);
                   }}
-                  className={`w-full px-4 py-2 font-semibold rounded-lg shadow-sm transition-colors text-sm ${
-                    showMyAssignments
+                  className={`w-full px-4 py-2 font-semibold rounded-lg shadow-sm transition-colors text-sm ${showMyAssignments
                       ? 'bg-accent text-white'
                       : 'bg-primary text-white hover:bg-primary-dark'
-                  }`}
+                    }`}
                 >
                   השיבוצים שלי
                 </button>
@@ -267,7 +266,17 @@ export function EventsList() {
                         <h3 className="text-md font-semibold text-text mb-3">פריטים פנויים</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {itemsToRender.available.map((item) => (
-                            <MenuItemCard key={item.id} item={item} canAssign={!!canAssign} onAssign={() => handleAssignItem(item)} onEdit={() => handleEditAssignment(item)} onAssignmentCancelled={() => { setSelectedCategory(null); setShowMyAssignments(false); }} />
+                            <MenuItemCard
+                              key={item.id}
+                              item={item}
+                              assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
+                              assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
+                              isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
+                              isEventActive={!!canAssign}
+                              onAssign={() => handleAssignItem(item)}
+                              onEdit={() => handleEditAssignment(item)}
+                              onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
+                            />
                           ))}
                         </div>
                       </div>
@@ -278,7 +287,17 @@ export function EventsList() {
                         <h3 className="text-md font-semibold text-text mb-3 border-t pt-4 mt-4">פריטים ששובצו</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {itemsToRender.assigned.map((item) => (
-                            <MenuItemCard key={item.id} item={item} canAssign={!!canAssign} onAssign={() => handleAssignItem(item)} onEdit={() => handleEditAssignment(item)} assignedTo={eventAssignments.find(a => a.menuItemId === item.id)?.userId} allUsers={users} onAssignmentCancelled={() => { setSelectedCategory(null); setShowMyAssignments(false); }} />
+                            <MenuItemCard
+                              key={item.id}
+                              item={item}
+                              assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
+                              assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
+                              isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
+                              isEventActive={!!canAssign}
+                              onAssign={() => handleAssignItem(item)}
+                              onEdit={() => handleEditAssignment(item)}
+                              onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
+                            />
                           ))}
                         </div>
                       </div>
@@ -293,7 +312,7 @@ export function EventsList() {
 
       {selectedMenuItem && activeEvent && (<AssignmentModal menuItem={selectedMenuItem} event={activeEvent} onClose={() => setSelectedMenuItem(null)} />)}
       {editingAssignment && activeEvent && (<EditAssignmentModal menuItem={editingAssignment.item} event={activeEvent} assignment={editingAssignment.assignment} onClose={() => setEditingAssignment(null)} />)}
-      
+
       {showUserItemForm && activeEvent && (<UserMenuItemForm event={activeEvent} onClose={() => setShowUserItemForm(false)} availableCategories={availableCategories} />)}
     </div>
   );

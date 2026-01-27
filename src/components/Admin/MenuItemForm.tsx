@@ -11,13 +11,14 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
   const { user: authUser } = useAuth(); // 2. Getting the authenticated user
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-  
+
   const [formData, setFormData] = useState({
     name: item?.name || '',
     category: item?.category || 'main' as MenuCategory,
     quantity: item?.quantity || 1,
     notes: item?.notes || '',
-    isRequired: item?.isRequired || false
+    isRequired: item?.isRequired || false,
+    isSplittable: item?.isSplittable || false
   });
 
   const categoryOptions = [
@@ -49,7 +50,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error('יש לתקן את השגיאות בטופס');
       return;
@@ -76,7 +77,8 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
         ...formData,
         name: formData.name.trim(),
         notes: formData.notes.trim() || undefined,
-        eventId: event.id
+        eventId: event.id,
+        isSplittable: formData.quantity > 1 ? formData.isSplittable : false
       };
 
       if (item) {
@@ -96,7 +98,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
           creatorId: authUser?.uid || 'admin',
           creatorName: authUser?.displayName || 'Admin'
         };
-        
+
         const itemId = await FirebaseService.createMenuItem(newItem);
         if (itemId) {
           toast.success('הפריט נוסף בהצלחה!');
@@ -114,7 +116,13 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
   };
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updates = { [field]: value };
+      if (field === 'quantity' && (typeof value === 'number' && value <= 1)) {
+        Object.assign(updates, { isSplittable: false });
+      }
+      return { ...prev, ...updates };
+    });
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -171,6 +179,16 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
             </label>
             <p className="text-xs text-gray-500 mt-1">פריטים חובה מסומנים באופן מיוחד למשתתפים</p>
           </div>
+
+          {formData.quantity > 1 && (
+            <div className="mb-6">
+              <label className="flex items-center">
+                <input type="checkbox" checked={formData.isSplittable} onChange={(e) => handleInputChange('isSplittable', e.target.checked)} className="rounded border-gray-300 text-green-600 focus:ring-green-500" disabled={isSubmitting} />
+                <span className="mr-2 text-sm text-gray-700">אפשר חלוקה בין משתתפים</span>
+              </label>
+              <p className="text-xs text-gray-500 mt-1">אם מסומן, מספר אנשים יוכלו להירשם לפריט זה במשותף (למשל: כל אחד יביא 2 אבטיחים מתוך 4)</p>
+            </div>
+          )}
 
           <div className="flex space-x-3 rtl:space-x-reverse">
             <button type="submit" disabled={isSubmitting} className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">

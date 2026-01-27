@@ -27,11 +27,10 @@ interface EditableItem extends MenuItem {
 const FilterButton = ({ label, isActive, onClick }: { label: string, isActive: boolean, onClick: () => void }) => (
   <button
     onClick={onClick}
-    className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
-      isActive
-        ? 'bg-blue-600 text-white shadow'
-        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-    }`}
+    className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${isActive
+      ? 'bg-blue-600 text-white shadow'
+      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+      }`}
   >
     {label}
   </button>
@@ -50,7 +49,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     // Listen to each event for real-time updates
     allEvents.forEach(eventData => {
       const eventRef = ref(database, `events/${eventData.id}`);
-      
+
       const unsubscribe = onValue(eventRef, (snapshot) => {
         if (snapshot.exists()) {
           const updatedEventData = snapshot.val();
@@ -58,14 +57,14 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             id: eventData.id,
             ...updatedEventData
           };
-          
+
           // Update the specific event in realtimeEvents
-          setRealtimeEvents(prev => 
+          setRealtimeEvents(prev =>
             prev.map(e => e.id === eventData.id ? fullEvent : e)
           );
         }
       });
-      
+
       unsubscribers.push(unsubscribe);
     });
 
@@ -78,9 +77,9 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     if (!realtimeEvents) return [];
     return realtimeEvents.flatMap(e =>
       e.menuItems ? Object.entries(e.menuItems).map(([id, itemData]) => ({
-          ...(itemData as Omit<MenuItem, 'id' | 'eventId'>),
-          id,
-          eventId: e.id,
+        ...(itemData as Omit<MenuItem, 'id' | 'eventId'>),
+        id,
+        eventId: e.id,
       })) : []
     );
   }, [realtimeEvents]);
@@ -115,7 +114,8 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     category: 'main' as MenuCategory,
     quantity: 1,
     notes: '',
-    isRequired: false
+    isRequired: false,
+    isSplittable: false
   });
 
   useEffect(() => {
@@ -130,10 +130,10 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     { value: 'dessert', label: 'קינוח' }, { value: 'drink', label: 'שתייה' },
     { value: 'other', label: 'אחר' }
   ];
-  
+
   const assignedOptions = [
-      { value: 'all', label: 'כל הפריטים'}, { value: 'assigned', label: 'משובצים'},
-      { value: 'unassigned', label: 'לא משובצים'},
+    { value: 'all', label: 'כל הפריטים' }, { value: 'assigned', label: 'משובצים' },
+    { value: 'unassigned', label: 'לא משובצים' },
   ];
 
   const filteredItems = useMemo(() => {
@@ -159,16 +159,16 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   const categorizedItems = useMemo(() => {
     const categories = ['starter', 'main', 'dessert', 'drink', 'other'];
     const grouped: { [key: string]: EditableItem[] } = {};
-    
+
     categories.forEach(category => {
       grouped[category] = filteredItems.filter(item => item.category === category);
     });
-    
+
     return grouped;
   }, [filteredItems]);
 
   const getCategoryStats = (categoryItems: EditableItem[]) => {
-    const assigned = categoryItems.filter(item => 
+    const assigned = categoryItems.filter(item =>
       (allAssignments || []).some(a => a.menuItemId === item.id)
     ).length;
     return { total: categoryItems.length, assigned };
@@ -180,23 +180,23 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   const toggleSelectAll = () => { const allSelected = (filteredItems || []).every(item => item.isSelected); const filteredIds = (filteredItems || []).map(item => item.id); setEditableItems(prev => (prev || []).map(item => filteredIds.includes(item.id) ? { ...item, isSelected: !allSelected } : item)); };
   const startEditing = (itemId: string) => { setEditableItems(prev => (prev || []).map(item => item.id === itemId ? { ...item, isEditing: true } : item)); };
   const cancelEditing = (itemId: string) => { setEditableItems(prev => (prev || []).map(item => item.id === itemId ? { ...item.originalData, isEditing: false, isSelected: item.isSelected, hasChanges: false, originalData: item.originalData } : item)); };
-  const updateItemField = (itemId: string, field: keyof MenuItem, value: any) => { 
-    setEditableItems(prev => (prev || []).map(item => { 
-      if (item.id === itemId) { 
+  const updateItemField = (itemId: string, field: keyof MenuItem, value: any) => {
+    setEditableItems(prev => (prev || []).map(item => {
+      if (item.id === itemId) {
         // Convert undefined to null for Firebase compatibility
         const sanitizedValue = value === undefined || value === '' ? null : value;
-        const updatedItem = { ...item, [field]: sanitizedValue }; 
-        const originalForComparison = { ...item.originalData }; 
-        const currentForComparison = { ...updatedItem }; 
-        delete (currentForComparison as any).isEditing; 
-        delete (currentForComparison as any).isSelected; 
-        delete (currentForComparison as any).hasChanges; 
-        delete (currentForComparison as any).originalData; 
-        const hasChanges = JSON.stringify(originalForComparison) !== JSON.stringify(currentForComparison); 
-        return { ...updatedItem, hasChanges }; 
-      } 
-      return item; 
-    })); 
+        const updatedItem = { ...item, [field]: sanitizedValue };
+        const originalForComparison = { ...item.originalData };
+        const currentForComparison = { ...updatedItem };
+        delete (currentForComparison as any).isEditing;
+        delete (currentForComparison as any).isSelected;
+        delete (currentForComparison as any).hasChanges;
+        delete (currentForComparison as any).originalData;
+        const hasChanges = JSON.stringify(originalForComparison) !== JSON.stringify(currentForComparison);
+        return { ...updatedItem, hasChanges };
+      }
+      return item;
+    }));
   };
 
   // ****** FIX START ******
@@ -207,19 +207,19 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     setIsLoading(true);
     try {
       // Sanitize updates to convert undefined/empty strings to null
-      const updates = { 
-        name: item.name, 
-        category: item.category, 
-        quantity: item.quantity, 
-        notes: item.notes === undefined || item.notes === '' ? null : item.notes, 
-        isRequired: item.isRequired 
+      const updates = {
+        name: item.name,
+        category: item.category,
+        quantity: item.quantity,
+        notes: item.notes === undefined || item.notes === '' ? null : item.notes,
+        isRequired: item.isRequired
       };
       // Fix: Pass eventId as first parameter for Multi-Tenant model
       await FirebaseService.updateMenuItem(item.eventId, item.id, updates);
-      
+
       // Update local store
       updateMenuItem(itemId, updates);
-      setEditableItems(prev => prev.map(i => 
+      setEditableItems(prev => prev.map(i =>
         i.id === itemId ? { ...i, isEditing: false, hasChanges: false, originalData: { ...i, isEditing: false, hasChanges: false, isSelected: i.isSelected, originalData: i.originalData } } : i
       ));
       toast.success('הפריט עודכן בהצלחה');
@@ -236,23 +236,23 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   const saveAllChanges = async () => {
     const changedItems = editableItems.filter(item => item.hasChanges);
     if (changedItems.length === 0) return;
-    
+
     setIsLoading(true);
     let successCount = 0;
     let errorCount = 0;
-    
+
     try {
-    for (const item of changedItems) {
+      for (const item of changedItems) {
         try {
           // Sanitize updates to convert undefined/empty strings to null
-          const updates = { 
-            name: item.name, 
-            category: item.category, 
-            quantity: item.quantity, 
-            notes: item.notes === undefined || item.notes === '' ? null : item.notes, 
-            isRequired: item.isRequired 
+          const updates = {
+            name: item.name,
+            category: item.category,
+            quantity: item.quantity,
+            notes: item.notes === undefined || item.notes === '' ? null : item.notes,
+            isRequired: item.isRequired
           };
-          
+
           await FirebaseService.updateMenuItem(item.eventId, item.id, updates);
           updateMenuItem(item.id, updates);
           successCount++;
@@ -261,7 +261,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           errorCount++;
         }
       }
-      
+
       if (successCount > 0) {
         setEditableItems(prev => prev.map(item => {
           if (changedItems.some(changed => changed.id === item.id)) {
@@ -281,7 +281,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       setIsLoading(false);
     }
   };
-  
+
   // ****** FIX START ******
   const executeBulkAction = async () => {
     const selectedItems = filteredItems.filter(item => item.isSelected);
@@ -289,7 +289,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       toast.error('יש לבחור פריטים לפעולה');
       return;
     }
-    
+
     setIsLoading(true);
     let successCount = 0;
     let errorCount = 0;
@@ -332,13 +332,13 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             for (const assignment of itemAssignments) {
               try {
                 await FirebaseService.cancelAssignment(item.eventId, assignment.id, item.id);
-                
+
                 // Update local store - remove assignment
                 deleteAssignment(assignment.id);
-                
+
                 // Update the item in local state to show as unassigned
-                setEditableItems(prev => prev.map(editItem => 
-                  editItem.id === item.id 
+                setEditableItems(prev => prev.map(editItem =>
+                  editItem.id === item.id
                     ? { ...editItem, assignedTo: undefined, assignedToName: undefined, assignedAt: undefined }
                     : editItem
                 ));
@@ -364,7 +364,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             }
           }
           break;
-        
+
         case 'required':
           for (const item of selectedItems) {
             try {
@@ -397,14 +397,14 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     } finally {
       setIsLoading(false);
       setBulkAction(null);
-      setEditableItems(prev => prev.map(item => ({...item, isSelected: false})));
+      setEditableItems(prev => prev.map(item => ({ ...item, isSelected: false })));
     }
   };
   // ****** FIX END ******
 
-  const getEventName = (eventId: string) => { 
-    const event = (realtimeEvents || []).find(e => e.id === eventId); 
-    return event ? event.details.title : 'אירוע לא ידוע'; 
+  const getEventName = (eventId: string) => {
+    const event = (realtimeEvents || []).find(e => e.id === eventId);
+    return event ? event.details.title : 'אירוע לא ידוע';
   };
   const getItemAssignment = (itemId: string) => { return (allAssignments || []).find(a => a.menuItemId === itemId); };
 
@@ -440,8 +440,8 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     }
 
     // Check for duplicates
-    const existingItem = editableItems.find(item => 
-      item.name.toLowerCase().trim() === newItem.name.toLowerCase().trim() && 
+    const existingItem = editableItems.find(item =>
+      item.name.toLowerCase().trim() === newItem.name.toLowerCase().trim() &&
       item.eventId === event.id
     );
 
@@ -459,9 +459,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         quantity: newItem.quantity,
         notes: newItem.notes.trim() || undefined,
         isRequired: newItem.isRequired,
+        isSplittable: newItem.isSplittable,
         createdAt: Date.now(),
         creatorId: 'admin',
-        creatorName: 'Admin'
+        creatorName: 'Admin',
+        eventId: event.id
       };
 
       const itemId = await FirebaseService.addMenuItem(event.id, itemData);
@@ -473,7 +475,8 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           category: 'main',
           quantity: 1,
           notes: '',
-          isRequired: false
+          isRequired: false,
+          isSplittable: false
         });
       }
     } catch (error) {
@@ -522,7 +525,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       };
 
       const listId = await FirebaseService.createPresetList(listData);
-      
+
       if (listId) {
         toast.success(`רשימה "${listName.trim()}" נשמרה בהצלחה עם ${presetItems.length} פריטים`);
         // Cancel item selection
@@ -553,9 +556,9 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">עריכת פריטים</h1>
             <p className="text-gray-600">{event ? `אירוע: ${event.details.title}` : 'כלל האירועים'}</p>
-            <a 
-              href="https://www.linkedin.com/in/chagai-yechiel/" 
-              target="_blank" 
+            <a
+              href="https://www.linkedin.com/in/chagai-yechiel/"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -570,27 +573,26 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
               <span className="text-sm sm:text-base">שמור הכל ({changedCount})</span>
             </button>
           )}
-          <button 
-            onClick={toggleEditAll} 
-            className={`px-3 sm:px-4 py-2 rounded-lg flex items-center space-x-2 rtl:space-x-reverse transition-colors text-sm sm:text-base ${
-              editAllMode 
-                ? 'bg-red-500 hover:bg-red-600 text-white' 
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            }`}
+          <button
+            onClick={toggleEditAll}
+            className={`px-3 sm:px-4 py-2 rounded-lg flex items-center space-x-2 rtl:space-x-reverse transition-colors text-sm sm:text-base ${editAllMode
+              ? 'bg-red-500 hover:bg-red-600 text-white'
+              : 'bg-blue-500 hover:bg-blue-600 text-white'
+              }`}
           >
             <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>{editAllMode ? 'בטל עריכה' : 'ערוך הכל'}</span>
           </button>
-          <button 
-            onClick={() => setShowAddItemForm(true)} 
+          <button
+            onClick={() => setShowAddItemForm(true)}
             className="bg-green-500 hover:bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center space-x-2 rtl:space-x-reverse transition-colors text-sm sm:text-base"
           >
             <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
             <span>הוסף פריט</span>
           </button>
           {event && (
-            <button 
-              onClick={() => setShowImportModal(true)} 
+            <button
+              onClick={() => setShowImportModal(true)}
               className="bg-purple-500 hover:bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center space-x-2 rtl:space-x-reverse transition-colors text-sm sm:text-base"
             >
               <Upload className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -599,56 +601,56 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           )}
         </div>
       </div>
-  
+
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="p-3 space-y-2">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <input type="text" placeholder="חפש פריטים..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pr-10 pl-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" />
-              </div>
-              
-              {!event && (
-                <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <label className="text-xs font-medium text-gray-700 whitespace-nowrap">אירוע:</label>
-                    <div className="flex flex-wrap gap-1">
-                        <FilterButton label="כל האירועים" isActive={filterEvent === 'all'} onClick={() => setFilterEvent('all')} />
-                        {(realtimeEvents || []).map(e => (
-                            <FilterButton key={e.id} label={e.details.title} isActive={filterEvent === e.id} onClick={() => setFilterEvent(e.id)} />
-                        ))}
-                    </div>
-                </div>
-              )}
-
-              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <label className="text-xs font-medium text-gray-700 whitespace-nowrap">קטגוריה:</label>
-                  <div className="flex flex-wrap gap-1">
-                      <FilterButton label="הכל" isActive={filterCategory === 'all'} onClick={() => setFilterCategory('all')} />
-                      {categoryOptions.map(option => (
-                          <FilterButton key={option.value} label={option.label} isActive={filterCategory === option.value} onClick={() => setFilterCategory(option.value)} />
-                      ))}
-                  </div>
-              </div>
-              
-              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <label className="text-xs font-medium text-gray-700 whitespace-nowrap">שיבוץ:</label>
-                  <div className="flex flex-wrap gap-1">
-                      {assignedOptions.map(option => (
-                          <FilterButton key={option.value} label={option.label} isActive={filterAssigned === option.value} onClick={() => setFilterAssigned(option.value)} />
-                      ))}
-                  </div>
-              </div>
-              <div className="flex items-center space-x-2 rtl:space-x-reverse">
-                  <label className="text-xs font-medium text-gray-700 whitespace-nowrap">נוצר ע"י:</label>
-                  <div className="flex flex-wrap gap-1">
-                      <FilterButton label="הכל" isActive={filterAddedBy === 'all'} onClick={() => setFilterAddedBy('all')} />
-                      <FilterButton label="פריטי מנהלים" isActive={filterAddedBy === 'admin'} onClick={() => setFilterAddedBy('admin')} />
-                      <FilterButton label="פריטי משתמשים" isActive={filterAddedBy === 'user'} onClick={() => setFilterAddedBy('user')} />
-                  </div>
-              </div>
+        <div className="p-3 space-y-2">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input type="text" placeholder="חפש פריטים..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pr-10 pl-3 py-1.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm" />
           </div>
+
+          {!event && (
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <label className="text-xs font-medium text-gray-700 whitespace-nowrap">אירוע:</label>
+              <div className="flex flex-wrap gap-1">
+                <FilterButton label="כל האירועים" isActive={filterEvent === 'all'} onClick={() => setFilterEvent('all')} />
+                {(realtimeEvents || []).map(e => (
+                  <FilterButton key={e.id} label={e.details.title} isActive={filterEvent === e.id} onClick={() => setFilterEvent(e.id)} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">קטגוריה:</label>
+            <div className="flex flex-wrap gap-1">
+              <FilterButton label="הכל" isActive={filterCategory === 'all'} onClick={() => setFilterCategory('all')} />
+              {categoryOptions.map(option => (
+                <FilterButton key={option.value} label={option.label} isActive={filterCategory === option.value} onClick={() => setFilterCategory(option.value)} />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">שיבוץ:</label>
+            <div className="flex flex-wrap gap-1">
+              {assignedOptions.map(option => (
+                <FilterButton key={option.value} label={option.label} isActive={filterAssigned === option.value} onClick={() => setFilterAssigned(option.value)} />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <label className="text-xs font-medium text-gray-700 whitespace-nowrap">נוצר ע"י:</label>
+            <div className="flex flex-wrap gap-1">
+              <FilterButton label="הכל" isActive={filterAddedBy === 'all'} onClick={() => setFilterAddedBy('all')} />
+              <FilterButton label="פריטי מנהלים" isActive={filterAddedBy === 'admin'} onClick={() => setFilterAddedBy('admin')} />
+              <FilterButton label="פריטי משתמשים" isActive={filterAddedBy === 'user'} onClick={() => setFilterAddedBy('user')} />
+            </div>
+          </div>
+        </div>
       </div>
-      
+
       {/* Bulk Actions */}
       {selectedCount > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -678,7 +680,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           </div>
         </div>
       )}
-  
+
       {/* Table */}
       {/* Categorized Items View */}
       <div className="space-y-6">
@@ -692,10 +694,10 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           ['starter', 'main', 'dessert', 'drink', 'other'].map(category => {
             const categoryItems = categorizedItems[category] || [];
             if (categoryItems.length === 0) return null;
-            
+
             const stats = getCategoryStats(categoryItems);
             const categoryLabel = categoryOptions.find(opt => opt.value === category)?.label || category;
-            
+
             return (
               <div key={category} className="bg-white rounded-lg shadow-md overflow-hidden">
                 {/* Category Header */}
@@ -710,7 +712,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                         {stats.assigned} שובצו
                       </span>
                       <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
+                        <div
                           className="bg-green-500 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${stats.total > 0 ? (stats.assigned / stats.total) * 100 : 0}%` }}
                         />
@@ -718,20 +720,20 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Items Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-100">
                       <tr>
                         <th className="px-4 py-2 text-right">
-                          <button 
+                          <button
                             onClick={() => {
                               const allCategorySelected = categoryItems.every(item => item.isSelected);
                               const categoryIds = categoryItems.map(item => item.id);
-                              setEditableItems(prev => prev.map(item => 
-                                categoryIds.includes(item.id) 
-                                  ? { ...item, isSelected: !allCategorySelected } 
+                              setEditableItems(prev => prev.map(item =>
+                                categoryIds.includes(item.id)
+                                  ? { ...item, isSelected: !allCategorySelected }
                                   : item
                               ));
                             }}
@@ -752,6 +754,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">כמות</th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">הערות</th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">חובה</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">ניתן לחלוקה</th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">שיבוץ</th>
                         <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">פעולות</th>
                       </tr>
@@ -772,11 +775,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                             </td>
                             <td className="px-4 py-3">
                               {item.isEditing ? (
-                                <input 
-                                  type="text" 
-                                  value={item.name} 
-                                  onChange={(e) => updateItemField(item.id, 'name', e.target.value)} 
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm" 
+                                <input
+                                  type="text"
+                                  value={item.name}
+                                  onChange={(e) => updateItemField(item.id, 'name', e.target.value)}
+                                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                                 />
                               ) : (
                                 <span className="font-medium text-gray-900">{item.name}</span>
@@ -789,13 +792,13 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                             )}
                             <td className="px-4 py-3">
                               {item.isEditing ? (
-                                <input 
-                                  type="number" 
-                                  min="1" 
-                                  max="100" 
-                                  value={item.quantity} 
-                                  onChange={(e) => updateItemField(item.id, 'quantity', parseInt(e.target.value) || 1)} 
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm" 
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="100"
+                                  value={item.quantity}
+                                  onChange={(e) => updateItemField(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                                 />
                               ) : (
                                 <span className="text-sm text-gray-600">{item.quantity}</span>
@@ -803,11 +806,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                             </td>
                             <td className="px-4 py-3">
                               {item.isEditing ? (
-                                <input 
-                                  type="text" 
-                                  value={item.notes || ''} 
-                                  onChange={(e) => updateItemField(item.id, 'notes', e.target.value || undefined)} 
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm" 
+                                <input
+                                  type="text"
+                                  value={item.notes || ''}
+                                  onChange={(e) => updateItemField(item.id, 'notes', e.target.value || undefined)}
+                                  className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                                 />
                               ) : (
                                 <span className="text-sm text-gray-600">{item.notes || '-'}</span>
@@ -815,15 +818,29 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                             </td>
                             <td className="px-4 py-3">
                               {item.isEditing ? (
-                                <input 
-                                  type="checkbox" 
-                                  checked={item.isRequired} 
-                                  onChange={(e) => updateItemField(item.id, 'isRequired', e.target.checked)} 
-                                  className="rounded border-gray-300 text-red-600 focus:ring-red-500" 
+                                <input
+                                  type="checkbox"
+                                  checked={item.isRequired}
+                                  onChange={(e) => updateItemField(item.id, 'isRequired', e.target.checked)}
+                                  className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                                 />
                               ) : (
                                 <span className={`px-2 py-1 rounded-full text-xs ${item.isRequired ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
                                   {item.isRequired ? 'חובה' : 'רגיל'}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              {item.isEditing ? (
+                                <input
+                                  type="checkbox"
+                                  checked={item.isSplittable}
+                                  onChange={(e) => updateItemField(item.id, 'isSplittable', e.target.checked)}
+                                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                />
+                              ) : (
+                                <span className={`px-2 py-1 rounded-full text-xs ${item.isSplittable ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                  {item.isSplittable ? 'כן' : 'לא'}
                                 </span>
                               )}
                             </td>
@@ -841,26 +858,26 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                               <div className="flex items-center space-x-2 rtl:space-x-reverse">
                                 {item.isEditing ? (
                                   <>
-                                    <button 
-                                      onClick={() => saveItem(item.id)} 
-                                      disabled={!item.hasChanges || isLoading} 
-                                      className="p-1 text-green-600 hover:text-green-700 disabled:text-gray-400" 
+                                    <button
+                                      onClick={() => saveItem(item.id)}
+                                      disabled={!item.hasChanges || isLoading}
+                                      className="p-1 text-green-600 hover:text-green-700 disabled:text-gray-400"
                                       title="שמור"
                                     >
                                       <Save className="h-4 w-4" />
                                     </button>
-                                    <button 
-                                      onClick={() => cancelEditing(item.id)} 
-                                      className="p-1 text-gray-600 hover:text-gray-700" 
+                                    <button
+                                      onClick={() => cancelEditing(item.id)}
+                                      className="p-1 text-gray-600 hover:text-gray-700"
                                       title="ביטול"
                                     >
                                       <X className="h-4 w-4" />
                                     </button>
                                   </>
                                 ) : (
-                                  <button 
-                                    onClick={() => startEditing(item.id)} 
-                                    className="p-1 text-blue-600 hover:text-blue-700" 
+                                  <button
+                                    onClick={() => startEditing(item.id)}
+                                    className="p-1 text-blue-600 hover:text-blue-700"
                                     title="ערוך"
                                   >
                                     <Edit className="h-4 w-4" />
@@ -933,7 +950,14 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                       min="1"
                       max="100"
                       value={newItem.quantity}
-                      onChange={(e) => setNewItem(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1;
+                        setNewItem(prev => ({
+                          ...prev,
+                          quantity: val,
+                          isSplittable: val <= 1 ? false : prev.isSplittable
+                        }));
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     />
                   </div>
@@ -949,15 +973,28 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                   />
                 </div>
                 <div>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={newItem.isRequired}
-                      onChange={(e) => setNewItem(prev => ({ ...prev, isRequired: e.target.checked }))}
-                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
-                    />
-                    <span className="mr-2 text-sm text-gray-700">פריט חובה</span>
-                  </label>
+                  <div className="flex space-x-4 rtl:space-x-reverse">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={newItem.isRequired}
+                        onChange={(e) => setNewItem(prev => ({ ...prev, isRequired: e.target.checked }))}
+                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="mr-2 text-sm text-gray-700">פריט חובה</span>
+                    </label>
+                    {newItem.quantity > 1 && (
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={newItem.isSplittable}
+                          onChange={(e) => setNewItem(prev => ({ ...prev, isSplittable: e.target.checked }))}
+                          className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                        <span className="mr-2 text-sm text-gray-700">ניתן לחלוקה</span>
+                      </label>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex space-x-3 rtl:space-x-reverse mt-6">

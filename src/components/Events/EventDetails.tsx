@@ -30,12 +30,12 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const eventMenuItems = useMemo(() => 
+  const eventMenuItems = useMemo(() =>
     menuItems.filter(item => item.eventId === event.id),
     [menuItems, event.id]
   );
 
-  const eventAssignments = useMemo(() => 
+  const eventAssignments = useMemo(() =>
     assignments.filter(assignment => assignment.eventId === event.id),
     [assignments, event.id]
   );
@@ -71,15 +71,15 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
 
   const categoryNames = {
     starter: 'מנות ראשונות',
-    main: 'מנות עיקריות', 
+    main: 'מנות עיקריות',
     dessert: 'קינוחים',
     drink: 'שתייה',
     equipment: 'ציוד כללי',
     other: 'אחר'
   };
 
-  const filteredItems = activeCategory === 'all' 
-    ? eventMenuItems 
+  const filteredItems = activeCategory === 'all'
+    ? eventMenuItems
     : categorizedItems[activeCategory as keyof typeof categorizedItems] || [];
 
   const isPast = isEventPast(event.date, event.time);
@@ -159,16 +159,16 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
           )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="flex items-center text-gray-600"><Calendar className="h-5 w-5 ml-3 text-orange-500" /><span>{formatDate(event.date)}</span></div>
-            <div className="flex items-center text-gray-600"><Clock className="h-5 w-5 ml-3 text-orange-500" /><span>{formatTime(event.time)}</span></div>
-            <div className="flex items-center text-gray-600"><MapPin className="h-5 w-5 ml-3 text-orange-500" /><span>{event.location}</span></div>
-            <div className="flex items-center text-gray-600"><Users className="h-5 w-5 ml-3 text-orange-500" /><span>מארח: {event.hostName}</span></div>
+          <div className="flex items-center text-gray-600"><Calendar className="h-5 w-5 ml-3 text-orange-500" /><span>{formatDate(event.date)}</span></div>
+          <div className="flex items-center text-gray-600"><Clock className="h-5 w-5 ml-3 text-orange-500" /><span>{formatTime(event.time)}</span></div>
+          <div className="flex items-center text-gray-600"><MapPin className="h-5 w-5 ml-3 text-orange-500" /><span>{event.location}</span></div>
+          <div className="flex items-center text-gray-600"><Users className="h-5 w-5 ml-3 text-orange-500" /><span>מארח: {event.hostName}</span></div>
         </div>
         {event.description && (<div className="border-t pt-4"><p className="text-gray-700">{event.description}</p></div>)}
       </div>
 
       {!dataLoaded && (<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"><div className="flex items-center justify-between"><div className="flex items-center"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div><span className="text-blue-700 text-sm">טוען נתונים מהשרת ומסנכרן...</span></div><button onClick={handleForceRefresh} disabled={isRefreshing} className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm transition-colors disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /><span>רענן נתונים</span></button></div></div>)}
-      
+
       <div className="bg-white rounded-xl shadow-md p-4 mb-6">
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setActiveCategory('all')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeCategory === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>הכל ({eventMenuItems.length})</button>
@@ -178,43 +178,55 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
 
       <div className="bg-white rounded-xl shadow-md p-6">
         <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-                <ChefHat className="h-5 w-5 ml-3 text-orange-500" />
-                <h2 className="text-lg font-semibold text-gray-900">פריטים לשיבוץ{filteredItems.length > 0 && (<span className="text-gray-500 text-sm mr-2">({filteredItems.filter(item => item.assignedTo).length}/{filteredItems.length} משובצים)</span>)}</h2>
-            </div>
+          <div className="flex items-center">
+            <ChefHat className="h-5 w-5 ml-3 text-orange-500" />
+            <h2 className="text-lg font-semibold text-gray-900">פריטים לשיבוץ{filteredItems.length > 0 && (<span className="text-gray-500 text-sm mr-2">({filteredItems.filter(item => item.assignedTo).length}/{filteredItems.length} משובצים)</span>)}</h2>
+          </div>
 
-            {/* 4. Adding new buttons for admin and user */}
-            <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              {!isAdmin && canAssign && (
-                <button
-                  onClick={() => setShowUserItemForm(true)}
-                  disabled={!canAddMoreItems}
-                  title={canAddMoreItems ? "הוסף פריט חדש" : `הגעת למכסת ${MAX_USER_ITEMS} הפריטים`}
-                  className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>הוסף פריט ({userCreatedItemsCount}/{MAX_USER_ITEMS})</span>
-                </button>
-              )}
-              {isAdmin && (
-                <button onClick={() => setShowBulkManager(true)} className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"><Settings className="h-4 w-4" /><span>ניהול מתקדם</span></button>
-              )}
-            </div>
+          {/* 4. Adding new buttons for admin and user */}
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            {!isAdmin && canAssign && (
+              <button
+                onClick={() => setShowUserItemForm(true)}
+                disabled={!canAddMoreItems}
+                title={canAddMoreItems ? "הוסף פריט חדש" : `הגעת למכסת ${MAX_USER_ITEMS} הפריטים`}
+                className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <Plus className="h-4 w-4" />
+                <span>הוסף פריט ({userCreatedItemsCount}/{MAX_USER_ITEMS})</span>
+              </button>
+            )}
+            {isAdmin && (
+              <button onClick={() => setShowBulkManager(true)} className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"><Settings className="h-4 w-4" /><span>ניהול מתקדם</span></button>
+            )}
+          </div>
         </div>
 
         {filteredItems.length === 0 ? (
           <div className="text-center py-8"><div className="bg-gray-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4"><ChefHat className="h-8 w-8 text-gray-400" /></div><h3 className="text-lg font-medium text-gray-900 mb-2">אין פריטים בקטגוריה זו</h3><p className="text-gray-500">עדיין לא נוספו פריטים לקטגוריה הנבחרת</p></div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredItems.map((item) => (<MenuItemCard key={item.id} item={item} canAssign={canAssign && dataLoaded} onAssign={() => handleAssignItem(item)} onEdit={() => handleEditAssignment(item)} />))}
+            {filteredItems.map((item) => (
+              <MenuItemCard
+                key={item.id}
+                item={item}
+                assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
+                assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
+                isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
+                isEventActive={!!(canAssign && dataLoaded)}
+                onAssign={() => handleAssignItem(item)}
+                onEdit={() => handleEditAssignment(item)}
+                onCancel={() => { }} // No cancel action in details view context or handle via parent reload
+              />
+            ))}
           </div>
         )}
       </div>
 
-      {showUserInfo && (<UserInfoModal onClose={() => setShowUserInfo(false)} onComplete={() => {setShowUserInfo(false);}}/>)}
-      {selectedMenuItem && (<AssignmentModal menuItem={selectedMenuItem} event={event} onClose={() => setSelectedMenuItem(null)}/>)}
-      {editingAssignment && (<EditAssignmentModal menuItem={editingAssignment.item} event={event} assignment={editingAssignment.assignment} onClose={() => setEditingAssignment(null)}/>)}
-      
+      {showUserInfo && (<UserInfoModal onClose={() => setShowUserInfo(false)} onComplete={() => { setShowUserInfo(false); }} />)}
+      {selectedMenuItem && (<AssignmentModal menuItem={selectedMenuItem} event={event} onClose={() => setSelectedMenuItem(null)} />)}
+      {editingAssignment && (<EditAssignmentModal menuItem={editingAssignment.item} event={event} assignment={editingAssignment.assignment} onClose={() => setEditingAssignment(null)} />)}
+
       {/* 5. Adding the modal for the new form */}
       {showUserItemForm && (
         <UserMenuItemForm

@@ -1,7 +1,7 @@
 // src/components/Events/AssignmentModal.tsx
 
 import React, { useState, useEffect } from 'react';
-import { useStore } from '../../store/useStore';
+import { useStore, selectAssignments } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { MenuItem, Assignment } from '../../types';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -33,11 +33,40 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
 
+  // Calculate max quantity for splittable items
+  const assignments = useStore(selectAssignments);
+
+  const maxQuantity = React.useMemo(() => {
+    if (!item.isSplittable) return 1;
+
+    const itemAssignments = assignments.filter(a => a.menuItemId === item.id && a.eventId === eventId);
+    const currentTotal = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+
+    let available = item.quantity - currentTotal;
+
+    // If we are editing, we can reuse our own quantity
+    if (isEdit && existingAssignment) {
+      available += existingAssignment.quantity;
+    }
+
+    return Math.max(0, available);
+  }, [item, assignments, eventId, isEdit, existingAssignment]);
+
+  useEffect(() => {
+    // If not splittable, always 1. If splittable, default to 1 but check max.
+    if (!item.isSplittable) {
+      setQuantity(1);
+    } else if (!existingAssignment) {
+      // New assignment: default to 1, but if only 0 available (shouldn't happen if button enabled), 0.
+      setQuantity(Math.min(1, maxQuantity));
+    }
+  }, [item.isSplittable, maxQuantity, existingAssignment]);
+
   // Check if user is already registered as event participant
   useEffect(() => {
     const participants = useStore.getState().currentEvent?.participants || {};
     const isParticipant = !!participants[user.uid];
-    
+
     // Show name field only if it's an anonymous user who hasn't joined yet
     if (user.isAnonymous && !isParticipant) {
       setShowNameInput(true);
@@ -54,15 +83,19 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       toast.error("הכמות חייבת להיות גדולה מ-0.");
       return;
     }
-    
+    if (item.isSplittable && quantity > maxQuantity) {
+      toast.error(`הכמות המבוקשת גדולה מהכמות הפנויה (מקסימום ${maxQuantity}).`);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       let finalUserName = participantName.trim();
-      
+
       // If user entered a name, register them as event participant
       if (showNameInput && finalUserName) {
-        await FirebaseService.joinEvent(organizerId, eventId, user.uid, finalUserName);
+        await FirebaseService.joinEvent(eventId, user.uid, finalUserName);
       } else {
         // If they're already a participant, take their existing name
         const existingParticipant = useStore.getState().currentEvent?.participants[user.uid];
@@ -71,7 +104,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
       if (isEdit && existingAssignment) {
         // --- Edit logic ---
-        await FirebaseService.updateAssignment(organizerId, eventId, existingAssignment.id, {
+        await FirebaseService.updateAssignment(eventId, existingAssignment.id, {
           quantity,
           notes: notes.trim(),
         });
@@ -86,8 +119,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
           notes: notes.trim(),
           status: 'confirmed',
           assignedAt: Date.now(),
+          eventId: eventId // Added eventId
         };
-        await FirebaseService.createAssignment(organizerId, eventId, assignmentData);
+        await FirebaseService.createAssignment(eventId, assignmentData);
         toast.success(`שובצת בהצלחה לפריט: ${item.name}`);
       }
       onClose();
@@ -109,7 +143,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             <X size={24} />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           <div className="bg-accent/10 p-4 rounded-lg mb-6 text-center">
@@ -123,27 +157,35 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 <label className="block text-sm font-medium text-neutral-700 mb-2">שם מלא*</label>
                 <div className="relative">
                   <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                  <input 
-                    type="text" 
-                    value={participantName} 
-                    onChange={e => setParticipantName(e.target.value)} 
-                    placeholder="השם שיוצג לכולם" 
-                    className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent" 
+                  <input
+                    type="text"
+                    value={participantName}
+                    onChange={e => setParticipantName(e.target.value)}
+                    placeholder="השם שיוצג לכולם"
+                    className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
                   />
                 </div>
                 <p className="text-xs text-neutral-500 mt-1">השם יישמר למכשיר זה עבור אירוע זה.</p>
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-2">כמות שאביא*</label>
+              <div className="flex justify-between mb-2">
+                <label className="block text-sm font-medium text-neutral-700">כמות שאביא*</label>
+                {item.isSplittable && (
+                  <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
+                    נותרו: {maxQuantity}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <Hash className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                <input 
-                  type="number" 
-                  value={quantity} 
-                  onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)} 
-                  className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent" 
-                  min="1" 
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={e => setQuantity(parseInt(e.target.value, 10) || 1)}
+                  className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                  min="1"
+                  max={item.isSplittable ? maxQuantity : undefined}
                 />
               </div>
             </div>
@@ -151,18 +193,18 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               <label className="block text-sm font-medium text-neutral-700 mb-2">הערות (אופציונלי)</label>
               <div className="relative">
                 <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
-                <textarea 
-                  value={notes} 
-                  onChange={e => setNotes(e.target.value)} 
-                  className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent" 
-                  rows={3} 
-                  placeholder="לדוגמה: ללא גלוטן, טבעוני..." 
+                <textarea
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  className="w-full p-2 pr-10 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
+                  rows={3}
+                  placeholder="לדוגמה: ללא גלוטן, טבעוני..."
                 />
               </div>
             </div>
           </div>
         </div>
-        
+
         {/* Actions */}
         <div className="bg-neutral-100 px-6 py-4 flex justify-end space-x-3 rtl:space-x-reverse rounded-b-xl">
           <button onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-700 hover:bg-neutral-300 font-medium transition-colors">

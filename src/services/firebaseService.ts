@@ -5,9 +5,9 @@ import { ref, push, set, get, onValue, off, remove, update, query, equalTo, orde
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added import
 import { database, auth } from '../lib/firebase';
-import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem } from '../types'; 
+import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem } from '../types';
 
-import { toast } from 'react-hot-toast'; 
+import { toast } from 'react-hot-toast';
 
 const functions = getFunctions(); // <-- Functions service initialization
 
@@ -16,11 +16,11 @@ const functions = getFunctions(); // <-- Functions service initialization
  * All operations are performed on global collections with filtering by eventId or organizerId
  */
 export class FirebaseService {
-  
+
   // ===============================
   // Internal helper functions
   // ===============================
-  
+
   /**
    * Ensures the event has all required structures
    */
@@ -28,11 +28,11 @@ export class FirebaseService {
     try {
       const eventRef = ref(database, `events/${eventId}`);
       const snapshot = await get(eventRef);
-      
+
       if (snapshot.exists()) {
         const eventData = snapshot.val();
         const updates: { [key: string]: any } = {};
-        
+
         // Ensure all required structures exist
         if (!eventData.menuItems) {
           updates[`events/${eventId}/menuItems`] = {};
@@ -43,14 +43,14 @@ export class FirebaseService {
         if (!eventData.participants) {
           updates[`events/${eventId}/participants`] = {};
         }
-        
+
         if (Object.keys(updates).length > 0) {
           await update(ref(database), updates);
         }
       } else {
         console.warn('⚠️ Event does not exist:', `events/${eventId}`);
       }
-      
+
       console.groupEnd();
     } catch (error) {
       console.error('❌ Error in ensureEventStructure:', error);
@@ -69,10 +69,10 @@ export class FirebaseService {
   static async createOrganizer(email: string, password: string, displayName: string): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const newUser = userCredential.user;
-    
+
     // Update profile in Firebase Auth
     await updateProfile(newUser, { displayName });
-    
+
     // Create user profile in Database
     const userObject: User = {
       id: newUser.uid,
@@ -80,21 +80,21 @@ export class FirebaseService {
       email: newUser.email || '',
       createdAt: Date.now()
     };
-    
+
     await set(ref(database, `users/${newUser.uid}`), userObject);
     return userObject;
   }
-  
+
   /**
    * קורא לפונקציית ענן למחיקת המשתמש וכל הנתונים שלו
    */
   static async deleteCurrentUserAccount(): Promise<void> {
     const deleteUser = httpsCallable(functions, 'deleteUserAccount');
     try {
-        const result = await deleteUser();
+      const result = await deleteUser();
     } catch (error) {
-        console.error("Error calling deleteUserAccount function:", error);
-        throw new Error('שגיאה במחיקת החשבון.');
+      console.error("Error calling deleteUserAccount function:", error);
+      throw new Error('שגיאה במחיקת החשבון.');
     }
   }
 
@@ -143,17 +143,17 @@ export class FirebaseService {
       const eventsRef = ref(database, 'events');
       const q = query(eventsRef, orderByChild('organizerId'), equalTo(organizerId));
       const snapshot = await get(q);
-      
+
       if (snapshot.exists()) {
         const eventsData = snapshot.val();
-        
+
         return Object.entries(eventsData)
           .map(([id, event]) => ({
             id,
             ...(event as Omit<ShishiEvent, 'id'>)
           }));
       }
-      
+
       return [];
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -165,15 +165,15 @@ export class FirebaseService {
    * מאזין לשינויים באירוע ספציפי
    */
   static subscribeToEvent(
-    eventId: string, 
+    eventId: string,
     callback: (eventData: ShishiEvent | null) => void
   ): () => void {
     console.group('📖 FirebaseService.subscribeToEvent');
     console.log('📥 Input parameters:', { eventId });
     console.log('🔗 Event path:', `events/${eventId}`);
-    
+
     const eventRef = ref(database, `events/${eventId}`);
-    
+
     const onValueChange = async (snapshot: any) => {
       if (snapshot.exists()) {
         // Ensure valid structure before returning data
@@ -243,14 +243,14 @@ export class FirebaseService {
       await this.ensureEventStructure(eventId);
       const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
       const newItemId = newItemRef.key!;
-      
+
       // Clean undefined values before saving
       const finalItemData = {
         ...itemData,
         id: newItemId,
         notes: itemData.notes || null // Convert undefined to null or remove completely
       };
-      
+
       // Remove fields with null/undefined values
       Object.keys(finalItemData).forEach(key => {
         if (finalItemData[key as keyof typeof finalItemData] === undefined) {
@@ -289,7 +289,7 @@ export class FirebaseService {
         if (currentEventData === null) {
           // If the event doesn't exist, the transaction will fail and the error will be caught in catch.
           // No need to throw an error from here.
-          return; 
+          return;
         }
 
         // --- New validation logic ---
@@ -346,7 +346,7 @@ export class FirebaseService {
         // --- Direct data update in transaction ---
         currentEventData.menuItems[newItemId] = finalItemData;
         currentEventData.assignments[newAssignmentRef.key!] = assignmentData;
-        
+
         // --- Update the new counter ---
         currentEventData.userItemCounts[assignToUserId] = userItemCount + 1;
 
@@ -402,17 +402,17 @@ export class FirebaseService {
     console.log('📥 Input parameters:', { eventId, itemId });
 
     const eventRef = ref(database, `events/${eventId}`);
-    
+
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
         if (currentEventData === null || !currentEventData.menuItems?.[itemId]) {
           // If event or item don't exist, nothing to do.
           console.log('Transaction aborted: Event or menu item not found.');
-          return; 
+          return;
         }
 
         console.log('🔧 Transaction started. Current event data:', currentEventData);
-        
+
         const itemToDelete = currentEventData.menuItems[itemId];
         const creatorId = itemToDelete.creatorId;
 
@@ -426,7 +426,7 @@ export class FirebaseService {
             console.log(`🧹 Cleaned up zero-count entry for user ${creatorId}`);
           }
         }
-        
+
         // Step 2: Delete the item itself
         delete currentEventData.menuItems[itemId];
         console.log(`🗑️ Marked menu item ${itemId} for deletion.`);
@@ -440,7 +440,7 @@ export class FirebaseService {
             }
           });
         }
-        
+
         // Return the updated object so the transaction writes it
         return currentEventData;
       });
@@ -468,19 +468,19 @@ export class FirebaseService {
   ): Promise<void> {
     console.group('👥 FirebaseService.joinEvent');
     console.log('📥 Input parameters:', { eventId, userId, userName });
-    
+
     try {
       await this.ensureEventStructure(eventId);
-      
+
       const participantRef = ref(database, `events/${eventId}/participants/${userId}`);
       const participantData = {
         name: userName,
         joinedAt: Date.now()
       };
-      
+
       console.log('👤 Participant data:', participantData);
       console.log('💾 Saving participant to Firebase...');
-      
+
       await set(participantRef, participantData);
       console.log('✅ Participant joined successfully!');
       console.groupEnd();
@@ -497,7 +497,7 @@ export class FirebaseService {
   static async leaveEvent(eventId: string, userId: string): Promise<void> {
     console.group('👋 FirebaseService.leaveEvent');
     console.log('📥 Input parameters:', { eventId, userId });
-    
+
     try {
       const participantRef = ref(database, `events/${eventId}/participants/${userId}`);
       await remove(participantRef);
@@ -523,133 +523,187 @@ export class FirebaseService {
   ): Promise<string> {
     console.group('📋 FirebaseService.createAssignment');
     console.log('📥 Input parameters:', { eventId, assignmentData });
-    
+
+    console.group('📋 FirebaseService.createAssignment (Transactional)');
+    console.log('📥 Input parameters:', { eventId, assignmentData });
+
+    const eventRef = ref(database, `events/${eventId}`);
+    const newAssignmentRef = push(ref(database, `events/${eventId}/assignments`));
+    const newAssignmentId = newAssignmentRef.key!;
+
     try {
-      await this.ensureEventStructure(eventId);
-      
-      // Check that the item is not already assigned
-      const menuItemRef = ref(database, `events/${eventId}/menuItems/${assignmentData.menuItemId}`);
-      const snapshot = await get(menuItemRef);
-      
-      if (snapshot.val()?.assignedTo) {
-        throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
-      }
-      
-      const newAssignmentRef = push(ref(database, `events/${eventId}/assignments`));
-      const updates: { [key: string]: any } = {};
-      
-      // Add the assignment
-      updates[`events/${eventId}/assignments/${newAssignmentRef.key}`] = assignmentData;
-      
-      // Update item as assigned
-      updates[`events/${eventId}/menuItems/${assignmentData.menuItemId}/assignedTo`] = assignmentData.userId;
-      updates[`events/${eventId}/menuItems/${assignmentData.menuItemId}/assignedToName`] = assignmentData.userName;
-      updates[`events/${eventId}/menuItems/${assignmentData.menuItemId}/assignedAt`] = Date.now();
-      
-      await update(ref(database), updates);
-      console.log('✅ Assignment created successfully');
+      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
+        if (!currentEventData) {
+          return; // Event doesn't exist
+        }
+
+        // --- 1. Basic Setup & Validation ---
+        if (!currentEventData.menuItems) currentEventData.menuItems = {};
+        if (!currentEventData.assignments) currentEventData.assignments = {};
+        if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
+
+        const item = currentEventData.menuItems[assignmentData.menuItemId];
+        if (!item) {
+          throw new Error('הפריט לא נמצא.');
+        }
+
+        // --- 2. User Item Limit Validation ---
+        // Count how many items this user has CREATED (not assigned to)
+        // Note: The original requirement was about CREATING items, but let's be safe.
+        // If the limit applies to ASSIGNMENTS too, we would check it here. 
+        // Current logic in addMenuItemAndAssign checks creation limit. 
+        // We will assume simply signing up for an existing item doesn't count towards the "Create Item" limit unless specified.
+        // For now, we proceed.
+
+        // --- 3. Splittable vs Non-Splittable Logic ---
+        if (item.isSplittable) {
+          // --- Splittable Item Logic ---
+          let currentAssignedQuantity = 0;
+
+          // Calculate total assigned quantity from all assignments for this item
+          Object.values(currentEventData.assignments).forEach((assignment: any) => {
+            if (assignment.menuItemId === item.id) {
+              currentAssignedQuantity += (assignment.quantity || 0);
+            }
+          });
+
+          const newTotal = currentAssignedQuantity + assignmentData.quantity;
+
+          if (newTotal > item.quantity) {
+            const remaining = Math.max(0, item.quantity - currentAssignedQuantity);
+            throw new Error(`הכמות המבוקשת גדולה מהכמות הפנויה. נותרו: ${remaining}`);
+          }
+
+          // We do NOT update item.assignedTo for splittable items to keep it "open"
+          // unless we want to mark it fully complete visually, but logic-wise it stays open until full.
+
+        } else {
+          // --- Non-Splittable Item Logic (Original 1-to-1) ---
+          if (item.assignedTo) {
+            throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
+          }
+
+          // Lock the item
+          item.assignedTo = assignmentData.userId;
+          item.assignedToName = assignmentData.userName;
+          item.assignedAt = Date.now();
+        }
+
+        // --- 4. Finalize Assignment ---
+        const finalAssignmentData = {
+          ...assignmentData,
+          id: newAssignmentId,
+          assignedAt: Date.now()
+        };
+
+        currentEventData.assignments[newAssignmentId] = finalAssignmentData;
+
+        return currentEventData;
+      });
+
+      console.log('✅ Assignment created successfully via transaction');
       console.groupEnd();
-      
-      return newAssignmentRef.key!;
+
+      return newAssignmentId;
     } catch (error) {
-      console.error('❌ Error in createAssignment:', error);
+      console.error('❌ Error in createAssignment transaction:', error);
       console.groupEnd();
       throw error;
     }
   }
 
-// src/services/firebaseService.ts
+  // src/services/firebaseService.ts
 
   /**
    * Updates an existing assignment. If the username changes, the function will update the name across all assignments and items of that user in the current event.
    */
-static async updateAssignment(
-  eventId: string,
-  assignmentId: string,
-  updates: { quantity: number; notes?: string; userName?: string }
-): Promise<void> {
-  console.group('📝 FirebaseService.updateAssignment (Enhanced)');
-  console.log('📥 Input parameters:', { eventId, assignmentId, updates });
-  
-  try {
-    const dbUpdates: { [key: string]: any } = {};
-    const assignmentPath = `events/${eventId}/assignments/${assignmentId}`;
+  static async updateAssignment(
+    eventId: string,
+    assignmentId: string,
+    updates: { quantity: number; notes?: string; userName?: string }
+  ): Promise<void> {
+    console.group('📝 FirebaseService.updateAssignment (Enhanced)');
+    console.log('📥 Input parameters:', { eventId, assignmentId, updates });
 
-    // Step 1: Prepare the basic updates for the specific assignment being edited.
-    dbUpdates[`${assignmentPath}/quantity`] = updates.quantity;
-    dbUpdates[`${assignmentPath}/notes`] = updates.notes || null; // Use null for empty notes
-    dbUpdates[`${assignmentPath}/updatedAt`] = Date.now();
+    try {
+      const dbUpdates: { [key: string]: any } = {};
+      const assignmentPath = `events/${eventId}/assignments/${assignmentId}`;
 
-    // Step 2: Check if the user's name needs to be updated across the entire event.
-    if (updates.userName) {
-      const assignmentRef = ref(database, assignmentPath);
-      const assignmentSnapshot = await get(assignmentRef);
+      // Step 1: Prepare the basic updates for the specific assignment being edited.
+      dbUpdates[`${assignmentPath}/quantity`] = updates.quantity;
+      dbUpdates[`${assignmentPath}/notes`] = updates.notes || null; // Use null for empty notes
+      dbUpdates[`${assignmentPath}/updatedAt`] = Date.now();
 
-      if (assignmentSnapshot.exists()) {
-        const assignmentData = assignmentSnapshot.val();
-        const currentUserId = assignmentData.userId;
-        const currentUserName = assignmentData.userName;
+      // Step 2: Check if the user's name needs to be updated across the entire event.
+      if (updates.userName) {
+        const assignmentRef = ref(database, assignmentPath);
+        const assignmentSnapshot = await get(assignmentRef);
 
-        // Only proceed if the name has actually changed.
-        if (currentUserId && updates.userName !== currentUserName) {
-          console.log(`👤 Name change detected for user ${currentUserId}: "${currentUserName}" -> "${updates.userName}"`);
+        if (assignmentSnapshot.exists()) {
+          const assignmentData = assignmentSnapshot.val();
+          const currentUserId = assignmentData.userId;
+          const currentUserName = assignmentData.userName;
 
-          // Fetch all event data to find other instances of this user.
-          const eventRef = ref(database, `events/${eventId}`);
-          const eventSnapshot = await get(eventRef);
+          // Only proceed if the name has actually changed.
+          if (currentUserId && updates.userName !== currentUserName) {
+            console.log(`👤 Name change detected for user ${currentUserId}: "${currentUserName}" -> "${updates.userName}"`);
 
-          if (eventSnapshot.exists()) {
-            const eventData = eventSnapshot.val();
-            const allAssignments = eventData.assignments || {};
-            const allMenuItems = eventData.menuItems || {};
-            
-            // Iterate through all assignments in the event.
-            for (const anId in allAssignments) {
-              if (allAssignments[anId].userId === currentUserId) {
-                dbUpdates[`events/${eventId}/assignments/${anId}/userName`] = updates.userName;
-                console.log(`🔄 Queued name update for assignment: ${anId}`);
+            // Fetch all event data to find other instances of this user.
+            const eventRef = ref(database, `events/${eventId}`);
+            const eventSnapshot = await get(eventRef);
 
-                const menuItemId = allAssignments[anId].menuItemId;
-                if (menuItemId) {
-                  dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
-                  console.log(`🔗 Queued name update for linked menu item (assignedToName): ${menuItemId}`);
+            if (eventSnapshot.exists()) {
+              const eventData = eventSnapshot.val();
+              const allAssignments = eventData.assignments || {};
+              const allMenuItems = eventData.menuItems || {};
+
+              // Iterate through all assignments in the event.
+              for (const anId in allAssignments) {
+                if (allAssignments[anId].userId === currentUserId) {
+                  dbUpdates[`events/${eventId}/assignments/${anId}/userName`] = updates.userName;
+                  console.log(`🔄 Queued name update for assignment: ${anId}`);
+
+                  const menuItemId = allAssignments[anId].menuItemId;
+                  if (menuItemId) {
+                    dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
+                    console.log(`🔗 Queued name update for linked menu item (assignedToName): ${menuItemId}`);
+                  }
                 }
               }
-            }
 
-            // *** START OF THE FIX ***
-            // Iterate through all menu items to update creatorName.
-            for (const menuItemId in allMenuItems) {
-              if (allMenuItems[menuItemId].creatorId === currentUserId) {
-                dbUpdates[`events/${eventId}/menuItems/${menuItemId}/creatorName`] = updates.userName;
-                console.log(`✍️ Queued name update for created menu item (creatorName): ${menuItemId}`);
+              // *** START OF THE FIX ***
+              // Iterate through all menu items to update creatorName.
+              for (const menuItemId in allMenuItems) {
+                if (allMenuItems[menuItemId].creatorId === currentUserId) {
+                  dbUpdates[`events/${eventId}/menuItems/${menuItemId}/creatorName`] = updates.userName;
+                  console.log(`✍️ Queued name update for created menu item (creatorName): ${menuItemId}`);
+                }
               }
+              // *** END OF THE FIX ***
             }
-            // *** END OF THE FIX ***
-          }
-        } else {
-           // If only quantity/notes changed, or name is the same, update just in case.
-           dbUpdates[`${assignmentPath}/userName`] = updates.userName;
-           const menuItemId = assignmentData.menuItemId;
-           if (menuItemId) {
+          } else {
+            // If only quantity/notes changed, or name is the same, update just in case.
+            dbUpdates[`${assignmentPath}/userName`] = updates.userName;
+            const menuItemId = assignmentData.menuItemId;
+            if (menuItemId) {
               dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
-           }
+            }
+          }
         }
       }
+
+      console.log('💾 Applying atomic batch updates:', dbUpdates);
+      // Perform a single, atomic update for all changes.
+      await update(ref(database), dbUpdates);
+
+      console.log('✅ Assignment(s) updated successfully');
+      console.groupEnd();
+    } catch (error) {
+      console.error('❌ Error in updateAssignment:', error);
+      console.groupEnd();
+      throw error;
     }
-
-    console.log('💾 Applying atomic batch updates:', dbUpdates);
-    // Perform a single, atomic update for all changes.
-    await update(ref(database), dbUpdates);
-
-    console.log('✅ Assignment(s) updated successfully');
-    console.groupEnd();
-  } catch (error) {
-    console.error('❌ Error in updateAssignment:', error);
-    console.groupEnd();
-    throw error;
   }
-}
   /**
    * מבטל שיבוץ
    */
@@ -660,18 +714,18 @@ static async updateAssignment(
   ): Promise<void> {
     console.group('❌ FirebaseService.cancelAssignment');
     console.log('📥 Input parameters:', { eventId, assignmentId, menuItemId });
-    
+
     try {
       const updates: { [key: string]: null } = {};
-      
+
       // Delete the assignment
       updates[`events/${eventId}/assignments/${assignmentId}`] = null;
-      
+
       // Remove assignment from item
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
-      
+
       console.log('💾 Updates to apply:', updates);
       await update(ref(database), updates);
       console.log('✅ Assignment cancelled successfully');
@@ -698,9 +752,9 @@ static async updateAssignment(
     if (!organizerId) {
       console.warn('No organizerId provided for preset lists subscription');
       callback([]);
-      return () => {};
+      return () => { };
     }
-    
+
     const listsRef = ref(database, `users/${organizerId}/presetLists`);
     const onValueChange = (snapshot: any) => {
       if (snapshot.exists()) {
@@ -709,11 +763,11 @@ static async updateAssignment(
           id,
           ...(list as Omit<PresetList, 'id'>)
         }));
-        
+
         // Add default lists if they don't exist
         const hasDefaultParticipants = listsArray.some(list => list.id === 'default-participants');
         const hasDefaultSalon = listsArray.some(list => list.id === 'default-salon');
-        
+
         if (!hasDefaultParticipants) {
           listsArray.push({
             id: 'default-participants',
@@ -738,7 +792,7 @@ static async updateAssignment(
             createdBy: 'system'
           });
         }
-        
+
         if (!hasDefaultSalon) {
           listsArray.push({
             id: 'default-salon',
@@ -760,7 +814,7 @@ static async updateAssignment(
             createdBy: 'system'
           });
         }
-        
+
         callback(listsArray);
       } else {
         // If no lists exist, create the default lists
@@ -830,21 +884,21 @@ static async updateAssignment(
       toast.error('אין הרשאה ליצור רשימה');
       return null;
     }
-    
+
     try {
       // Always save under the specific organizer
       const basePath = `users/${organizerId}/presetLists`;
       const newListRef = push(ref(database, basePath));
-      
+
       const fullListData = {
         ...listData,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         createdBy: organizerId
       };
-      
+
       await set(newListRef, fullListData);
-      
+
       return newListRef.key;
     } catch (error) {
       console.error('Error creating preset list:', error);
@@ -856,7 +910,7 @@ static async updateAssignment(
    * מעדכן רשימה מוכנה קיימת
    */
   static async updatePresetList(
-    listId: string, 
+    listId: string,
     updates: Partial<PresetList>,
     organizerId: string
   ): Promise<boolean> {
@@ -895,29 +949,29 @@ static async updateAssignment(
   }> {
     console.group('🔍 FirebaseService.validateEventData');
     console.log('📥 Input parameters:', { eventId });
-    
+
     const issues: string[] = [];
-    
+
     try {
       const eventSnapshot = await get(ref(database, `events/${eventId}`));
-      
+
       if (!eventSnapshot.exists()) {
         console.log('❌ Event does not exist');
         console.groupEnd();
         return { isValid: false, issues: ['האירוע לא קיים'] };
       }
-      
+
       const eventData = eventSnapshot.val();
-      
+
       // Basic structure check
       if (!eventData.details) issues.push('חסרים פרטי האירוע');
       if (!eventData.organizerId) issues.push('חסר מזהה מארגן');
       if (!eventData.organizerName) issues.push('חסר שם מארגן');
-      
+
       // Assignment consistency check
       const menuItems = eventData.menuItems || {};
       const assignments = eventData.assignments || {};
-      
+
       Object.entries(assignments).forEach(([assignmentId, assignment]: [string, any]) => {
         const menuItem = menuItems[assignment.menuItemId];
         if (!menuItem) {
@@ -928,18 +982,18 @@ static async updateAssignment(
       });
 
       Object.entries(menuItems).forEach(([menuItemId, menuItem]: [string, any]) => {
-        if(menuItem.assignedTo) {
+        if (menuItem.assignedTo) {
           const assignmentExists = Object.values(assignments).some((a: any) => a.menuItemId === menuItemId && a.userId === menuItem.assignedTo);
           if (!assignmentExists) {
             issues.push(`פריט ${menuItemId} משובץ למשתמש ${menuItem.assignedToName} אך אין שיבוץ תואם`);
           }
         }
       });
-      
+
       const isValid = issues.length === 0;
       console.log('🔍 Validation result:', { isValid, issues });
       console.groupEnd();
-      
+
       return { isValid, issues };
     } catch (error) {
       console.error('❌ Error validating event data:', error);

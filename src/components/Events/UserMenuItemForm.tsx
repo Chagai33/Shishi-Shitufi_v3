@@ -21,7 +21,7 @@ interface FormErrors {
 }
 
 export function UserMenuItemForm({ event, onClose, category, availableCategories }: UserMenuItemFormProps) {
-  
+
   const { user: authUser } = useAuth(); // <-- The line that was restored
   const { addMenuItem } = useStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,6 +34,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     category: category || ('main' as MenuCategory),
     quantity: 1,
     notes: '',
+    isSplittable: false,
   });
 
   const categoryOptions = [
@@ -94,14 +95,14 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
 
     const eventMenuItems = allMenuItems.filter(item => item.eventId === event.id);
     const isDuplicate = eventMenuItems.some(
-        item => item.name.trim().toLowerCase() === formData.name.trim().toLowerCase()
+      item => item.name.trim().toLowerCase() === formData.name.trim().toLowerCase()
     );
 
     if (isDuplicate) {
-        if (!window.confirm(`פריט בשם "${formData.name.trim()}" כבר קיים באירוע. האם להוסיף אותו בכל זאת?`)) {
-            setIsSubmitting(false);
-            return; // Stop the function if user clicked "Cancel"
-        }
+      if (!window.confirm(`פריט בשם "${formData.name.trim()}" כבר קיים באירוע. האם להוסיף אותו בכל זאת?`)) {
+        setIsSubmitting(false);
+        return; // Stop the function if user clicked "Cancel"
+      }
     }
 
     if (showNameInput && !participantName.trim()) {
@@ -126,10 +127,12 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
         category: formData.category,
         quantity: formData.quantity,
         notes: formData.notes.trim() || '',
+        isSplittable: formData.isSplittable,
         isRequired: false,
         createdAt: Date.now(),
         creatorId: authUser.uid,
-        creatorName: finalUserName
+        creatorName: finalUserName,
+        eventId: event.id
       };
 
       if (!newItemData.notes) {
@@ -175,7 +178,14 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
   };
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updates = { [field]: value };
+      // Reset isSplittable if quantity becomes 1
+      if (field === 'quantity' && (typeof value === 'number' && value <= 1)) {
+        Object.assign(updates, { isSplittable: false });
+      }
+      return { ...prev, ...updates };
+    });
 
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -227,9 +237,8 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="לדוגמה: עוגת גבינה"
-                className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 disabled={isSubmitting}
                 required
               />
@@ -272,9 +281,8 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                   max="100"
                   value={formData.quantity}
                   onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 1)}
-                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                    errors.quantity ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.quantity ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   disabled={isSubmitting}
                   required
                 />
@@ -303,6 +311,22 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
               />
             </div>
           </div>
+
+          {formData.quantity > 1 && (
+            <div className="mb-6 flex items-center">
+              <input
+                type="checkbox"
+                id="isSplittable"
+                checked={formData.isSplittable}
+                onChange={(e) => handleInputChange('isSplittable', e.target.checked)}
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                disabled={isSubmitting}
+              />
+              <label htmlFor="isSplittable" className="mr-2 block text-sm text-gray-900">
+                אפשר לאחרים להצטרף לפריט זה (שיהיה ניתן לחלוקה)
+              </label>
+            </div>
+          )}
           <div className="flex space-x-3 rtl:space-x-reverse">
             <button
               type="submit"

@@ -14,7 +14,7 @@ import { User } from '../types';
 export function useAuth() {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const { setUser, clearCurrentEvent } = useStore();
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function useAuth() {
       setIsLoading(true);
       if (user) {
         setFirebaseUser(user);
-        
+
         // Load user profile from Database
         const userProfileRef = ref(database, `users/${user.uid}`);
         const snapshot = await get(userProfileRef);
@@ -37,7 +37,7 @@ export function useAuth() {
             email: user.email || '',
             createdAt: Date.now(),
           };
-          await set(userProfileRef, newUserProfile); 
+          await set(userProfileRef, newUserProfile);
           setUser(newUserProfile);
         }
       } else {
@@ -51,8 +51,11 @@ export function useAuth() {
     return () => unsubscribe();
   }, [setUser, clearCurrentEvent]);
 
+  const logout = () => auth.signOut();
+
   return {
     user: firebaseUser,
     isLoading,
+    logout
   };
 }

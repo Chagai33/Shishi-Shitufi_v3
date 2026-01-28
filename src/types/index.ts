@@ -8,6 +8,7 @@ export interface User {
   name: string;
   email?: string;
   createdAt: number;
+  isAdmin?: boolean;
 }
 
 /**
@@ -28,11 +29,13 @@ export interface EventDetails {
  * Represents a menu item for a specific event.
  * Note that the eventId field is no longer needed, as the item is nested under the event.
  */
+export type MenuCategory = 'starter' | 'main' | 'dessert' | 'drink' | 'other' | 'equipment';
+
 export interface MenuItem {
   id: string;
   eventId: string; // Added event ID for convenience
   name: string;
-  category: 'starter' | 'main' | 'dessert' | 'drink' | 'other' | 'equipment';
+  category: MenuCategory;
   quantity: number;
   notes?: string;
   isRequired: boolean;
@@ -68,9 +71,9 @@ export interface Assignment {
  * מייצג משתתף שנרשם לאירוע.
  */
 export interface Participant {
-    id: string; // Firebase Auth UID (can belong to an anonymous user)
-    name: string;
-    joinedAt: number;
+  id: string; // Firebase Auth UID (can belong to an anonymous user)
+  name: string;
+  joinedAt: number;
 }
 
 /**

@@ -6,9 +6,12 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { FirebaseService } from '../services/firebaseService';
 import { toast } from 'react-hot-toast';
-import { LogIn, UserPlus, Eye, EyeOff, ChefHat } from 'lucide-react';
+import { Eye, EyeOff, ChefHat } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/Common/LanguageSwitcher';
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation();
   const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,42 +29,42 @@ const LoginPage: React.FC = () => {
       if (isLoginView) {
         // --- Login logic ---
         await signInWithEmailAndPassword(auth, email, password);
-        toast.success('התחברת בהצלחה!');
+        toast.success(t('login.messages.loginSuccess'));
         navigate('/dashboard');
       } else {
         // --- Registration logic ---
         if (!agreedToTerms) {
-          toast.error('יש לאשר את תנאי השימוש ומדיניות הפרטיות.');
+          toast.error(t('login.messages.termsRequired'));
           setIsLoading(false);
           return;
         }
         if (!displayName.trim()) {
-          toast.error('יש להזין שם להצגה');
+          toast.error(t('login.messages.displayNameRequired'));
           setIsLoading(false);
           return;
         }
         await FirebaseService.createOrganizer(email, password, displayName);
-        toast.success('נרשמת בהצלחה! ברוך הבא.');
+        toast.success(t('login.messages.registerSuccess'));
         navigate('/dashboard');
       }
     } catch (error: any) {
       console.error("Authentication error:", error);
-      let errorMessage = "אירעה שגיאה. אנא נסה שוב.";
+      let errorMessage = t('common.errors.general');
       if (error.code) {
         switch (error.code) {
           case 'auth/user-not-found':
           case 'auth/wrong-password':
           case 'auth/invalid-credential':
-            errorMessage = 'אימייל או סיסמה שגויים.';
+            errorMessage = t('login.messages.authErrors.invalidCredential');
             break;
           case 'auth/email-already-in-use':
-            errorMessage = 'כתובת האימייל כבר בשימוש.';
+            errorMessage = t('login.messages.authErrors.emailInUse');
             break;
           case 'auth/weak-password':
-            errorMessage = 'הסיסמה חלשה מדי. נדרשים לפחות 6 תווים.';
+            errorMessage = t('login.messages.authErrors.weakPassword');
             break;
           case 'auth/invalid-email':
-            errorMessage = 'כתובת האימייל אינה תקינה.';
+            errorMessage = t('login.messages.authErrors.invalidEmail');
             break;
         }
       }
@@ -72,16 +75,19 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4 relative">
+      <div className="absolute top-4 left-4 rtl:left-auto rtl:right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-            <ChefHat className="mx-auto h-12 w-12 text-orange-500" />
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
-                שישי שיתופי
-            </h1>
-            <p className="mt-2 text-sm text-gray-600">
-                {isLoginView ? 'התחבר לחשבונך כדי לנהל אירועים' : 'צור חשבון חדש והתחל לארגן'}
-            </p>
+          <ChefHat className="mx-auto h-12 w-12 text-orange-500" />
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+            {t('header.title')}
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
+            {isLoginView ? t('login.subtitle.login') : t('login.subtitle.register')}
+          </p>
         </div>
 
         <div className="bg-white p-8 shadow-lg rounded-xl">
@@ -89,7 +95,7 @@ const LoginPage: React.FC = () => {
             {!isLoginView && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  שם להצגה
+                  {t('login.fields.displayName')}
                 </label>
                 <div className="mt-1">
                   <input
@@ -105,7 +111,7 @@ const LoginPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                כתובת אימייל
+                {t('login.fields.email')}
               </label>
               <div className="mt-1">
                 <input
@@ -121,7 +127,7 @@ const LoginPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                סיסמה
+                {t('login.fields.password')}
               </label>
               <div className="mt-1 relative">
                 <input
@@ -133,11 +139,11 @@ const LoginPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
                 <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
@@ -152,13 +158,13 @@ const LoginPage: React.FC = () => {
                   className="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                 />
                 <label htmlFor="terms-agree" className="text-xs text-gray-600">
-                  אני מאשר/ת שקראתי והסכמתי ל
+                  {t('login.terms.agree')}
                   <Link to="/terms" target="_blank" className="text-orange-600 hover:underline mx-1">
-                    תנאי השימוש
+                    {t('login.terms.terms')}
                   </Link>
-                  ול
+                  {t('login.terms.and')}
                   <Link to="/privacy" target="_blank" className="text-orange-600 hover:underline mx-1">
-                    מדיניות הפרטיות
+                    {t('login.terms.privacy')}
                   </Link>
                   .
                 </label>
@@ -174,9 +180,9 @@ const LoginPage: React.FC = () => {
                 {isLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 ) : isLoginView ? (
-                  'התחבר'
+                  t('login.submit.login')
                 ) : (
-                  'צור חשבון'
+                  t('login.submit.register')
                 )}
               </button>
             </div>
@@ -187,7 +193,7 @@ const LoginPage: React.FC = () => {
               onClick={() => setIsLoginView(!isLoginView)}
               className="text-sm font-medium text-orange-600 hover:text-orange-500"
             >
-              {isLoginView ? 'אין לך חשבון? צור אחד' : 'יש לך חשבון? התחבר'}
+              {isLoginView ? t('login.toggle.toRegister') : t('login.toggle.toLogin')}
             </button>
           </div>
         </div>

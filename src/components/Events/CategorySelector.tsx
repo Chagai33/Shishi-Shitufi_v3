@@ -1,18 +1,18 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { MenuItem, Assignment } from '../../types'; // Make sure the path to types files is correct
+import { MenuItem, Assignment } from '../../types';
+import { useTranslation } from 'react-i18next';
 
-// Define design details for each category
-const categoryDetails: { [key: string]: { name: string; icon: string; color: string; glowClass: string } } = {
-  starter: { name: 'מנות ראשונות', icon: '/Icons/2.gif', color: '#3498db', glowClass: 'glow-starter' },
-  main: { name: 'מנות עיקריות', icon: '/Icons/1.gif', color: '#009688', glowClass: 'glow-main' },
-  dessert: { name: 'קינוחים', icon: '/Icons/3.gif', color: '#9b59b6', glowClass: 'glow-dessert' },
-  drink: { name: 'שתייה', icon: '/Icons/4.gif', color: '#2ecc71', glowClass: 'glow-drink' },
-  equipment: { name: 'ציוד כללי', icon: '/Icons/6.gif', color: '#2ecc71', glowClass: 'glow-drink' },
-  other: { name: 'אחר', icon: '/Icons/5.gif', color: '#95a5a6', glowClass: 'glow-other' },
+// Define design details for each category (names removed, will use t())
+const categoryDetails: { [key: string]: { icon: string; color: string; glowClass: string } } = {
+  starter: { icon: '/Icons/2.gif', color: '#3498db', glowClass: 'glow-starter' },
+  main: { icon: '/Icons/1.gif', color: '#009688', glowClass: 'glow-main' },
+  dessert: { icon: '/Icons/3.gif', color: '#9b59b6', glowClass: 'glow-dessert' },
+  drink: { icon: '/Icons/4.gif', color: '#2ecc71', glowClass: 'glow-drink' },
+  equipment: { icon: '/Icons/6.gif', color: '#2ecc71', glowClass: 'glow-drink' },
+  other: { icon: '/Icons/5.gif', color: '#95a5a6', glowClass: 'glow-other' },
 };
 
-// Definition of Props that the component receives
 interface CategorySelectorProps {
   menuItems: MenuItem[];
   assignments: Assignment[];
@@ -32,6 +32,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   userCreatedItemsCount,
   MAX_USER_ITEMS,
 }) => {
+  const { t } = useTranslation();
 
   // Helper function to calculate status and progress for each category
   const getCategoryProgress = (category: string) => {
@@ -61,13 +62,14 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
           const details = categoryDetails[categoryKey];
           const percentage = progress.total > 0 ? (progress.assigned / progress.total) * 100 : 0;
+          const categoryName = t(`categories.${categoryKey}`);
 
           return (
             <button
               key={categoryKey}
               type="button"
               onClick={() => onSelectCategory(categoryKey)}
-              aria-label={`קטגוריה ${details.name}, ${progress.assigned} מתוך ${progress.total} פריטים שובצו`}
+              aria-label={`${categoryName}, ${progress.assigned} ${t('eventPage.stats.assigned')} ${progress.total}`}
               className="group relative category-card-2025 p-6 rounded-xl cursor-pointer text-center overflow-hidden w-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               {/* Glow element activated on hover */}
@@ -81,13 +83,13 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                   aria-hidden="true"
                   className="w-20 h-20 mx-auto mb-3 object-contain transition-transform duration-300 group-hover:scale-110"
                 />
-                <h3 className="text-xl font-bold text-neutral-800 mb-2">{details.name}</h3>
+                <h3 className="text-xl font-bold text-neutral-800 mb-2">{categoryName}</h3>
 
                 <div className="flex-grow"></div> {/* Spacer to push progress bar to bottom */}
 
                 <div className="w-full">
                   <p className="text-center text-neutral-500 text-sm mb-4">
-                    {progress.assigned} / {progress.total} שובצו
+                    {progress.assigned} / {progress.total} {t('eventPage.stats.assigned')}
                   </p>
                   <div className="w-full bg-neutral-200 rounded-full h-2.5">
                     <div
@@ -111,7 +113,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         <button
           onClick={onAddItem}
           disabled={!canAddMoreItems}
-          title={canAddMoreItems ? "הוסף פריט חדש לארוחה" : "לא ניתן להוסיף פריטים נוספים"}
+          title={canAddMoreItems ? t('eventPage.category.addItemTooltip') : t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS })}
           className={`w-full flex items-center justify-center text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500
             ${!canAddMoreItems
               ? 'bg-neutral-400 cursor-not-allowed'
@@ -119,7 +121,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             }`}
         >
           <Plus size={20} className="ml-2" />
-          הוסף פריט משלך ({userCreatedItemsCount}/{MAX_USER_ITEMS})
+          {t('eventPage.category.addItem')} ({userCreatedItemsCount}/{MAX_USER_ITEMS})
         </button>
       </div>
     </div>

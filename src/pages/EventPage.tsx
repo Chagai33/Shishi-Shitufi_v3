@@ -1,27 +1,28 @@
 // src/pages/EventPage.tsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useStore, selectMenuItems, selectAssignments, selectParticipants } from '../store/useStore';
 import { FirebaseService } from '../services/firebaseService';
 import { auth } from '../lib/firebase';
 import { signInAnonymously, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
-import { ShishiEvent, MenuItem as MenuItemType, Assignment as AssignmentType } from '../types';
-import { CalendarPlus, Clock, MapPin, ChefHat, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Shield, Minus } from 'lucide-react';
+import { MenuItem as MenuItemType, Assignment as AssignmentType } from '../types';
+import { CalendarPlus, Clock, MapPin, ChefHat, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Shield, Minus, Settings } from 'lucide-react';
 import { isEventFinished } from '../utils/dateUtils';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
 import { CategorySelector } from '../components/Events/CategorySelector';
+import LanguageSwitcher from '../components/Common/LanguageSwitcher';
 
-// Category names mapping
-const categoryNames: { [key: string]: string } = {
+/* const categoryNames: { [key: string]: string } = {
     starter: 'מנה ראשונה',
     main: 'מנה עיקרית',
     dessert: 'קינוחים',
     drink: 'משקאות',
     other: 'אחר'
-};
+}; */
 
 
 // --- Component: CategorySelector removed, using imported component ---
@@ -40,6 +41,7 @@ const MenuItemCard: React.FC<{
     isEventActive: boolean;
     currentUserId?: string;
 }> = ({ item, assignment, assignments = [], onAssign, onEdit, onEditAssignment, onCancel, isMyAssignment, isEventActive, currentUserId }) => {
+    const { t } = useTranslation();
     const assignedByOther = assignment && !isMyAssignment;
     const isSplittable = item.isSplittable || item.quantity > 1; // Enforce splittable if quantity > 1
     const totalQuantity = item.quantity;
@@ -73,14 +75,14 @@ const MenuItemCard: React.FC<{
                 <div className="flex justify-between items-start mb-2">
                     <h4 className="font-bold text-gray-800 text-lg leading-tight">{item.name}</h4>
                     <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
-                        {categoryNames[item.category]}
+                        {t(`categories.${item.category}`)}
                     </span>
                 </div>
 
                 <div className="text-sm text-gray-600 space-y-1">
-                    <p>כמות נדרשת: <span className="font-semibold">{item.quantity}</span></p>
+                    <p>{t('eventPage.item.quantityRequired')}: <span className="font-semibold">{item.quantity}</span></p>
                     {item.creatorName && (
-                        <p className="text-xs text-gray-400">נוצר ע"י: {item.creatorName}</p>
+                        <p className="text-xs text-gray-400">{t('eventPage.item.createdBy')}: {item.creatorName}</p>
                     )}
                     {item.notes && (
                         <p className="text-xs bg-yellow-50 text-yellow-800 p-2 rounded mt-2 border border-yellow-100">
@@ -93,7 +95,7 @@ const MenuItemCard: React.FC<{
                 {isSplittable && (
                     <div className="mt-4">
                         <div className="flex justify-between text-xs mb-1 text-gray-700 font-medium">
-                            <span>התקדמות: {filledQuantity}/{totalQuantity}</span>
+                            <span>{t('eventPage.item.progress')}: {filledQuantity}/{totalQuantity}</span>
                             <span>{Math.round(progressPercent)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -126,7 +128,7 @@ const MenuItemCard: React.FC<{
                     <div className="space-y-3">
                         {hasMyAssignment && (
                             <div className="bg-white p-2 rounded-lg border border-blue-200 shadow-sm">
-                                <p className="text-xs font-bold text-blue-800 mb-2">אני מביא:</p>
+                                <p className="text-xs font-bold text-blue-800 mb-2">{t('eventPage.item.iBring')}</p>
                                 <ul className="space-y-2">
                                     {myAssignments.map(myAss => (
                                         <li key={myAss.id} className="flex justify-between items-center text-sm group">
@@ -139,7 +141,7 @@ const MenuItemCard: React.FC<{
                                                             onEditAssignment && onEditAssignment(myAss);
                                                         }}
                                                         className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                                                        title="ערוך כמות"
+                                                        title={t('eventPage.item.editQuantity')}
                                                     >
                                                         <Edit size={12} />
                                                     </button>
@@ -152,7 +154,7 @@ const MenuItemCard: React.FC<{
                                                         onCancel(myAss);
                                                     }}
                                                     className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors"
-                                                    title="בטל"
+                                                    title={t('eventPage.item.cancel')}
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -169,12 +171,12 @@ const MenuItemCard: React.FC<{
                                 className="w-full bg-orange-600 text-white py-2 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
                             >
                                 <Plus size={16} />
-                                {hasMyAssignment ? 'הוסף עוד' : 'אני אשתתף בזה'}
+                                {hasMyAssignment ? t('eventPage.item.addMore') : t('eventPage.item.iWillParticipate')}
                             </button>
                         )}
 
                         {isFull && (
-                            <p className="text-sm text-center text-green-700 font-medium">הפריט הושלם ✔️</p>
+                            <p className="text-sm text-center text-green-700 font-medium">{t('eventPage.item.completed')} ✔️</p>
                         )}
                     </div>
                 ) : (
@@ -183,7 +185,7 @@ const MenuItemCard: React.FC<{
                         <div className="space-y-3">
                             <div className="flex justify-between items-center text-sm">
                                 <span className={`font-semibold ${isMyAssignment ? 'text-blue-700' : 'text-green-700'}`}>
-                                    {isMyAssignment ? 'אני מביא:' : `נלקח ע"י ${assignment.userName}:`}
+                                    {isMyAssignment ? t('eventPage.item.iBring') : `${t('eventPage.item.takenBy')} ${assignment.userName}:`}
                                 </span>
                                 <span className="font-bold text-lg">{assignment.quantity}</span>
                             </div>
@@ -198,13 +200,13 @@ const MenuItemCard: React.FC<{
                                         onClick={onEdit}
                                         className="flex-1 text-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-1.5 rounded flex items-center justify-center transition-colors"
                                     >
-                                        <Edit size={12} className="ml-1" /> ערוך
+                                        <Edit size={12} className="ml-1" /> {t('common.edit')}
                                     </button>
                                     <button
                                         onClick={() => onCancel(assignment)}
                                         className="flex-1 text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded flex items-center justify-center transition-colors"
                                     >
-                                        <Trash2 size={12} className="ml-1" /> מחק
+                                        <Trash2 size={12} className="ml-1" /> {t('common.delete')}
                                     </button>
                                 </div>
                             )}
@@ -216,10 +218,10 @@ const MenuItemCard: React.FC<{
                                 className="w-full bg-orange-600 text-white py-2 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
                             >
                                 <Plus size={16} />
-                                אני אביא את זה
+                                {t('eventPage.item.iWillBringIt')}
                             </button>
                         ) : (
-                            <p className="text-sm text-center text-gray-400">האירוע הסתיים</p>
+                            <p className="text-sm text-center text-gray-400">{t('eventPage.status.ended')}</p>
                         )
                     )
                 )}
@@ -235,8 +237,10 @@ const AssignmentModal: React.FC<{
     user: FirebaseUser;
     onClose: () => void;
     isEdit?: boolean;
+    isAddMore?: boolean;
     existingAssignment?: AssignmentType;
-}> = ({ item, eventId, user, onClose, isEdit = false, existingAssignment }) => {
+}> = ({ item, eventId, user, onClose, isEdit = false, isAddMore = false, existingAssignment }) => {
+    const { t } = useTranslation();
     const [quantity, setQuantity] = useState(existingAssignment?.quantity || item.quantity);
     const [notes, setNotes] = useState(existingAssignment?.notes || '');
     const [isLoading, setIsLoading] = useState(false);
@@ -244,6 +248,8 @@ const AssignmentModal: React.FC<{
     const [showNameInput, setShowNameInput] = useState(false);
     const [currentUserName, setCurrentUserName] = useState('');
     const [useNewName, setUseNewName] = useState(false);
+    const [tempUserName, setTempUserName] = useState('');
+    const [isEditingName, setIsEditingName] = useState(false);
 
     const assignments = useStore(selectAssignments);
     const maxQuantity = useMemo(() => {
@@ -255,12 +261,12 @@ const AssignmentModal: React.FC<{
 
         let available = item.quantity - currentTotal;
 
-        if (isEdit && existingAssignment) {
+        if (isEdit && existingAssignment && !isAddMore) {
             available += existingAssignment.quantity;
         }
 
         return Math.max(0, available);
-    }, [item, assignments, eventId, isEdit, existingAssignment]);
+    }, [item, assignments, eventId, isEdit, existingAssignment, isAddMore]);
 
     useEffect(() => {
         // Fix: Treat as splittable if quantity > 1, even if isSplittable is undefined/false
@@ -268,10 +274,16 @@ const AssignmentModal: React.FC<{
 
         if (!effectivelySplittable) {
             setQuantity(1);
+        } else if (isAddMore) {
+            // For Add More, start at 1 (representing +1)
+            setQuantity(Math.min(1, maxQuantity));
         } else if (!existingAssignment) {
             setQuantity(Math.min(1, maxQuantity));
         }
-    }, [item.isSplittable, item.quantity, maxQuantity, existingAssignment]);
+        // For Edit, we prefer existingAssignment.quantity (already set in useState initializer), 
+        // but if maxQuantity dropped below it (race condition), we might need to clamp? 
+        // For now, respect user's original input or current state.
+    }, [item.isSplittable, item.quantity, maxQuantity, existingAssignment, isAddMore]);
 
     useEffect(() => {
         const currentEvent = useStore.getState().currentEvent;
@@ -279,61 +291,64 @@ const AssignmentModal: React.FC<{
 
         if (existingParticipant) {
             setCurrentUserName(existingParticipant.name);
+            setTempUserName(existingParticipant.name);
             setShowNameInput(false);
         } else if (user.isAnonymous) {
             setShowNameInput(true);
+            setIsEditingName(true); // Force name input for anonymous users
         } else {
-            setCurrentUserName(user.displayName || 'משתמש');
+            setCurrentUserName(user.displayName || t('common.user'));
+            setTempUserName(user.displayName || t('common.user'));
             setShowNameInput(false);
         }
-    }, [user.uid, user.isAnonymous]);
+    }, [user.uid, user.isAnonymous, t]);
 
     const handleSubmit = async () => {
-        if (showNameInput && !participantName.trim()) {
-            toast.error("כדי להשתבץ, יש להזין שם מלא.");
+        let finalUserName = tempUserName.trim();
+
+        if (isEditingName && !finalUserName) {
+            toast.error(t('eventPage.assignment.nameRequired'));
             return;
         }
-        if (useNewName && !participantName.trim()) {
-            toast.error("יש להזין שם חדש.");
-            return;
-        }
-        if (quantity <= 0) { toast.error("הכמות חייבת להיות גדולה מ-0."); return; }
-        if (item.isSplittable && quantity > maxQuantity) {
-            toast.error(`הכמות המבוקשת גדולה מהכמות הפנויה (מקסימום ${maxQuantity}).`);
+        if (quantity <= 0) { toast.error(t('eventPage.assignment.quantityPositive')); return; }
+        if ((item.isSplittable || item.quantity > 1) && quantity > maxQuantity) {
+            toast.error(t('eventPage.assignment.quantityExceedsAvailable', { maxQuantity }));
             return;
         }
 
         setIsLoading(true);
         try {
-            let finalUserName = '';
-
-            if (useNewName && participantName.trim()) {
-                finalUserName = participantName.trim();
+            if (isEditingName || showNameInput) {
                 await FirebaseService.joinEvent(eventId, user.uid, finalUserName);
-            } else if (showNameInput && participantName.trim()) {
-                finalUserName = participantName.trim();
-                await FirebaseService.joinEvent(eventId, user.uid, finalUserName);
-            } else {
-                finalUserName = currentUserName;
             }
 
             if (isEdit && existingAssignment) {
-                await FirebaseService.updateAssignment(eventId, existingAssignment.id, { quantity, notes: notes.trim(), userName: finalUserName });
-                toast.success("השיבוץ עודכן בהצלחה!");
+                let finalQuantity = quantity;
+                let finalNotes = notes.trim();
+
+                if (isAddMore) {
+                    finalQuantity = existingAssignment.quantity + quantity;
+                    // Optional: concatenate notes? For now keep existing or replace if edited.
+                    // Logic: If user typed new notes, maybe append or replace?
+                    // Let's assume user sees "Notes" field and edits it for the *merge*.
+                }
+
+                await FirebaseService.updateAssignment(eventId, existingAssignment.id, { quantity: finalQuantity, notes: finalNotes, userName: finalUserName });
+                toast.success(isAddMore ? t('eventPage.assignment.addMoreSuccess') : t('eventPage.assignment.updateSuccess'));
             } else {
                 await FirebaseService.createAssignment(eventId, {
                     menuItemId: item.id, userId: user.uid, userName: finalUserName,
                     quantity, notes: notes.trim(), status: 'confirmed', assignedAt: Date.now(), eventId
                 });
-                toast.success(`שובצת בהצלחה לפריט: ${item.name}`);
+                toast.success(t('eventPage.assignment.assignSuccess', { itemName: item.name }));
             }
             onClose();
-        } catch (error: any) { toast.error(error.message || "אירעה שגיאה."); }
+        } catch (error: any) { toast.error(error.message || t('common.errorOccurred')); }
         finally { setIsLoading(false); }
     };
 
     const handleIncrement = () => setQuantity(q => {
-        const max = item.isSplittable ? maxQuantity : item.quantity;
+        const max = (item.isSplittable || item.quantity > 1) ? maxQuantity : item.quantity;
         return Math.min(q + 1, max);
     });
     const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
@@ -341,31 +356,48 @@ const AssignmentModal: React.FC<{
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-                <div className="flex items-center justify-between p-6 border-b"><h2 className="text-lg font-semibold text-neutral-900">{isEdit ? 'עריכת שיבוץ' : 'שיבוץ פריט'}</h2><button onClick={onClose} className="text-neutral-500 hover:text-neutral-700"><X size={24} /></button></div>
+                <div className="flex items-center justify-between p-6 border-b"><h2 className="text-lg font-semibold text-neutral-900">{isAddMore ? t('eventPage.assignment.addMoreTitle') : isEdit ? t('eventPage.assignment.editTitle') : t('eventPage.assignment.addTitle')}</h2><button onClick={onClose} className="text-neutral-500 hover:text-neutral-700"><X size={24} /></button></div>
                 <div className="p-6">
-                    <div className="bg-accent/10 p-4 rounded-lg mb-6 text-center"><p className="font-bold text-accent">{item.name}</p><p className="text-sm text-accent/80">כמות מוצעת: {item.quantity}</p></div>
+                    <div className="bg-accent/10 p-4 rounded-lg mb-6 text-center"><p className="font-bold text-accent">{item.name}</p><p className="text-sm text-accent/80">{t('eventPage.assignment.suggestedQuantity')}: {item.quantity}</p></div>
                     <div className="space-y-4">
                         {currentUserName && !showNameInput && (
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm font-medium text-blue-800">תירשם בשם:</p>
-                                        <p className="text-blue-700 font-semibold">{currentUserName}</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setUseNewName(true)}
-                                        className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-                                    >
-                                        שנה שם
-                                    </button>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        {t('eventPage.assignment.registerAs')} <span className="text-blue-600 font-bold">{tempUserName}</span>
+                                    </label>
+                                    {!isEdit && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditingName(!isEditingName)}
+                                            className="text-xs text-orange-600 hover:text-orange-700 underline flex items-center"
+                                        >
+                                            <Edit size={12} className="ml-1" />
+                                            {t('eventPage.assignment.changeName')}
+                                        </button>
+                                    )}
                                 </div>
+
+                                {isEditingName && (
+                                    <div className="mb-3 animate-fadeIn">
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">{user.uid.startsWith('guest_') ? t('eventPage.assignment.fullName') : t('eventPage.assignment.newName')}</label>
+                                        <input
+                                            type="text"
+                                            value={tempUserName}
+                                            onChange={(e) => setTempUserName(e.target.value)}
+                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            placeholder={t('eventPage.assignment.namePlaceholder')}
+                                            autoFocus
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {(showNameInput || useNewName) && (
                             <div>
                                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                                    {useNewName ? 'שם חדש*' : 'שם מלא*'}
+                                    {useNewName ? t('eventPage.assignment.newName') : t('eventPage.assignment.fullName')}
                                 </label>
                                 <div className="relative">
                                     <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -373,7 +405,7 @@ const AssignmentModal: React.FC<{
                                         type="text"
                                         value={participantName}
                                         onChange={e => setParticipantName(e.target.value)}
-                                        placeholder={useNewName ? "השם החדש שיוצג" : "השם שיוצג לכולם"}
+                                        placeholder={useNewName ? t('eventPage.assignment.newNamePlaceholder') : t('eventPage.assignment.namePlaceholder')}
                                         className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
                                     />
                                 </div>
@@ -386,7 +418,7 @@ const AssignmentModal: React.FC<{
                                             }}
                                             className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded"
                                         >
-                                            ביטול
+                                            {t('common.cancel')}
                                         </button>
                                     </div>
                                 )}
@@ -396,7 +428,9 @@ const AssignmentModal: React.FC<{
                         {/* Stepper UI for Quantity */}
                         <div>
                             <div className="flex justify-between mb-2 items-center">
-                                <label className="block text-sm font-medium text-neutral-700">כמות שאביא*</label>
+                                <label className="block text-sm font-medium text-neutral-700">
+                                    {isAddMore ? t('eventPage.assignment.quantityToAdd') : t('eventPage.assignment.quantityToBring')}
+                                </label>
                                 <div className="flex gap-2 items-center">
                                     {(item.isSplittable || item.quantity > 1) && quantity < maxQuantity && (
                                         <button
@@ -404,12 +438,12 @@ const AssignmentModal: React.FC<{
                                             onClick={() => setQuantity(maxQuantity)}
                                             className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
                                         >
-                                            אביא הכל
+                                            {t('eventPage.assignment.bringAll')}
                                         </button>
                                     )}
-                                    {item.isSplittable && (
+                                    {(item.isSplittable || item.quantity > 1) && (
                                         <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
-                                            נותרו: {maxQuantity}
+                                            {t('eventPage.assignment.remaining')}: {maxQuantity}
                                         </span>
                                     )}
                                 </div>
@@ -431,7 +465,7 @@ const AssignmentModal: React.FC<{
                                 <button
                                     type="button"
                                     onClick={handleIncrement}
-                                    disabled={quantity >= (item.isSplittable ? maxQuantity : item.quantity)}
+                                    disabled={quantity >= ((item.isSplittable || item.quantity > 1) ? maxQuantity : item.quantity)}
                                     className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-r border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     <Plus size={20} />
@@ -439,7 +473,7 @@ const AssignmentModal: React.FC<{
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">הערות (אופציונלי)</label>
+                            <label className="block text-sm font-medium text-neutral-700 mb-2">{t('eventPage.assignment.notesOptional')}</label>
                             <div className="relative">
                                 <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
                                 <textarea
@@ -447,36 +481,58 @@ const AssignmentModal: React.FC<{
                                     onChange={e => setNotes(e.target.value)}
                                     className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
                                     rows={3}
-                                    placeholder="לדוגמה: ללא גלוטן, טבעוני..."
+                                    placeholder={t('eventPage.assignment.notesPlaceholder')}
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="bg-neutral-50 px-6 py-4 flex justify-end space-x-3 rtl:space-x-reverse rounded-b-xl">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300 font-medium">ביטול</button>
-                    <button onClick={handleSubmit} disabled={isLoading} className="px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent/90 disabled:bg-neutral-300 font-medium">{isLoading ? 'מעדכן...' : isEdit ? 'שמור שינויים' : 'אשר שיבוץ'}</button>
+                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300 font-medium">{t('common.cancel')}</button>
+                    <button onClick={handleSubmit} disabled={isLoading} className="px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent/90 disabled:bg-neutral-300">{isLoading ? t('common.saving') : isAddMore ? t('eventPage.assignment.add') : isEdit ? t('common.saveChanges') : t('eventPage.assignment.confirmAssignment')}</button>
                 </div>
             </div >
         </div >
     );
 };
 
-const NameModal: React.FC<{ onSave: (name: string) => void, isLoading: boolean, onClose: () => void }> = ({ onSave, isLoading, onClose }) => {
+const NameModal: React.FC<{ isLoading: boolean, onSave: (name: string) => void, onClose: () => void }> = ({ isLoading, onSave, onClose }) => {
+    const { t } = useTranslation();
     const [name, setName] = useState('');
+    const [error, setError] = useState('');
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl shadow-xl max-w-sm w-full">
                 <div className="p-6 text-center">
-                    <h2 className="text-xl font-bold text-neutral-900 mb-2">ברוכים הבאים!</h2>
-                    <p className="text-gray-600 mb-4">כדי להשתתף באירוע, אנא הזן את שמך.</p>
-                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="השם שלך" className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500" />
+                    <h2 className="text-xl font-bold text-neutral-900 mb-2">{t('eventPage.welcome.title')}</h2>
+                    <p className="text-gray-600 mb-4">{t('eventPage.welcome.subtitle')}</p>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                            setName(e.target.value);
+                            if (e.target.value.trim()) setError('');
+                        }}
+                        placeholder={t('eventPage.welcome.namePlaceholder')}
+                        className={`w-full p-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500`}
+                    />
+                    {error && <p className="text-red-500 text-xs mt-1 text-right">{error}</p>}
                     <div className="flex space-x-3 rtl:space-x-reverse mt-6">
                         <button type="button" onClick={onClose} disabled={isLoading} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">
-                            ביטול
+                            {t('common.cancel')}
                         </button>
-                        <button onClick={() => onSave(name)} disabled={!name.trim() || isLoading} className="flex-1 bg-accent text-white py-2 rounded-lg hover:bg-accent/90 disabled:bg-neutral-300">
-                            {isLoading ? 'שומר...' : 'הצטרף לאירוע'}
+                        <button
+                            onClick={() => {
+                                if (!name.trim()) {
+                                    setError(t('eventPage.messages.missingName'));
+                                    return;
+                                }
+                                onSave(name);
+                            }}
+                            disabled={isLoading}
+                            className="flex-1 bg-accent text-white py-2 rounded-lg hover:bg-accent/90 disabled:bg-neutral-300"
+                        >
+                            {isLoading ? t('common.saving') : t('eventPage.welcome.join')}
                         </button>
                     </div>
                 </div>
@@ -487,6 +543,7 @@ const NameModal: React.FC<{ onSave: (name: string) => void, isLoading: boolean, 
 
 // --- Main Page Component ---
 const EventPage: React.FC = () => {
+    const { t, i18n } = useTranslation();
     const { eventId } = useParams<{ eventId: string }>();
     const [localUser, setLocalUser] = useState<FirebaseUser | null>(null);
     const [isJoining, setIsJoining] = useState(false);
@@ -524,7 +581,7 @@ const EventPage: React.FC = () => {
         };
     }, [menuItems, assignments]);
 
-    const [modalState, setModalState] = useState<{ type: 'assign' | 'edit' | 'add-user-item'; item?: MenuItemType; assignment?: AssignmentType; category?: string } | null>(null);
+    const [modalState, setModalState] = useState<{ type: 'assign' | 'edit' | 'add-user-item' | 'add-more'; item?: MenuItemType; assignment?: AssignmentType; category?: string } | null>(null);
     const [itemToAssignAfterJoin, setItemToAssignAfterJoin] = useState<MenuItemType | null>(null);
     const [showNameModal, setShowNameModal] = useState(false);
 
@@ -557,19 +614,30 @@ const EventPage: React.FC = () => {
         setIsJoining(true);
         try {
             await FirebaseService.joinEvent(eventId, localUser.uid, name.trim());
-            toast.success(`ברוך הבא, ${name.trim()}!`);
+            toast.success(t('eventPage.messages.welcomeUser', { name: name.trim() }));
             setShowNameModal(false);
             if (itemToAssignAfterJoin) {
                 setModalState({ type: 'assign', item: itemToAssignAfterJoin });
                 setItemToAssignAfterJoin(null);
             }
-        } catch (error) { toast.error("שגיאה בהצטרפות לאירוע."); } finally { setIsJoining(false); }
+        } catch (error) {
+            toast.error(t('eventPage.messages.joinError'));
+        } finally {
+            setIsJoining(false);
+        }
     }, [eventId, localUser, itemToAssignAfterJoin]);
 
     const handleAssignClick = (item: MenuItemType) => {
         if (!localUser) return;
         const isParticipant = participants.some(p => p.id === localUser.uid);
-        if (localUser.isAnonymous && !isParticipant) {
+
+        // CHECK: Does the user already have an assignment for this item?
+        const existingAssignment = assignments.find(a => a.menuItemId === item.id && a.userId === localUser.uid);
+
+        if (existingAssignment) {
+            // Use existing logic for editing an assignment
+            setModalState({ type: 'add-more', item, assignment: existingAssignment });
+        } else if (localUser.isAnonymous && !isParticipant) {
             setItemToAssignAfterJoin(item);
             setShowNameModal(true);
         } else {
@@ -582,28 +650,28 @@ const EventPage: React.FC = () => {
 
         const item = menuItems.find(i => i.id === assignment.menuItemId);
         if (!item) {
-            toast.error("הפריט לא נמצא");
+            toast.error(t('eventPage.messages.itemNotFound'));
             return;
         }
 
         const isCreator = item.creatorId === localUser.uid;
 
         if (isCreator) {
-            if (window.confirm("פעולה זו תמחק גם את הפריט וגם את השיבוץ")) {
+            if (window.confirm(t('eventPage.messages.deleteItemConfirm'))) {
                 try {
                     await FirebaseService.deleteMenuItem(eventId, item.id);
-                    toast.success("הפריט והשיבוץ נמחקו");
+                    toast.success(t('eventPage.messages.itemDeleted'));
                 } catch (error) {
-                    toast.error("שגיאה במחיקת הפריט");
+                    toast.error(t('eventPage.messages.deleteItemError'));
                 }
             }
         } else {
-            if (window.confirm("האם לבטל את השיבוץ?")) {
+            if (window.confirm(t('eventPage.messages.cancelAssignmentConfirm'))) {
                 try {
                     await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
-                    toast.success("השיבוץ בוטל");
+                    toast.success(t('eventPage.messages.assignmentCancelled'));
                 } catch (error) {
-                    toast.error("שגיאה בביטול השיבוץ");
+                    toast.error(t('eventPage.messages.cancelAssignmentError'));
                 }
             }
         }
@@ -647,13 +715,13 @@ const EventPage: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-background text-center p-4">
                 <AlertCircle size={64} className="text-error" />
-                <h1 className="mt-6 text-4xl font-bold text-neutral-800">אופס!</h1>
-                <p className="mt-2 text-lg text-neutral-600">נראה שהאירוע שחיפשת לא קיים.</p>
+                <h1 className="mt-6 text-4xl font-bold text-neutral-800">{t('eventPage.error.oops')}</h1>
+                <p className="mt-2 text-lg text-neutral-600">{t('eventPage.error.eventNotFound')}</p>
                 <Link
                     to="/"
                     className="mt-8 inline-block bg-accent text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
                 >
-                    חזור לדף הראשי
+                    {t('common.backToHome')}
                 </Link>
             </div>
         );
@@ -682,13 +750,13 @@ const EventPage: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-background text-center p-4">
                 <AlertCircle size={64} className="text-info" />
-                <h1 className="mt-6 text-4xl font-bold text-neutral-800">האירוע אינו פעיל</h1>
-                <p className="mt-2 text-lg text-neutral-600">לא ניתן לשבץ פריטים חדשים.</p>
+                <h1 className="mt-6 text-4xl font-bold text-neutral-800">{t('eventPage.status.inactive')}</h1>
+                <p className="mt-2 text-lg text-neutral-600">{t('eventPage.status.inactiveSubtitle')}</p>
                 <Link
                     to="/"
                     className="mt-8 inline-block bg-accent text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
                 >
-                    חזור לדף הראשי
+                    {t('common.backToHome')}
                 </Link>
             </div>
         );
@@ -701,20 +769,21 @@ const EventPage: React.FC = () => {
 
                     <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <div>
-                            <h1 className="font-bold text-lg text-accent">שישי שיתופי</h1>
-                            <p className="text-xs text-neutral-500">ניהול ארוחות משותפות</p>
+                            <h1 className="font-bold text-lg text-accent">{t('header.title')}</h1>
+                            <p className="text-xs text-neutral-500">{t('header.subtitle')}</p>
                         </div>
                     </Link>
 
                     <div className="text-left flex items-center gap-3">
+                        <LanguageSwitcher />
                         {showAdminButton && (
                             <Link
                                 to="/"
-                                className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors text-sm font-medium"
-                                title="מעבר לפאנל ניהול"
+                                className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900 transition-colors text-sm font-medium"
+                                title={t('eventPage.adminPanelTooltip')}
                             >
-                                <Shield size={16} />
-                                <span className="hidden sm:inline">פאנל ניהול</span>
+                                <Settings size={20} className="block sm:hidden" />
+                                <span className="hidden sm:block">{t('eventPage.adminPanel')}</span>
                             </Link>
                         )}
 
@@ -741,13 +810,13 @@ const EventPage: React.FC = () => {
                         <h1 className="text-xl font-bold text-neutral-900">{currentEvent.details.title}</h1>
                         <div className="flex flex-col items-end gap-y-2">
                             {assignmentStats.requiredTotal > 0 && (
-                                <div className="text-xs font-semibold text-red-700 bg-red-100 px-2 py-1 rounded-full whitespace-nowrap" title="פריטי חובה">
-                                    <span>חובה: {assignmentStats.requiredAssigned}/{assignmentStats.requiredTotal} שובצו</span>
+                                <div className="text-xs font-semibold text-red-700 bg-red-100 px-2 py-1 rounded-full whitespace-nowrap" title={t('eventPage.stats.required.tooltip')}>
+                                    <span>{t('eventPage.stats.required.text', { count: assignmentStats.requiredAssigned, total: assignmentStats.requiredTotal })}</span>
                                 </div>
                             )}
                             {assignmentStats.optionalTotal > 0 && (
-                                <div className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full whitespace-nowrap" title="פריטי רשות">
-                                    <span>רשות: {assignmentStats.optionalAssigned}/{assignmentStats.optionalTotal} שובצו</span>
+                                <div className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full whitespace-nowrap" title={t('eventPage.stats.optional.tooltip')}>
+                                    <span>{t('eventPage.stats.optional.text', { count: assignmentStats.optionalAssigned, total: assignmentStats.optionalTotal })}</span>
                                 </div>
                             )}
                         </div>
@@ -757,10 +826,10 @@ const EventPage: React.FC = () => {
                         <button
                             onClick={handleAddToCalendar}
                             className="flex items-center hover:text-accent hover:font-medium transition-colors group"
-                            title="הוסף ליומן גוגל"
+                            title={t('eventPage.details.addToCalendar')}
                         >
                             <CalendarPlus size={14} className="ml-1.5 flex-shrink-0 group-hover:text-accent" />
-                            {new Date(currentEvent.details.date).toLocaleDateString('he-IL')}
+                            {new Date(currentEvent.details.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US')}
                         </button>
 
                         {/* Time (Static) */}
@@ -772,14 +841,14 @@ const EventPage: React.FC = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center hover:text-blue-600 hover:underline transition-colors group"
-                            title="נווט עם Google Maps / Waze"
+                            title={t('eventPage.details.navigate')}
                         >
                             <MapPin size={14} className="ml-1.5 flex-shrink-0 group-hover:text-blue-500" />
                             {currentEvent.details.location}
                         </a>
 
                         {/* Organizer (Static) */}
-                        <p className="flex items-center"><UserIcon size={14} className="ml-1.5 flex-shrink-0" /> מארגן: {currentEvent.organizerName}</p>
+                        <p className="flex items-center"><UserIcon size={14} className="ml-1.5 flex-shrink-0" /> {t('eventPage.details.organizer')}: {currentEvent.organizerName}</p>
                     </div>
                 </div>
 
@@ -791,21 +860,21 @@ const EventPage: React.FC = () => {
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => { setSearchTerm(e.target.value); setView('items'); setSelectedCategory(null); }}
-                                placeholder="חפש פריט..."
+                                placeholder={t('eventPage.searchPlaceholder')}
                                 className="w-full pr-9 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 shadow-sm"
                             />
                             {searchTerm && (
                                 <button
                                     onClick={() => setSearchTerm('')}
                                     className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                                    aria-label="נקה חיפוש"
+                                    aria-label={t('common.clearSearch')}
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
                             )}
                         </div>
                         <button onClick={handleMyAssignmentsClick} className={`px-3 py-1.5 text-sm font-medium rounded-lg shadow-sm transition-colors whitespace-nowrap ${selectedCategory === 'my-assignments' ? 'bg-accent text-white' : 'bg-primary text-white hover:bg-primary/90'}`}>
-                            השיבוצים שלי
+                            {t('eventPage.filter.myAssignments')}
                         </button>
                     </div>
                 </div>
@@ -820,7 +889,7 @@ const EventPage: React.FC = () => {
                                 if (canAddMoreItems) {
                                     setModalState({ type: 'add-user-item' });
                                 } else {
-                                    toast.error(`הגעת למכסת ${MAX_USER_ITEMS} הפריטים שניתן להוסיף.`);
+                                    toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
                                 }
                             }}
                             canAddMoreItems={canAddMoreItems}
@@ -833,11 +902,11 @@ const EventPage: React.FC = () => {
                     </>
                 ) : (
                     <div>
-                        <button onClick={handleBackToCategories} className="flex items-center text-sm font-semibold text-accent hover:underline mb-4"><ArrowRight size={16} className="ml-1" />חזור לקטגוריות</button>
+                        <button onClick={handleBackToCategories} className="flex items-center text-sm font-semibold text-accent hover:underline mb-4"><ArrowRight size={16} className="ml-1" />{t('eventPage.backToCategories')}</button>
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-bold text-neutral-800">
-                                    {searchTerm ? 'תוצאות חיפוש' : selectedCategory === 'my-assignments' ? 'השיבוצים שלי' : categoryNames[selectedCategory!]}
+                                    {searchTerm ? t('eventPage.list.searchResults') : selectedCategory === 'my-assignments' ? t('eventPage.filter.myAssignments') : t(`categories.${selectedCategory!}`)}
                                 </h2>
 
                             </div>
@@ -847,15 +916,15 @@ const EventPage: React.FC = () => {
                                         if (canAddMoreItems) {
                                             setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
                                         } else {
-                                            toast.error(`הגעת למכסת ${MAX_USER_ITEMS} הפריטים שניתן להוסיף.`);
+                                            toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
                                         }
                                     }}
-                                    title={canAddMoreItems ? "הוסף פריט חדש לקטגוריה זו" : `הגעת למכסת ${MAX_USER_ITEMS} הפריטים`}
+                                    title={canAddMoreItems ? t('eventPage.category.addItemTooltip') : t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS })}
                                     className="bg-success text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center"
                                     disabled={!canAddMoreItems}
                                 >
                                     <Plus size={16} className="inline-block ml-1" />
-                                    הוסף פריט ({userCreatedItemsCount}/{MAX_USER_ITEMS})
+                                    {t('eventPage.category.addItem')} ({userCreatedItemsCount}/{MAX_USER_ITEMS})
                                 </button>
                             )}
                         </div>
@@ -881,7 +950,7 @@ const EventPage: React.FC = () => {
                                         <>
                                             {availableItems.length > 0 && (
                                                 <div>
-                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">פריטים פנויים</h3>
+                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">{t('eventPage.list.available')}</h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {availableItems.map(item => {
                                                             const assignment = assignments.find(a => a.menuItemId === item.id);
@@ -904,7 +973,7 @@ const EventPage: React.FC = () => {
 
                                             {assignedItems.length > 0 && (
                                                 <div className={availableItems.length > 0 ? 'pt-6 border-t' : ''}>
-                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">פריטים שהושלמו</h3>
+                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">{t('eventPage.list.completed')}</h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {assignedItems.map(item => {
                                                             const assignment = assignments.find(a => a.menuItemId === item.id);
@@ -929,7 +998,7 @@ const EventPage: React.FC = () => {
                                     );
                                 })()}
                             </div>
-                        ) : <p className="text-center text-neutral-500 py-8">לא נמצאו פריטים.</p>}
+                        ) : <p className="text-center text-neutral-500 py-8">{t('eventPage.list.noItems')}</p>}
                     </div>
                 )}
             </main>
@@ -941,13 +1010,13 @@ const EventPage: React.FC = () => {
                             <ChefHat className="h-6 w-6 text-orange-500" />
                         </div>
                     </div>
-                    <h2 className="text-lg font-bold text-gray-800 mb-1">רוצה ליצור אירוע משלך?</h2>
-                    <p className="text-gray-600 text-sm mb-4">זה לוקח דקה להירשם, וזה לגמרי בחינם.</p>
+                    <h2 className="text-lg font-bold text-gray-800 mb-1">{t('eventPage.promo.title')}</h2>
+                    <p className="text-gray-600 text-sm mb-4">{t('eventPage.promo.subtitle')}</p>
                     <Link
                         to="/"
                         className="inline-block bg-orange-500 text-white font-bold py-2 px-5 rounded-lg hover:bg-orange-600 transition-colors shadow hover:shadow-md text-sm"
                     >
-                        הירשם עכשיו
+                        {t('eventPage.promo.register')}
                     </Link>
                 </div>
             </div>
@@ -956,6 +1025,7 @@ const EventPage: React.FC = () => {
 
             {localUser && modalState?.type === 'assign' && modalState.item && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} />)}
             {localUser && modalState?.type === 'edit' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} existingAssignment={modalState.assignment} />)}
+            {localUser && modalState?.type === 'add-more' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} isAddMore={true} existingAssignment={modalState.assignment} />)}
             {
                 modalState?.type === 'add-user-item' && currentEvent && (
                     <UserMenuItemForm

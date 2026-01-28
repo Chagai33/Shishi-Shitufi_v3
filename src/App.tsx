@@ -32,21 +32,25 @@ import { FirebaseService } from './services/firebaseService';
  * היא גם מטפלת בלוגיקה של מחיקת החשבון והנתונים המשויכים אליו.
  */
 /*******  082bce00-3db0-46d3-ab25-193bdca2e3fe  *******/
+
+import { useTranslation } from 'react-i18next';
+
 function App() {
+  const { t } = useTranslation(); // <-- Hook
   const { isLoading: isAuthLoading } = useAuth();
-  const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore(); // <-- Call to state and function
+  const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore();
 
   // Account deletion logic
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleDeleteAccount = async () => {
     setIsDeletingAccount(true);
-    toast.loading('מוחק את החשבון והנתונים...', { id: 'delete-toast' });
+    toast.loading(t('account.delete.processing'), { id: 'delete-toast' });
     try {
       await FirebaseService.deleteCurrentUserAccount();
-      toast.success('החשבון נמחק בהצלחה. תודה שהשתמשת בשירות!', { id: 'delete-toast' });
+      toast.success(t('account.delete.success'), { id: 'delete-toast' });
     } catch (error: any) {
-      toast.error(error.message || 'שגיאה במחיקת החשבון.', { id: 'delete-toast' });
+      toast.error(error.message || t('account.delete.error'), { id: 'delete-toast' });
     } finally {
       toggleDeleteAccountModal();
       setIsDeletingAccount(false);
@@ -92,11 +96,11 @@ function App() {
       {/* Adding the modal here */}
       {isDeleteAccountModalOpen && (
         <ConfirmationModal
-          message={`האם אתה בטוח שברצונך למחוק את חשבונך?\nפעולה זו הינה **בלתי הפיכה** ותמחק את כל האירועים, הפריטים והשיבוצים המשויכים לך.`}
+          message={t('account.delete.confirmMessage')}
           onClose={toggleDeleteAccountModal}
           options={[
             {
-              label: isDeletingAccount ? 'מוחק...' : 'כן, מחק את החשבון',
+              label: isDeletingAccount ? t('common.loading') : t('account.delete.confirmButton'),
               onClick: handleDeleteAccount,
               className: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300'
             }

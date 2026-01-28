@@ -1,0 +1,559 @@
+{
+    "translation": {
+        "common": {
+            "user": "משתמש",
+            "errorOccurred": "אירעה שגיאה",
+            "saving": "שומר...",
+            "saveChanges": "שמור שינויים",
+            "backToHome": "חזרה לדף הבית",
+            "clearSearch": "נקה חיפוש",
+            "errors": {
+                "general": "שגיאה כללית"
+            },
+            "loading": "טוען...",
+            "save": "שמור",
+            "cancel": "ביטול",
+            "delete": "מחק",
+            "edit": "ערוך",
+            "close": "סגור",
+            "confirm": "אישור",
+            "back": "חזור"
+        },
+        "errors": {
+            "auth": {
+                "userNotFound": "משתמש לא נמצא",
+                "wrongPassword": "סיסמה שגויה",
+                "emailInUse": "האימייל כבר בשימוש",
+                "tooManyRequests": "יותר מדי בקשות, נסה שוב מאוחר יותר",
+                "permissionDenied": "אין הרשאה"
+            },
+            "general": "אירעה שגיאה. אנא נסה שנית.",
+            "required": "שדה זה הוא חובה"
+        },
+        "importModal": {
+            "preview": {
+                "table": {
+                    "yes": "כן",
+                    "no": "לא",
+                    "select": "בחר",
+                    "name": "שם פריט",
+                    "category": "קטגוריה",
+                    "quantity": "כמות",
+                    "notes": "הערות",
+                    "required": "חובה",
+                    "actions": "פעולות"
+                },
+                "title": "תצוגה מקדימה ({{count}} פריטים)",
+                "selectAll": "בחר הכל",
+                "deselectAll": "בטל בחירת הכל",
+                "back": "חזור לייבוא",
+                "noItems": "לא נמצאו פריטים לייבוא",
+                "errors": {
+                    "nameLength": "שם הפריט חייב להכיל לפחות 2 תווים",
+                    "quantityRange": "הכמות חייבת להיות בין 1 ל-100"
+                },
+                "summary": {
+                    "selected": "<strong>{{selected}}</strong> פריטים נבחרו לייבוא מתוך <strong>{{valid}}</strong> פריטים תקינים",
+                    "errors": "{{count}} פריטים עם שגיאות לא ייובאו"
+                },
+                "importBtn": "ייבא {{count}} פריטים",
+                "importingBtn": "מייבא פריטים...",
+                "cancelBtn": "ביטול"
+            },
+            "methods": {
+                "desc": "בחר שיטת ייבוא",
+                "preset": "רשימה התחלתית",
+                "text": "טקסט חופשי",
+                "excel": "Excel",
+                "csv": "CSV"
+            },
+            "title": "ייבוא פריטים",
+            "preset": {
+                "title": "רשימות מוכנות",
+                "desc": "בחר מרשימות מוכנות מראש או צור רשימה חדשה",
+                "openBtn": "פתח רשימות מוכנות",
+                "loadedSuccess": "נטענו {{count}} פריטים מהרשימה"
+            },
+            "text": {
+                "label": "הדבק רשימת פריטים",
+                "placeholder": "לחם, 2\nסלט ירוק, 1, סלט עלים טריים",
+                "help": "פורמט: שם פריט, כמות (אופציונלי), הערות (אופציונלי)\nכל פריט בשורה נפרדת. אם לא צוינה כמות, תיקבע כמות 1.",
+                "parseBtn": "עבד טקסט",
+                "emptyError": "יש להזין טקסט",
+                "parseError": "שגיאה בעיבוד הטקסט"
+            },
+            "file": {
+                "label": "העלה קובץ {{type}}",
+                "help": "פורמט: עמודה ראשונה - שם פריט, עמודה שנייה - כמות (אופציונלי), עמודה שלישית - הערות (אופציונלי)\nהשורה הראשונה יכולה להכיל כותרות ותתעלם.",
+                "unsupportedType": "סוג קובץ לא נתמך",
+                "parseError": "שגיאה בעיבוד הקובץ"
+            },
+            "duplicates": {
+                "title": "נמצאו פריטים כפולים",
+                "desc": "זוהו <strong>{{duplicates}}</strong> פריטים שכבר קיימים באירוע.<br/>בנוסף להם, יש <strong>{{new}}</strong> פריטים חדשים.<br/>איך תרצה להמשיך?",
+                "importAll": "ייבא הכל ({{count}} פריטים)",
+                "importNew": "ייבא חדשים בלבד ({{count}} פריטים)",
+                "cancel": "ביטול"
+            }
+        },
+        "presetList": {
+            "title": "ניהול רשימות מוכנות",
+            "createNew": "צור רשימה חדשה",
+            "edit": "ערוך",
+            "delete": "מחק",
+            "use": "השתמש",
+            "empty": "אין רשימות מוכנות",
+            "form": {
+                "name": "שם הרשימה",
+                "addItem": "הוסף פריט",
+                "save": "שמור רשימה",
+                "saving": "שומר...",
+                "cancel": "ביטול"
+            },
+            "confirmDelete": "האם למחוק את הרשימה \"{{name}}\"?"
+        },
+        "bulkEdit": {
+            "filters": {
+                "allOf": "הכל מתוך הרשימה",
+                "assigned": "שובצו",
+                "unassigned": "לא שובצו",
+                "allEvents": "כל האירועים",
+                "search": "חיפוש",
+                "event": "אירוע",
+                "category": "קטגוריה",
+                "all": "הכל",
+                "assignment": "שיבוץ",
+                "createdBy": "נוצר ע\"י",
+                "admin": "מנהל",
+                "users": "משתמשים"
+            },
+            "messages": {
+                "itemUpdated": "הפריט עודכן בהצלחה",
+                "errorUpdating": "שגיאה בעדכון הפריט",
+                "errorGeneral": "אירעה שגיאה כללית",
+                "selectAction": "בחר פעולה מהרשימה",
+                "noAssignedToCancel": "אין שיבוצים לביטול בפריטים שנבחרו",
+                "error": "שגיאה",
+                "enterItemName": "נא להזין שם פריט",
+                "selectEvent": "בחר אירוע",
+                "itemAdded": "הפריט נוסף בהצלחה",
+                "errorAdding": "שגיאה בהוספת הפריט",
+                "selectToSave": "בחר פריטים לשמירה",
+                "enterListNameError": "שגיאה: נא להזין שם לרשימה",
+                "errorSavingList": "שגיאה בשמירת הרשימה"
+            },
+            "actions": {
+                "cancelAssignments": "בטל שיבוצים",
+                "changeCategory": "שנה קטגוריה",
+                "changeRequired": "שנה סטטוס חובה",
+                "delete": "מחק פריטים",
+                "saveAsList": "שמור כרשימה",
+                "execute": "בצע",
+                "cancel": "ביטול"
+            },
+            "saveAll": "שמור הכל",
+            "cancelEdit": "בטל עריכה",
+            "editAll": "ערוך הכל",
+            "addItem": "הוסף פריט",
+            "import": "ייבוא",
+            "table": {
+                "noItems": "אין פריטים",
+                "noItemsDesc": "לא נמצאו פריטים לתצוגה",
+                "items": "פריטים",
+                "name": "שם",
+                "event": "אירוע",
+                "quantity": "כמות",
+                "notes": "הערות",
+                "required": "חובה",
+                "splittable": "ניתן לפיצול",
+                "assignment": "שיבוץ"
+            },
+            "title": "עריכה מרוכזת",
+            "save": "שמור שינויים",
+            "saving": "שומר...",
+            "cancel": "ביטול",
+            "success": "השינויים נשמרו בהצלחה",
+            "error": "שגיאה בשמירת השינויים",
+            "stats": {
+                "itemsDisplayed": "פריטים מוצגים",
+                "selected": "נבחרו",
+                "withChanges": "עם שינויים",
+                "assigned": "משובצים"
+            }
+        },
+        "dashboard": {
+            "eventCard": {
+                "admin": "ניהול",
+                "status": {
+                    "active": "פעיל",
+                    "inactive": "לא פעיל",
+                    "ended": "הסתיים"
+                },
+                "stats": {
+                    "items": "{{count}} מתוך {{total}} פריטים שובצו",
+                    "participants": "{{count}} משתתפים"
+                },
+                "actions": {
+                    "share": "שתף",
+                    "participantsView": "תצוגת משתתפים",
+                    "bulkEdit": "עריכה מרוכזת",
+                    "import": "ייבא פריטים",
+                    "manageParticipants": "נהל משתתפים",
+                    "editDetails": "ערוך פרטי אירוע",
+                    "delete": "מחק אירוע"
+                },
+                "messages": {
+                    "linkCopied": "הקישור הועתק!"
+                }
+            },
+            "eventForm": {
+                "title": {
+                    "create": "יצירת אירוע חדש",
+                    "edit": "עריכת אירוע"
+                },
+                "fields": {
+                    "eventName": "שם האירוע",
+                    "location": "מיקום",
+                    "description": "תיאור (אופציונלי)",
+                    "isActive": "הפוך לאירוע פעיל",
+                    "allowUserItems": "אפשר למשתתפים להוסיף פריטים",
+                    "userItemLimit": "מגבלת פריטים למשתמש"
+                },
+                "submit": {
+                    "creating": "יוצר...",
+                    "updating": "מעדכן...",
+                    "create": "צור אירוע",
+                    "update": "עדכן אירוע"
+                },
+                "cancel": "ביטול",
+                "messages": {
+                    "userNotLoggedIn": "שגיאה: משתמש לא מחובר.",
+                    "fillRequired": "יש למלא את כל שדות החובה.",
+                    "createSuccess": "האירוע נוצר בהצלחה!",
+                    "updateSuccess": "האירוע עודכן בהצלחה!",
+                    "createError": "שגיאה ביצירת האירוע.",
+                    "updateError": "שגיאה בעדכון האירוע."
+                }
+            },
+            "main": {
+                "adminSuffix": " - מנהל",
+                "developedBy": "פותח ע\"י חגי יחיאל",
+                "filters": {
+                    "activeEvents": "אירועים פעילים ({{count}})",
+                    "inactiveEvents": "אירועים ישנים ({{count}})"
+                },
+                "createButton": "צור אירוע חדש",
+                "loading": "טוען נתונים...",
+                "empty": {
+                    "activeTitle": "אין אירועים פעילים",
+                    "inactiveTitle": "אין אירועים ישנים",
+                    "activeDesc": "לחץ על \"צור אירוע חדש\" כדי להתחיל.",
+                    "inactiveDesc": "אירועים שהושבתו או הסתיימו יופיעו כאן."
+                },
+                "messages": {
+                    "logoutSuccess": "התנתקת בהצלחה",
+                    "logoutError": "שגיאה בעת ההתנתקות",
+                    "fetchError": "שגיאה בטעינת האירועים.",
+                    "deleteConfirm": "האם אתה בטוח שברצונך למחוק את האירוע \"{{title}}\"? הפעולה אינה הפיכה.",
+                    "deleteSuccess": "האירוע נמחק בהצלחה",
+                    "deleteError": "שגיאה במחיקת האירוע",
+                    "manageParticipantsComingSoon": "ניהול משתתפים עבור {{title}} - בקרוב!"
+                }
+            },
+            "general": "שגיאה כללית"
+        },
+        "landing": {
+            "header": {
+                "login": "כניסה"
+            },
+            "hero": {
+                "badge": "ניהול אירועים חכם",
+                "title": "ניהול ארוחות קהילתיות",
+                "titleHighlight": "בקלות",
+                "subtitle": "הפלטפורמה שהופכת את התיאום הלוגיסטי לחוויה חלקה, כדי שתוכלו להתרכז באוכל ובחיבור האנושי.",
+                "cta": "פתח אירוע בחינם"
+            },
+            "useCases": {
+                "title": "מתאים לכל מפגש",
+                "items": [
+                    "פיקניקים משפחתיים בפארק",
+                    "טיולי חברים וקמפינג",
+                    "ארוחות שבת וחג קהילתיות",
+                    "מסיבות משרד ואירועי חברה"
+                ]
+            },
+            "differentiator": {
+                "title": "הכי פשוט למשתתפים",
+                "text": {
+                    "part1": "היתרון הגדול שלנו הוא בפשטות:",
+                    "highlight": "המשתתפים לא צריכים להירשם!",
+                    "part2": "פשוט שולחים להם לינק, הם בוחרים מה להביא, וזהו.\nבלי סיסמאות, בלי הורדות ובלי כאב ראש."
+                }
+            },
+            "story": {
+                "title": "למה בנינו את זה?",
+                "p1": "\"לפעמים הרעיונות הכי טובים נולדים לא במשרד, אלא סביב שולחן שבת. כמי שיצא בשאלה ומשתתף בארוחות קהילתיות, חוויתי את הקסם של הארוחות השיתופיות - אבל גם את הכאב ראש הלוגיסטי.\"",
+                "p2": "\"ניהול ה'מי מביא מה' דרך Google Sheets היה מסורבל, לא מותאם לנייד וגרר תקלות. מישהו מחק בטעות שורה, אחרים הסתבכו עם העריכה בטלפון, ומנהלת האירוע עבדה קשה מדי.\"",
+                "p3": "\"שישי שיתופי נולד כדי לפתור בדיוק את זה. בנינו פתרון ייעודי שמייצר חוויה חלקה, אפס תקלות ושקט נפשי למנהלי האירוע.\""
+            }
+        },
+        "login": {
+            "subtitle": {
+                "login": "התחבר לחשבונך כדי לנהל אירועים",
+                "register": "צור חשבון חדש והתחל לארגן"
+            },
+            "fields": {
+                "displayName": "שם להצגה",
+                "email": "כתובת אימייל",
+                "password": "סיסמה"
+            },
+            "terms": {
+                "agree": "אני מאשר/ת שקראתי והסכמתי ל",
+                "terms": "תנאי השימוש",
+                "and": "ול",
+                "privacy": "מדיניות הפרטיות"
+            },
+            "submit": {
+                "login": "התחבר",
+                "register": "צור חשבון"
+            },
+            "toggle": {
+                "toRegister": "אין לך חשבון? צור אחד",
+                "toLogin": "יש לך חשבון? התחבר"
+            },
+            "messages": {
+                "loginSuccess": "התחברת בהצלחה!",
+                "termsRequired": "יש לאשר את תנאי השימוש ומדיניות הפרטיות.",
+                "displayNameRequired": "יש להזין שם להצגה",
+                "registerSuccess": "נרשמת בהצלחה! ברוך הבא.",
+                "authErrors": {
+                    "invalidCredential": "אימייל או סיסמה שגויים.",
+                    "emailInUse": "כתובת האימייל כבר בשימוש.",
+                    "weakPassword": "הסיסמה חלשה מדי. נדרשים לפחות 6 תווים.",
+                    "invalidEmail": "כתובת האימייל אינה תקינה."
+                }
+            }
+        },
+        "header": {
+            "title": "שישי שיתופי",
+            "subtitle": "ניהול ארוחות קהילתיות",
+            "nav": {
+                "events": "אירועים",
+                "admin": "נהל אירועים"
+            },
+            "guest": "אורח",
+            "logout": "התנתק",
+            "adminLogin": "כניסת מנהל"
+        },
+        "languages": {
+            "he": "עברית",
+            "en": "English",
+            "es": "Español"
+        },
+        "account": {
+            "delete": {
+                "processing": "מוחק את החשבון והנתונים...",
+                "success": "החשבון נמחק בהצלחה. תודה שהשתמשת בשירות!",
+                "error": "שגיאה במחיקת החשבון.",
+                "confirmMessage": "האם אתה בטוח שברצונך למחוק את חשבונך?\nפעולה זו הינה **בלתי הפיכה** ותמחק את כל האירועים, הפריטים והשיבוצים המשויכים לך.",
+                "confirmButton": "כן, מחק את החשבון"
+            }
+        },
+        "categories": {
+            "starter": "מנה ראשונה",
+            "main": "מנה עיקרית",
+            "dessert": "קינוחים",
+            "drink": "משקאות",
+            "other": "אחר",
+            "equipment": "ציוד כללי"
+        },
+        "eventPage": {
+            "assignment": {
+                "nameRequired": "שם הוא חובה",
+                "quantityPositive": "הכמות חייבת להיות חיובית",
+                "updateSuccess": "עודכן בהצלחה",
+                "newNamePlaceholder": "שם חדש",
+                "quantityToBring": "כמות להביא",
+                "confirmAssignment": "אשר שיבוץ",
+                "editTitle": "עריכת שיבוץ",
+                "addTitle": "שיבוץ פריט",
+                "suggestedQuantity": "כמות מוצעת",
+                "registerAs": "תירשם בשם:",
+                "changeName": "שנה שם",
+                "newName": "שם חדש*",
+                "fullName": "שם מלא*",
+                "namePlaceholder": "השם שיוצג לכולם",
+                "quantityIBring": "כמות שאביא*",
+                "bringAll": "אביא הכל",
+                "remaining": "נותרו",
+                "notesOptional": "הערות (אופציונלי)",
+                "notesPlaceholder": "לדוגמה: ללא גלוטן, טבעוני...",
+                "confirm": "אשר שיבוץ",
+                "addMoreSuccess": "הוסף בהצלחה",
+                "addMoreTitle": "הוסף עוד פריטים",
+                "quantityToAdd": "כמות להוספה",
+                "add": "הוסף"
+            },
+            "adminPanelTooltip": "פאנל ניהול",
+            "adminPanel": "נהל אירועים",
+            "stats": {
+                "required": {
+                    "text": "חובה",
+                    "tooltip": "פריטי חובה"
+                },
+                "optional": {
+                    "text": "רשות",
+                    "tooltip": "פריטי רשות"
+                },
+                "assigned": "שובצו"
+            },
+            "searchPlaceholder": "חפש...",
+            "backToCategories": "חזרה לקטגוריות",
+            "list": {
+                "searchResults": "תוצאות חיפוש",
+                "noItems": "אין פריטים",
+                "available": "פריטים פנויים",
+                "completed": "פריטים שהושלמו",
+                "empty": "לא נמצאו פריטים."
+            },
+            "category": {
+                "addItemTooltip": "הוסף פריט לקטגוריה זו",
+                "addItem": "הוסף פריט"
+            },
+            "promo": {
+                "register": "הירשם",
+                "title": "רוצה ליצור אירוע משלך?",
+                "subtitle": "זה לוקח דקה להירשם, וזה לגמרי בחינם.",
+                "button": "הירשם עכשיו"
+            },
+            "item": {
+                "quantityRequired": "כמות נדרשת",
+                "createdBy": "נוצר ע\"י",
+                "progress": "התקדמות",
+                "iBring": "אני מביא:",
+                "editQuantity": "ערוך כמות",
+                "cancel": "בטל",
+                "addMore": "הוסף עוד",
+                "iWillParticipate": "אני אשתתף בזה",
+                "completed": "הפריט הושלם",
+                "takenBy": "נלקח ע\"י",
+                "iWillBringIt": "אני אביא את זה"
+            },
+            "status": {
+                "ended": "האירוע הסתיים",
+                "inactive": "האירוע אינו פעיל",
+                "inactiveSubtitle": "לא ניתן לשבץ פריטים חדשים."
+            },
+            "welcome": {
+                "title": "ברוכים הבאים!",
+                "subtitle": "כדי להשתתף באירוע, אנא הזן את שמך.",
+                "namePlaceholder": "השם שלך",
+                "join": "הצטרף לאירוע"
+            },
+            "error": {
+                "oops": "אופס!",
+                "eventNotFound": "נראה שהאירוע שחיפשת לא קיים."
+            },
+            "details": {
+                "organizer": "מארגן",
+                "navigate": "נווט עם Google Maps / Waze",
+                "addToCalendar": "הוסף ליומן גוגל"
+            },
+            "search": {
+                "placeholder": "חפש פריט...",
+                "clear": "נקה חיפוש"
+            },
+            "filter": {
+                "myAssignments": "השיבוצים שלי",
+                "backToCategories": "חזור לקטגוריות",
+                "searchResults": "תוצאות חיפוש"
+            },
+            "actions": {
+                "addItem": "הוסף פריט"
+            },
+            "messages": {
+                "welcomeUser": "ברוך הבא, {{name}}!",
+                "joinError": "שגיאה בהצטרפות לאירוע.",
+                "itemNotFound": "הפריט לא נמצא",
+                "deleteItemConfirm": "פעולה זו תמחק גם את הפריט וגם את השיבוץ",
+                "itemDeleted": "הפריט והשיבוץ נמחקו",
+                "deleteItemError": "שגיאה במחיקת הפריט",
+                "cancelAssignmentConfirm": "האם לבטל את השיבוץ?",
+                "assignmentCancelled": "השיבוץ בוטל",
+                "cancelAssignmentError": "שגיאה בביטול השיבוץ",
+                "missingName": "כדי להשתבץ, יש להזין שם מלא.",
+                "missingNewName": "יש להזין שם חדש.",
+                "quantityZero": "הכמות חייבת להיות גדולה מ-0.",
+                "quantityTooHigh": "הכמות המבוקשת גדולה מהכמות הפנויה (מקסימום {{max}}).",
+                "assignmentUpdated": "השיבוץ עודכן בהצלחה!",
+                "assignmentCreated": "שובצת בהצלחה לפריט: {{itemName}}",
+                "limitReached": "הגעת למכסת {{limit}} הפריטים שניתן להוסיף."
+            }
+        },
+        "footer": {
+            "terms": "תנאי שימוש",
+            "privacy": "מדיניות פרטיות",
+            "feedback": "משוב",
+            "deleteAccount": "מחק חשבון",
+            "developedBy": "פותח ע\"י",
+            "iconsBy": "אייקונים באדיבות"
+        },
+        "items": {
+            "tables": "שולחנות",
+            "chairs": "כיסאות",
+            "tablecloths": "מפות",
+            "plates": "צלחות",
+            "cups": "כוסות",
+            "cutlery": "סכו\"ם",
+            "trays": "מגשים",
+            "waterPitchers": "קנקני מים",
+            "napkins": "מפיות",
+            "challah": "חלה",
+            "redWine": "יין אדום",
+            "whiteWine": "יין לבן",
+            "greenSalad": "סלט ירוק",
+            "hummus": "חומוס",
+            "tahini": "טחינה",
+            "pitas": "פיתות",
+            "cheeses": "גבינות",
+            "fruit": "פירות",
+            "cake": "עוגה",
+            "juice": "מיץ",
+            "water": "מים"
+        },
+        "userItemForm": {
+            "title": "הוסף פריט משלך",
+            "fields": {
+                "name": "שם הפריט *",
+                "namePlaceholder": "לדוגמה: עוגת גבינה",
+                "category": "קטגוריה *",
+                "quantityTotal": "כמות נדרשת (סה\"כ)",
+                "myContribution": "אני מביא",
+                "bringAll": "אביא הכל",
+                "remainingMsg": "נותרו {{count}} לאחרים",
+                "youBringAllMsg": "אתה מביא את הכל",
+                "notes": "הערות (אופציונלי)",
+                "notesPlaceholder": "לדוגמה: כשר, ללא גלוטן, טבעוני...",
+                "fullName": "שם מלא *",
+                "nameDisplayPlaceholder": "השם שיוצג לכולם",
+                "nameHelp": "השם יישמר למכשיר זה עבור אירוע זה"
+            },
+            "submit": "הוסף ושבץ אותי",
+            "submitting": "מוסיף...",
+            "cancel": "ביטול",
+            "errors": {
+                "mustLogin": "יש להתחבר כדי להוסיף פריט",
+                "fixErrors": "יש לתקן את השגיאות בטופס",
+                "nameRequired": "שם הפריט הוא שדה חובה",
+                "nameLength": "שם הפריט חייב להכיל לפחות 2 תווים",
+                "quantityMin": "הכמות חייבת להיות לפחות 1",
+                "quantityMax": "הכמות לא יכולה להיות יותר מ-100",
+                "duplicateItem": "פריט בשם \"{{name}}\" כבר קיים באירוע. האם להוסיף אותו בכל זאת?",
+                "missingName": "יש להזין שם כדי להוסיף פריט",
+                "success": "הפריט נוסף בהצלחה!",
+                "generalError": "שגיאה בהוספת הפריט",
+                "permissionDenied": "אין הרשאה להוסיף פריט. בדוק את הגדרות Firebase"
+            }
+        }
+    }
+}

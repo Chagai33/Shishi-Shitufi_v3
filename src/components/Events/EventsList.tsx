@@ -25,7 +25,8 @@ export function EventsList() {
   const { events, menuItems, assignments, isLoading, user, users } = useStore();
   const isAdmin = user?.isAdmin || false;
 
-  const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
+  // Refactored state to hold more context (like assignment for 'add-more' flow)
+  const [selectedMenuItem, setSelectedMenuItem] = useState<{ item: MenuItem; assignment?: Assignment; isAddMore?: boolean } | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<{ item: MenuItem; assignment: Assignment } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showBulkManager, setShowBulkManager] = useState(false);
@@ -125,7 +126,17 @@ export function EventsList() {
 
   const handleAssignItem = (item: MenuItem) => {
     if (!canAssign) return;
-    setSelectedMenuItem(item);
+
+    // CHECK: Does the user already have an assignment for this item?
+    const existingAssignment = eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id);
+
+    if (existingAssignment) {
+      // "Add More" flow: pass existing assignment + flag
+      setSelectedMenuItem({ item, assignment: existingAssignment, isAddMore: true });
+    } else {
+      // New assignment flow
+      setSelectedMenuItem({ item, isAddMore: false });
+    }
   };
 
   const handleEditAssignment = async (item: MenuItem) => {
@@ -212,8 +223,8 @@ export function EventsList() {
                     setSelectedCategory(null);
                   }}
                   className={`w-full px-4 py-2 font-semibold rounded-lg shadow-sm transition-colors text-sm ${showMyAssignments
-                      ? 'bg-accent text-white'
-                      : 'bg-primary text-white hover:bg-primary-dark'
+                    ? 'bg-accent text-white'
+                    : 'bg-primary text-white hover:bg-primary-dark'
                     }`}
                 >
                   השיבוצים שלי
@@ -310,7 +321,18 @@ export function EventsList() {
         </>
       )}
 
-      {selectedMenuItem && activeEvent && (<AssignmentModal menuItem={selectedMenuItem} event={activeEvent} onClose={() => setSelectedMenuItem(null)} />)}
+      {selectedMenuItem && activeEvent && (
+        <AssignmentModal
+          item={selectedMenuItem.item}
+          eventId={activeEvent.id}
+          organizerId={activeEvent.organizerId}
+          user={user!}
+          onClose={() => setSelectedMenuItem(null)}
+          isAddMore={selectedMenuItem.isAddMore}
+          existingAssignment={selectedMenuItem.assignment}
+          isEdit={selectedMenuItem.isAddMore} // Add-more is technically an edit of the total
+        />
+      )}
       {editingAssignment && activeEvent && (<EditAssignmentModal menuItem={editingAssignment.item} event={activeEvent} assignment={editingAssignment.assignment} onClose={() => setEditingAssignment(null)} />)}
 
       {showUserItemForm && activeEvent && (<UserMenuItemForm event={activeEvent} onClose={() => setShowUserItemForm(false)} availableCategories={availableCategories} />)}

@@ -7,6 +7,7 @@ import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, MenuItem, MenuCategory } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 interface UserMenuItemFormProps {
   event: ShishiEvent;
@@ -21,7 +22,7 @@ interface FormErrors {
 }
 
 export function UserMenuItemForm({ event, onClose, category, availableCategories }: UserMenuItemFormProps) {
-
+  const { t } = useTranslation();
   const { user: authUser } = useAuth(); // <-- The line that was restored
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -47,12 +48,12 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
   });
 
   const categoryOptions = [
-    { value: 'starter', label: 'מנה ראשונה' },
-    { value: 'main', label: 'מנה עיקרית' },
-    { value: 'dessert', label: 'קינוח' },
-    { value: 'drink', label: 'שתייה' },
-    { value: 'equipment', label: 'ציוד כללי' },
-    { value: 'other', label: 'אחר' }
+    { value: 'starter', label: t('categories.starter') },
+    { value: 'main', label: t('categories.main') },
+    { value: 'dessert', label: t('categories.dessert') },
+    { value: 'drink', label: t('categories.drink') },
+    { value: 'equipment', label: t('categories.equipment') },
+    { value: 'other', label: t('categories.other') }
   ];
 
   useEffect(() => {
@@ -69,15 +70,15 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     const newErrors: FormErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'שם הפריט הוא שדה חובה';
+      newErrors.name = t('userItemForm.errors.nameRequired');
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'שם הפריט חייב להכיל לפחות 2 תווים';
+      newErrors.name = t('userItemForm.errors.nameLength');
     }
 
     if (formData.quantity < 1) {
-      newErrors.quantity = 'הכמות חייבת להיות לפחות 1';
+      newErrors.quantity = t('userItemForm.errors.quantityMin');
     } else if (formData.quantity > 100) {
-      newErrors.quantity = 'הכמות לא יכולה להיות יותר מ-100';
+      newErrors.quantity = t('userItemForm.errors.quantityMax');
     }
 
     setErrors(newErrors);
@@ -91,14 +92,14 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
 
     if (!authUser) {
       console.error('❌ No authenticated user');
-      toast.error('יש להתחבר כדי להוסיף פריט');
+      toast.error(t('userItemForm.errors.mustLogin'));
       console.groupEnd();
       return;
     }
 
     if (!validateForm()) {
       console.error('❌ Form validation failed');
-      toast.error('יש לתקן את השגיאות בטופס');
+      toast.error(t('userItemForm.errors.fixErrors'));
       return;
     }
 
@@ -108,7 +109,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     );
 
     if (isDuplicate) {
-      if (!window.confirm(`פריט בשם "${formData.name.trim()}" כבר קיים באירוע. האם להוסיף אותו בכל זאת?`)) {
+      if (!window.confirm(t('userItemForm.errors.duplicateItem', { name: formData.name.trim() }))) {
         setIsSubmitting(false);
         return; // Stop the function if user clicked "Cancel"
       }
@@ -116,7 +117,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
 
     if (showNameInput && !participantName.trim()) {
       console.error('❌ Name required but not provided');
-      toast.error('יש להזין שם כדי להוסיף פריט');
+      toast.error(t('userItemForm.errors.missingName'));
       return;
     }
 
@@ -129,7 +130,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
         await FirebaseService.joinEvent(event.id, authUser.uid, finalUserName);
       } else {
         const existingParticipant = event.participants?.[authUser.uid];
-        finalUserName = existingParticipant?.name || authUser.displayName || 'אורח';
+        finalUserName = existingParticipant?.name || authUser.displayName || t('header.guest');
       }
       const newItemData: Omit<MenuItem, 'id'> = {
         name: formData.name.trim(),
@@ -171,10 +172,10 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
       if (itemId) {
         // We can't immediately add to store without fetching, but we assume subscription handles it or we do optimistic update
         // For now, simpler to just close
-        toast.success('הפריט נוסף בהצלחה!');
+        toast.success(t('userItemForm.errors.success'));
       } else {
         console.error('❌ Failed to get item ID');
-        throw new Error('לא התקבל מזהה פריט');
+        throw new Error(t('userItemForm.errors.generalError'));
       }
 
       onClose();
@@ -186,9 +187,9 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
         stack: error.stack
       });
 
-      let errorMessage = 'שגיאה בהוספת הפריט';
+      let errorMessage = t('userItemForm.errors.generalError');
       if (error.code === 'PERMISSION_DENIED') {
-        errorMessage = 'אין הרשאה להוסיף פריט. בדוק את הגדרות Firebase';
+        errorMessage = t('userItemForm.errors.permissionDenied');
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -219,7 +220,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">הוסף פריט משלך</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('userItemForm.title')}</h2>
           <button
             onClick={onClose}
             disabled={isSubmitting}
@@ -232,7 +233,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
           {showNameInput && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                שם מלא *
+                {t('userItemForm.fields.fullName')}
               </label>
               <div className="relative">
                 <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -240,18 +241,18 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                   type="text"
                   value={participantName}
                   onChange={(e) => setParticipantName(e.target.value)}
-                  placeholder="השם שיוצג לכולם"
+                  placeholder={t('userItemForm.fields.nameDisplayPlaceholder')}
                   className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   disabled={isSubmitting}
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-1">השם יישמר למכשיר זה עבור אירוע זה</p>
+              <p className="text-xs text-gray-500 mt-1">{t('userItemForm.fields.nameHelp')}</p>
             </div>
           )}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              שם הפריט *
+              {t('userItemForm.fields.name')}
             </label>
             <div className="relative">
               <ChefHat className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -259,7 +260,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="לדוגמה: עוגת גבינה"
+                placeholder={t('userItemForm.fields.namePlaceholder')}
                 className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
                   }`}
                 disabled={isSubmitting}
@@ -276,7 +277,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                קטגוריה *
+                {t('userItemForm.fields.category')}
               </label>
               <select
                 value={formData.category}
@@ -295,7 +296,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
             <div className="col-span-2 grid grid-cols-2 gap-4">
               {/* Total Needed */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">כמות נדרשת (סה"כ)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('userItemForm.fields.quantityTotal')}</label>
                 <Stepper
                   value={formData.quantity}
                   onChange={(val) => {
@@ -314,14 +315,14 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
               {/* My Contribution */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">אני מביא</label>
+                  <label className="block text-sm font-medium text-gray-700">{t('userItemForm.fields.myContribution')}</label>
                   {myQuantity < formData.quantity && (
                     <button
                       type="button"
                       onClick={() => setMyQuantity(formData.quantity)}
                       className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
                     >
-                      אביא הכל
+                      {t('userItemForm.fields.bringAll')}
                     </button>
                   )}
                 </div>
@@ -332,20 +333,22 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                 />
               </div>
               <div className="col-span-2 text-xs text-gray-500 text-center -mt-2">
-                {myQuantity < formData.quantity ? `נותרו ${formData.quantity - myQuantity} לאחרים` : 'אתה מביא את הכל'}
+                {myQuantity < formData.quantity ?
+                  t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity }) :
+                  t('userItemForm.fields.youBringAllMsg')}
               </div>
             </div>
           </div>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              הערות (אופציונלי)
+              {t('userItemForm.fields.notes')}
             </label>
             <div className="relative">
               <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
               <textarea
                 value={formData.notes}
                 onChange={(e) => handleInputChange('notes', e.target.value)}
-                placeholder="לדוגמה: כשר, ללא גלוטן, טבעוני..."
+                placeholder={t('userItemForm.fields.notesPlaceholder')}
                 rows={3}
                 className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                 disabled={isSubmitting}
@@ -363,10 +366,10 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
               {isSubmitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
-                  מוסיף...
+                  {t('userItemForm.submitting')}
                 </>
               ) : (
-                'הוסף ושבץ אותי'
+                t('userItemForm.submit')
               )}
             </button>
             <button
@@ -375,7 +378,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
               disabled={isSubmitting}
               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
             >
-              ביטול
+              {t('userItemForm.cancel')}
             </button>
           </div>
         </form>

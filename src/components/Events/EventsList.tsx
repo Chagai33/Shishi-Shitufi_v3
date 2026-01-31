@@ -1,7 +1,7 @@
 // src/components/Events/EventsList.tsx
 
 import React, { useState, useMemo } from 'react';
-import { Plus, Calendar, Clock, MapPin, ChefHat, Search, X, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, ChefHat, Search, X, ArrowRight } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { AssignmentModal } from './AssignmentModal';
 import { EditAssignmentModal } from './EditAssignmentModal';
@@ -15,17 +15,15 @@ import { useTranslation } from 'react-i18next';
 
 export function EventsList() {
   const { t } = useTranslation();
-  const { events, menuItems, assignments, isLoading, user, users } = useStore();
+  const { events, menuItems, assignments, isLoading, user } = useStore();
   const isAdmin = user?.isAdmin || false;
 
-  // Refactored state to hold more context (like assignment for 'add-more' flow)
   const [selectedMenuItem, setSelectedMenuItem] = useState<{ item: MenuItem; assignment?: Assignment; isAddMore?: boolean } | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<{ item: MenuItem; assignment: Assignment } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showBulkManager, setShowBulkManager] = useState(false);
   const [showUserItemForm, setShowUserItemForm] = useState(false);
 
-  // New state to manage the view
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showMyAssignments, setShowMyAssignments] = useState(false);
 
@@ -119,15 +117,10 @@ export function EventsList() {
 
   const handleAssignItem = (item: MenuItem) => {
     if (!canAssign) return;
-
-    // CHECK: Does the user already have an assignment for this item?
     const existingAssignment = eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id);
-
     if (existingAssignment) {
-      // "Add More" flow: pass existing assignment + flag
       setSelectedMenuItem({ item, assignment: existingAssignment, isAddMore: true });
     } else {
-      // New assignment flow
       setSelectedMenuItem({ item, isAddMore: false });
     }
   };
@@ -141,8 +134,6 @@ export function EventsList() {
   };
 
   if (showBulkManager) {
-    // *** The fix is here ***
-    // Passing list of all events to component
     return <BulkItemsManager
       onBack={() => setShowBulkManager(false)}
       allEvents={events}
@@ -169,6 +160,7 @@ export function EventsList() {
 
       {!isLoading && activeEvent && (
         <>
+          {/* Header Component - Unchanged logic */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">
             <div className="flex flex-col space-y-2">
               <div className="flex items-center justify-between">
@@ -184,6 +176,7 @@ export function EventsList() {
             </div>
           </div>
 
+          {/* Search & Filter Component - Unchanged logic */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 mb-4">
             <div className="flex items-center space-x-4 rtl:space-x-reverse">
               <div className="flex-grow">
@@ -226,6 +219,7 @@ export function EventsList() {
             </div>
           </div>
 
+          {/* Main List Area */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             {searchTerm.trim() === '' && !selectedCategory && !showMyAssignments ? (
               <CategorySelector
@@ -265,45 +259,72 @@ export function EventsList() {
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    {/* Available Items Section */}
                     {itemsToRender.available.length > 0 && (
                       <div>
-                        <h3 className="text-md font-semibold text-text mb-3">{t('eventPage.list.available')}</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <h3
+                          id="available-items-heading"
+                          className="text-md font-semibold text-text mb-3"
+                        >
+                          {t('eventPage.list.available')}
+                        </h3>
+                        {/* A11Y & Layout Audit Fix: 
+                           1. role="list" added.
+                           2. aria-labelledby links to heading.
+                           3. 'grid' added to <li> to enforce full-height child stretching (Critical Senior Fix).
+                        */}
+                        <ul
+                          aria-labelledby="available-items-heading"
+                          role="list"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-4 list-none p-0 m-0"
+                        >
                           {itemsToRender.available.map((item) => (
-                            <MenuItemCard
-                              key={item.id}
-                              item={item}
-                              assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
-                              assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
-                              isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
-                              isEventActive={!!canAssign}
-                              onAssign={() => handleAssignItem(item)}
-                              onEdit={() => handleEditAssignment(item)}
-                              onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
-                            />
+                            <li key={item.id} className="grid">
+                              <MenuItemCard
+                                item={item}
+                                assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
+                                assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
+                                isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
+                                isEventActive={!!canAssign}
+                                onAssign={() => handleAssignItem(item)}
+                                onEdit={() => handleEditAssignment(item)}
+                                onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
+                              />
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       </div>
                     )}
 
+                    {/* Assigned Items Section */}
                     {itemsToRender.assigned.length > 0 && (
                       <div>
-                        <h3 className="text-md font-semibold text-text mb-3 border-t pt-4 mt-4">{t('eventPage.list.assignedHeader')}</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <h3
+                          id="assigned-items-heading"
+                          className="text-md font-semibold text-text mb-3 border-t pt-4 mt-4"
+                        >
+                          {t('eventPage.list.assignedHeader')}
+                        </h3>
+                        <ul
+                          aria-labelledby="assigned-items-heading"
+                          role="list"
+                          className="grid grid-cols-1 sm:grid-cols-2 gap-4 list-none p-0 m-0"
+                        >
                           {itemsToRender.assigned.map((item) => (
-                            <MenuItemCard
-                              key={item.id}
-                              item={item}
-                              assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
-                              assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
-                              isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
-                              isEventActive={!!canAssign}
-                              onAssign={() => handleAssignItem(item)}
-                              onEdit={() => handleEditAssignment(item)}
-                              onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
-                            />
+                            <li key={item.id} className="grid">
+                              <MenuItemCard
+                                item={item}
+                                assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
+                                assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
+                                isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
+                                isEventActive={!!canAssign}
+                                onAssign={() => handleAssignItem(item)}
+                                onEdit={() => handleEditAssignment(item)}
+                                onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
+                              />
+                            </li>
                           ))}
-                        </div>
+                        </ul>
                       </div>
                     )}
                   </div>
@@ -323,7 +344,7 @@ export function EventsList() {
           onClose={() => setSelectedMenuItem(null)}
           isAddMore={selectedMenuItem.isAddMore}
           existingAssignment={selectedMenuItem.assignment}
-          isEdit={selectedMenuItem.isAddMore} // Add-more is technically an edit of the total
+          isEdit={selectedMenuItem.isAddMore}
         />
       )}
       {editingAssignment && activeEvent && (<EditAssignmentModal menuItem={editingAssignment.item} event={activeEvent} assignment={editingAssignment.assignment} onClose={() => setEditingAssignment(null)} />)}

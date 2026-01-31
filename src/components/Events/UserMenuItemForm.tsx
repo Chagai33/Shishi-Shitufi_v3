@@ -36,7 +36,6 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
   // Accessibility: IDs and refs
   const titleId = useId();
   const nameErrorId = useId();
-  const quantityErrorId = useId();
   const participantNameId = useId();
   const itemNameId = useId();
   const categoryId = useId();

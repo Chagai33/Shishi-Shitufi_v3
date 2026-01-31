@@ -188,24 +188,26 @@ export function EventForm({ event, onClose }: EventFormProps) {
 
   if (!isAdmin) {
     return (
-      <div role="presentation" onClick={onClose}>
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={(e) => e.stopPropagation()}>
-          <div role="alertdialog" aria-modal="true" aria-labelledby={titleId} className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-center">
-            <div className="bg-red-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4" aria-hidden="true">
-              <AlertCircle className="h-8 w-8 text-red-600" aria-hidden="true" />
+      <FocusTrap>
+        <div role="presentation" onClick={onClose}>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={(e) => e.stopPropagation()}>
+            <div role="alertdialog" aria-modal="true" aria-labelledby={titleId} className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-center">
+              <div className="bg-red-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4" aria-hidden="true">
+                <AlertCircle className="h-8 w-8 text-red-600" aria-hidden="true" />
+              </div>
+              <h2 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">גישה מוגבלת</h2>
+              <p className="text-gray-600 mb-4">רק מנהלים יכולים ליצור ולערוך אירועים</p>
+              <button
+                type="button"
+                onClick={onClose}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                סגור
+              </button>
             </div>
-            <h2 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">גישה מוגבלת</h2>
-            <p className="text-gray-600 mb-4">רק מנהלים יכולים ליצור ולערוך אירועים</p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-            >
-              סגור
-            </button>
           </div>
         </div>
-      </div>
+      </FocusTrap>
     );
   }
 

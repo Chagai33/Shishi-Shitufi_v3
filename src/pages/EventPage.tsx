@@ -17,6 +17,7 @@ import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
 import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
 import LanguageSwitcher from '../components/Common/LanguageSwitcher';
+import { ParticipantsListModal } from '../components/Events/ParticipantsListModal';
 
 /* const categoryNames: { [key: string]: string } = {
     starter: 'מנה ראשונה',
@@ -639,6 +640,7 @@ const EventPage: React.FC = () => {
     const [modalState, setModalState] = useState<{ type: 'assign' | 'edit' | 'add-user-item' | 'add-more' | 'edit-item'; item?: MenuItemType; assignment?: AssignmentType; category?: string } | null>(null);
     const [itemToAssignAfterJoin, setItemToAssignAfterJoin] = useState<MenuItemType | null>(null);
     const [showNameModal, setShowNameModal] = useState(false);
+    const [showParticipantsList, setShowParticipantsList] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [view, setView] = useState<'categories' | 'items'>('categories');
@@ -930,6 +932,17 @@ const EventPage: React.FC = () => {
                                 : currentEvent.details.title}
                         </h1>
 
+                        {showAdminButton && (
+                            <button
+                                onClick={() => setShowParticipantsList(true)}
+                                className="flex items-center justify-center p-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0"
+                                title={t('eventPage.participantsList.tooltip')}
+                                aria-label={t('eventPage.participantsList.button')}
+                            >
+                                <img src="/Icons/audience.png" alt="participants" className="w-6 h-6" />
+                            </button>
+                        )}
+
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-600">
                         {/* Interactive Date -> Add to Calendar */}
@@ -1184,6 +1197,19 @@ const EventPage: React.FC = () => {
                     />
                 )
             }
+
+            {showParticipantsList && (
+                <ParticipantsListModal
+                    assignments={assignments}
+                    menuItems={menuItems}
+                    onClose={() => setShowParticipantsList(false)}
+                    onDeleteAssignment={async (assignmentId, menuItemId, userName, itemName) => {
+                        if (!eventId) return;
+                        await FirebaseService.cancelAssignment(eventId, assignmentId, menuItemId);
+                    }}
+                    isOrganizer={!!showAdminButton}
+                />
+            )}
         </div >
     );
 };

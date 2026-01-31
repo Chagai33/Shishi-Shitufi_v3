@@ -513,6 +513,15 @@
                 "assignmentUpdated": "השיבוץ עודכן בהצלחה!",
                 "assignmentCreated": "שובצת בהצלחה לפריט: {{itemName}}",
                 "limitReached": "הגעת למכסת {{limit}} הפריטים שניתן להוסיף."
+            },
+            "participantsList": {
+                "title": "רשימת משתתפים",
+                "button": "משתתפים",
+                "tooltip": "הצג רשימת משתתפים ושיבוצים",
+                "empty": "אין שיבוצים עדיין",
+                "deleteConfirm": "האם לבטל את השיבוץ של {{name}} ל{{item}}?",
+                "assignmentDeleted": "השיבוץ נמחק בהצלחה",
+                "total": "סה\"כ {{count}} שיבוצים"
             }
         },
         "footer": {

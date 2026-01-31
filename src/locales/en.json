@@ -512,6 +512,15 @@
                 "assignmentUpdated": "Assignment updated successfully!",
                 "assignmentCreated": "Successfully assigned to item: {{itemName}}",
                 "limitReached": "You have reached the limit of {{limit}} items you can add."
+            },
+            "participantsList": {
+                "title": "Participants List",
+                "button": "Participants",
+                "tooltip": "View participants and assignments",
+                "empty": "No assignments yet",
+                "deleteConfirm": "Cancel assignment of {{name}} for {{item}}?",
+                "assignmentDeleted": "Assignment deleted successfully",
+                "total": "Total {{count}} assignments"
             }
         },
         "footer": {

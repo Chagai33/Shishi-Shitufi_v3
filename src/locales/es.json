@@ -505,6 +505,15 @@
                 "assignmentUpdated": "¡Asignación actualizada con éxito!",
                 "assignmentCreated": "Asignado exitosamente al artículo: {{itemName}}",
                 "limitReached": "Has alcanzado el límite de {{limit}} artículos que puedes añadir."
+            },
+            "participantsList": {
+                "title": "Lista de Participantes",
+                "button": "Participantes",
+                "tooltip": "Ver participantes y asignaciones",
+                "empty": "Aún no hay asignaciones",
+                "deleteConfirm": "¿Cancelar asignación de {{name}} para {{item}}?",
+                "assignmentDeleted": "Asignación eliminada con éxito",
+                "total": "Total {{count}} asignaciones"
             }
         },
         "footer": {

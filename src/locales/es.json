@@ -135,6 +135,7 @@
                 "errorGeneral": "Ocurrió un error general",
                 "selectAction": "Seleccione una acción",
                 "noAssignedToCancel": "No hay asignaciones para cancelar en los artículos seleccionados",
+                "confirmCancelAssignments": "¿Estás seguro de que quieres cancelar {{count}} asignaciones?",
                 "error": "Error",
                 "enterItemName": "Por favor ingrese el nombre del artículo",
                 "selectEvent": "Seleccionar Evento",
@@ -337,7 +338,7 @@
             }
         },
         "header": {
-            "title": "Compartir Viernes",
+            "title": "Shishi-Shitufi",
             "subtitle": "Gestión de Comidas Comunitarias",
             "nav": {
                 "events": "Eventos",
@@ -414,7 +415,10 @@
             "list": {
                 "searchResults": "Resultados de Búsqueda",
                 "noItems": "No hay artículos",
+                "noItemsInCategory": "No hay artículos en esta categoría",
+                "noMyAssignments": "Aún no te has registrado para nada",
                 "available": "Artículos Disponibles",
+                "assignedHeader": "Artículos Asignados",
                 "completed": "Artículos Completados",
                 "empty": "No se encontraron artículos."
             },
@@ -439,6 +443,8 @@
                 "iWillParticipate": "Participaré en esto",
                 "completed": "Artículo Completado",
                 "takenBy": "Tomado por",
+                "cancelAssignment": "Cancelar Asignación",
+                "editItem": "Editar Artículo",
                 "iWillBringIt": "Yo lo traeré"
             },
             "status": {
@@ -458,7 +464,8 @@
             },
             "details": {
                 "organizer": "Organizador",
-                "navigate": "Navegar con Google Maps / Waze",
+                "navigate": "Navegar a la ubicación",
+                "navigateTooltip": "Elegir aplicación de navegación",
                 "addToCalendar": "Añadir a Google Calendar"
             },
             "search": {
@@ -471,16 +478,24 @@
                 "searchResults": "Resultados de Búsqueda"
             },
             "actions": {
-                "addItem": "Añadir Artículo"
+                "addItem": "Añadir Artículo",
+                "bulkEdit": "Edición Masiva"
             },
+            "noActiveEvent": "No hay evento activo en este momento",
+            "adminPrompt": "Ve al Panel de Administración para crear o activar un evento",
+            "comingSoon": "Nuevo evento próximamente",
+            "quickSearch": "Búsqueda Rápida",
             "messages": {
                 "welcomeUser": "¡Bienvenido, {{name}}!",
                 "joinError": "Error al unirse al evento.",
                 "itemNotFound": "Artículo no encontrado",
+                "confirmDeleteEmptyItem": "¿Estás seguro de que quieres eliminar este artículo?",
+                "confirmDeleteItemWithParticipants": "Este artículo tiene {{count}} asignaciones. ¿Estás seguro de que quieres eliminarlo?",
                 "deleteItemConfirm": "Esta acción eliminará tanto el artículo como la asignación",
                 "itemDeleted": "Artículo y asignación eliminados",
                 "deleteItemError": "Error al eliminar el artículo",
                 "cancelAssignmentConfirm": "¿Estás seguro de que quieres cancelar la asignación?",
+                "cancelAssignmentConfirmWithName": "¿Estás seguro de que quieres cancelar la asignación de {{name}}?",
                 "assignmentCancelled": "Asignación cancelada",
                 "cancelAssignmentError": "Error al cancelar la asignación",
                 "missingName": "Para asignar, se requiere un nombre completo.",
@@ -522,6 +537,30 @@
             "cake": "Pastel",
             "juice": "Jugo",
             "water": "Agua"
+        },
+        "editItemModal": {
+            "title": "Editar Artículo",
+            "fields": {
+                "name": "Nombre del Artículo *",
+                "category": "Categoría *",
+                "quantity": "Cantidad Requerida",
+                "assignedInfo": "Cantidad asignada: {{assigned}} - no se puede reducir por debajo de esto",
+                "notes": "Notas (Opcional)",
+                "notesPlaceholder": "ej. Kosher, Sin gluten, Vegano..."
+            },
+            "submit": "Guardar Cambios",
+            "submitting": "Guardando...",
+            "cancel": "Cancelar",
+            "success": "¡Artículo actualizado con éxito!",
+            "errors": {
+                "nameRequired": "El nombre del artículo es obligatorio",
+                "nameLength": "El nombre del artículo debe tener al menos 2 caracteres",
+                "quantityMin": "La cantidad debe ser al menos 1",
+                "quantityBelowAssigned": "No se puede reducir la cantidad por debajo de {{assigned}} (cantidad asignada)",
+                "quantityMax": "La cantidad no puede exceder 100",
+                "fixErrors": "Por favor corrige los errores del formulario",
+                "generalError": "Error al actualizar el artículo"
+            }
         },
         "userItemForm": {
             "title": "Agrega tu propio artículo",

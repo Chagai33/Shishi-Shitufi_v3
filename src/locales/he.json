@@ -135,6 +135,7 @@
                 "errorGeneral": "אירעה שגיאה כללית",
                 "selectAction": "בחר פעולה מהרשימה",
                 "noAssignedToCancel": "אין שיבוצים לביטול בפריטים שנבחרו",
+                "confirmCancelAssignments": "האם אתה בטוח שברצונך לבטל {{count}} שיבוצים?",
                 "error": "שגיאה",
                 "enterItemName": "נא להזין שם פריט",
                 "selectEvent": "בחר אירוע",
@@ -415,7 +416,10 @@
             "list": {
                 "searchResults": "תוצאות חיפוש",
                 "noItems": "אין פריטים",
+                "noItemsInCategory": "אין פריטים בקטגוריה זו",
+                "noMyAssignments": "עדיין לא שובצת לפריטים",
                 "available": "פריטים פנויים",
+                "assignedHeader": "פריטים ששובצו",
                 "completed": "פריטים שהושלמו",
                 "empty": "לא נמצאו פריטים."
             },
@@ -461,9 +465,16 @@
             },
             "details": {
                 "organizer": "מארגן",
-                "navigate": "נווט עם Google Maps / Waze",
-                "addToCalendar": "הוסף ליומן גוגל"
+                "navigate": "נווט למיקום",
+                "navigateTooltip": "בחר אפליקציית ניווט"
             },
+            "navigation": {
+                "title": "נווט באמצעות",
+                "waze": "Waze",
+                "googleMaps": "Google Maps",
+                "appleMaps": "Apple Maps"
+            },
+            "addToCalendar": "הוסף ליומן גוגל",
             "search": {
                 "placeholder": "חפש פריט...",
                 "clear": "נקה חיפוש"
@@ -474,19 +485,25 @@
                 "searchResults": "תוצאות חיפוש"
             },
             "actions": {
-                "addItem": "הוסף פריט"
+                "addItem": "הוסף פריט",
+                "bulkEdit": "מצב עריכה"
             },
+            "noActiveEvent": "אין אירוע פעיל כרגע",
+            "adminPrompt": "עבור למסך הניהול כדי ליצור או להפעיל אירוע",
+            "comingSoon": "אירוע חדש יפורסם בקרוב",
+            "quickSearch": "חיפוש מהיר",
             "messages": {
                 "welcomeUser": "ברוך הבא, {{name}}!",
                 "joinError": "שגיאה בהצטרפות לאירוע.",
-                "itemNotFound": "הפריט לא נמצא",
-                "confirmDeleteItemWithParticipants": "האם אתה בטוח? פעולה זו תמחק את הפריט ותבטל {{count}} שיבוצים פעילים.",
+                "itemNotFound": "פריט לא נמצא",
+                "confirmDeleteEmptyItem": "האם אתה בטוח שברצונך למחוק פריט זה?",
+                "confirmDeleteItemWithParticipants": "פריט זה כולל {{count}} שיבוצים. האם אתה בטוח שברצונך למחוק אותו?",
                 "confirmUnassignCreatorKeepItem": "אתה מבטל את השיבוץ שלך, אך הפריט יישמר עבור המשתתפים האחרים.",
-                "confirmDeleteEmptyItem": "האם למחוק את הפריט?",
                 "deleteItemConfirm": "פעולה זו תמחק גם את הפריט וגם את השיבוץ",
                 "itemDeleted": "הפריט והשיבוץ נמחקו",
                 "deleteItemError": "שגיאה במחיקת הפריט",
                 "cancelAssignmentConfirm": "האם לבטל את השיבוץ?",
+                "cancelAssignmentConfirmWithName": "האם לבטל את השיבוץ של {{name}}?",
                 "assignmentCancelled": "השיבוץ בוטל",
                 "cancelAssignmentError": "שגיאה בביטול השיבוץ",
                 "missingName": "כדי להשתבץ, יש להזין שם מלא.",

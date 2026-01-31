@@ -135,6 +135,7 @@
                 "errorGeneral": "General error occurred",
                 "selectAction": "Select an action",
                 "noAssignedToCancel": "No assignments to cancel in selected items",
+                "confirmCancelAssignments": "Are you sure you want to cancel {{count}} assignments?",
                 "error": "Error",
                 "enterItemName": "Please enter item name",
                 "selectEvent": "Select Event",
@@ -296,7 +297,7 @@
                 "title": "Why did we build this?",
                 "p1": "\"Sometimes the best ideas are born not in the office, but around a Shabbat table. As someone who participates in community meals, I experienced the magic of shared meals - but also the logistical headache.\"",
                 "p2": "\"Managing 'who brings what' via Google Sheets was cumbersome, not mobile-friendly, and prone to errors. Someone accidentally deleted a row, others struggled with editing on the phone, and the event manager worked too hard.\"",
-                "p3": "\"Friday Sharing was born to solve exactly this. We built a dedicated solution that creates a seamless experience, zero errors, and peace of mind for event managers.\""
+                "p3": "\"Shishi-Shitufi was born to solve exactly this. We built a dedicated solution that creates a seamless experience, zero errors, and peace of mind for event managers.\""
             }
         },
         "login": {
@@ -337,7 +338,7 @@
             }
         },
         "header": {
-            "title": "Friday Sharing",
+            "title": "Shishi-Shitufi",
             "subtitle": "Community Meal Management",
             "nav": {
                 "events": "Events",
@@ -415,7 +416,10 @@
             "list": {
                 "searchResults": "Search Results",
                 "noItems": "No items",
+                "noItemsInCategory": "No items in this category",
+                "noMyAssignments": "You haven't signed up for anything yet",
                 "available": "Available Items",
+                "assignedHeader": "Assigned Items",
                 "completed": "Completed Items",
                 "empty": "No items found."
             },
@@ -440,6 +444,8 @@
                 "iWillParticipate": "I'll participate in this",
                 "completed": "Item Completed",
                 "takenBy": "Taken by",
+                "cancelAssignment": "Cancel Assignment",
+                "editItem": "Edit Item",
                 "iWillBringIt": "I'll bring it"
             },
             "status": {
@@ -459,8 +465,15 @@
             },
             "details": {
                 "organizer": "Organizer",
-                "navigate": "Navigate with Google Maps / Waze",
+                "navigate": "Navigate to Location",
+                "navigateTooltip": "Choose Navigation App",
                 "addToCalendar": "Add to Google Calendar"
+            },
+            "navigation": {
+                "title": "Navigate with",
+                "waze": "Waze",
+                "googleMaps": "Google Maps",
+                "appleMaps": "Apple Maps"
             },
             "search": {
                 "placeholder": "Search item...",
@@ -472,16 +485,24 @@
                 "searchResults": "Search Results"
             },
             "actions": {
-                "addItem": "Add Item"
+                "addItem": "Add Item",
+                "bulkEdit": "Bulk Edit"
             },
+            "noActiveEvent": "No active event at the moment",
+            "adminPrompt": "Go to Admin Panel to create or activate an event",
+            "comingSoon": "New event coming soon",
+            "quickSearch": "Quick Search",
             "messages": {
                 "welcomeUser": "Welcome, {{name}}!",
                 "joinError": "Error joining event.",
                 "itemNotFound": "Item not found",
+                "confirmDeleteEmptyItem": "Are you sure you want to delete this item?",
+                "confirmDeleteItemWithParticipants": "This item has {{count}} assignments. Are you sure you want to delete it?",
                 "deleteItemConfirm": "This action will delete both the item and the assignment",
                 "itemDeleted": "Item and assignment deleted",
                 "deleteItemError": "Error deleting item",
                 "cancelAssignmentConfirm": "Are you sure you want to cancel the assignment?",
+                "cancelAssignmentConfirmWithName": "Are you sure you want to cancel the assignment for {{name}}?",
                 "assignmentCancelled": "Assignment cancelled",
                 "cancelAssignmentError": "Error cancelling assignment",
                 "missingName": "To assign, a full name is required.",
@@ -523,6 +544,30 @@
             "cake": "Cake",
             "juice": "Juice",
             "water": "Water"
+        },
+        "editItemModal": {
+            "title": "Edit Item",
+            "fields": {
+                "name": "Item Name *",
+                "category": "Category *",
+                "quantity": "Required Quantity",
+                "assignedInfo": "Assigned quantity: {{assigned}} - cannot reduce below this",
+                "notes": "Notes (Optional)",
+                "notesPlaceholder": "e.g. Kosher, Gluten free, Vegan..."
+            },
+            "submit": "Save Changes",
+            "submitting": "Saving...",
+            "cancel": "Cancel",
+            "success": "Item updated successfully!",
+            "errors": {
+                "nameRequired": "Item name is required",
+                "nameLength": "Item name must be at least 2 characters",
+                "quantityMin": "Quantity must be at least 1",
+                "quantityBelowAssigned": "Cannot reduce quantity below {{assigned}} (assigned quantity)",
+                "quantityMax": "Quantity cannot exceed 100",
+                "fixErrors": "Please fix form errors",
+                "generalError": "Error updating item"
+            }
         },
         "userItemForm": {
             "title": "Add Your Own Item",

@@ -3,6 +3,7 @@
 import React from 'react';
 import { MenuItem, Assignment } from '../../types';
 import { Edit, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 // Definition of Props that the component receives from the parent (EventPage)
 interface MenuItemCardProps {
@@ -28,13 +29,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   isEventActive,
   currentUserId,
 }) => {
-  const categoryNames: { [key: string]: string } = {
-    starter: 'מנה ראשונה',
-    main: 'מנה עיקרית',
-    dessert: 'קינוחים',
-    drink: 'שתייה',
-    other: 'אחר',
-  };
+  const { t } = useTranslation();
 
   const assignedByOther = assignment && !isMyAssignment;
   const isSplittable = item.isSplittable;
@@ -69,21 +64,21 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
         <div className="flex justify-between items-start mb-3">
           <h4 className="font-semibold text-gray-900 text-lg tracking-tight">{item.name}</h4>
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${tagColor}`}>
-            {categoryNames[item.category] || 'לא ידוע'}
+            {t(`categories.${item.category}`) || t('categories.other')}
           </span>
         </div>
         <div className="space-y-1">
           <p className="text-sm text-gray-600 font-medium">
-            {isSplittable ? `סה"כ נדרש: ${item.quantity}` : `כמות נדרשת: ${item.quantity}`}
+            {isSplittable ? `${t('eventPage.item.quantityRequired')}: ${item.quantity}` : `${t('eventPage.item.quantityRequired')}: ${item.quantity}`}
           </p>
-          {item.creatorName && <p className="text-xs text-gray-400">נוצר ע"י: {item.creatorName}</p>}
+          {item.creatorName && <p className="text-xs text-gray-400">{t('eventPage.item.createdBy')}: {item.creatorName}</p>}
           {item.notes && <p className="text-xs text-gray-500 italic bg-gray-50 p-2 rounded-lg mt-2 border border-gray-100">{item.notes}</p>}
         </div>
 
         {isSplittable && (
           <div className="mt-4">
             <div className="flex justify-between text-xs font-medium text-gray-500 mb-1.5">
-              <span>התקדמות</span>
+              <span>{t('eventPage.item.progress')}</span>
               <span>{Math.round(progressPercent)}%</span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
@@ -94,7 +89,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             </div>
             {assignments.length > 0 && (
               <div className="mt-3 text-xs text-gray-600">
-                <p className="font-semibold mb-2 text-gray-700">משובצים:</p>
+                <p className="font-semibold mb-2 text-gray-700">{t('eventPage.list.assignedHeader')}:</p>
                 <div className="space-y-1.5">
                   {assignments.map(a => (
                     <div key={a.id} className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -118,7 +113,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           <div className="space-y-3">
             {hasMyAssignment && (
               <div className="bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
-                <p className="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wider">התרומה שלי</p>
+                <p className="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wider">{t('eventPage.item.iBring')}</p>
                 <div className="space-y-2">
                   {myAssignments.map(myAss => (
                     <div key={myAss.id} className="flex justify-between items-center text-sm group">
@@ -130,8 +125,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                         <button
                           onClick={() => onCancel(myAss)}
                           className="text-red-600 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                          title="בטל שיבוץ זה"
-                          aria-label={`בטל שיבוץ של ${myAss.quantity} יחידות`}
+                          title={t('eventPage.item.cancelAssignment')}
+                          aria-label={t('eventPage.item.cancelAssignment')}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -146,16 +141,16 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
               <button
                 onClick={onAssign}
                 className="w-full bg-orange-600 text-white py-3 text-sm rounded-xl hover:bg-orange-700 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                aria-label={hasMyAssignment ? 'הוסף עוד לפריט זה' : 'שבץ אותי לפריט זה'}
+                aria-label={hasMyAssignment ? t('eventPage.item.addMore') : t('eventPage.item.iWillBringIt')}
               >
-                {hasMyAssignment ? 'הוסף עוד' : 'שבץ אותי'}
+                {hasMyAssignment ? t('eventPage.item.addMore') : t('eventPage.item.iWillBringIt')}
               </button>
             )}
 
             {isFull && (
               <div className="text-center py-1">
                 <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full inline-flex items-center">
-                  <span className="mr-1.5">הושלם</span>
+                  <span className="mr-1.5">{t('eventPage.item.completed')}</span>
                   <span className="text-xs" aria-hidden="true">✔️</span>
                 </span>
               </div>
@@ -166,28 +161,28 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             {isMyAssignment && assignment ? (
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm bg-white p-3 rounded-lg border border-blue-100 shadow-sm">
-                  <span className="font-semibold text-blue-700">השיבוץ שלי</span>
+                  <span className="font-semibold text-blue-700">{t('eventPage.item.iBring')}</span>
                   <span className="font-bold text-gray-900">{assignment.quantity}</span>
                 </div>
-                {assignment.notes && <p className="text-xs text-gray-700 bg-white p-2.5 rounded-lg border border-gray-100">הערה: {assignment.notes}</p>}
+                {assignment.notes && <p className="text-xs text-gray-700 bg-white p-2.5 rounded-lg border border-gray-100">{t('eventPage.assignment.notesOptional')}: {assignment.notes}</p>}
 
                 {isEventActive && (
                   <div className="flex space-x-3 rtl:space-x-reverse pt-1">
                     <button
                       onClick={onEdit}
                       className="flex-1 text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm hover:shadow focus:ring-2 focus:ring-gray-400 focus:ring-offset-1"
-                      aria-label="ערוך שיבוץ"
+                      aria-label={t('common.edit')}
                     >
                       <Edit size={16} className="ml-1.5" />
-                      ערוך
+                      {t('common.edit')}
                     </button>
                     <button
                       onClick={() => onCancel(assignment)}
                       className="flex-1 text-sm bg-white border border-red-200 text-red-600 hover:bg-red-50 py-2.5 rounded-lg flex items-center justify-center transition-all shadow-sm hover:shadow focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
-                      aria-label={item.creatorId === assignment.userId ? 'מחק פריט' : 'בטל שיבוץ'}
+                      aria-label={item.creatorId === assignment.userId ? t('common.delete') : t('eventPage.item.cancelAssignment')}
                     >
                       <Trash2 size={16} className="ml-1.5" />
-                      {item.creatorId === assignment.userId ? 'מחק פריט' : 'בטל'}
+                      {item.creatorId === assignment.userId ? t('common.delete') : t('eventPage.item.cancel')}
                     </button>
                   </div>
                 )}
@@ -199,11 +194,11 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                     <div className="flex justify-between items-center text-sm p-3 bg-green-50/80 border border-green-100 rounded-lg">
                       <span className="font-semibold text-green-800 flex items-center">
                         <div className="w-1.5 h-1.5 bg-green-600 rounded-full ml-2"></div>
-                        שובץ ל: {assignment.userName}
+                        {t('eventPage.item.takenBy')}: {assignment.userName}
                       </span>
                       <span className="font-bold text-gray-900">{assignment.quantity}</span>
                     </div>
-                    {assignment.notes && <p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">הערה: {assignment.notes}</p>}
+                    {assignment.notes && <p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">{t('eventPage.assignment.notesOptional')}: {assignment.notes}</p>}
                   </div>
                 ) : (
                   isEventActive ? (
@@ -211,20 +206,20 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                       <button
                         onClick={onAssign}
                         className="w-full bg-orange-600 text-white py-3 text-sm rounded-xl hover:bg-orange-700 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                        aria-label="שבץ אותי לפריט זה"
+                        aria-label={t('eventPage.item.iWillBringIt')}
                       >
-                        {isSplittable ? 'שבץ אותי (הוסף)' : 'שבץ אותי'}
+                        {isSplittable ? `${t('eventPage.item.iWillBringIt')} (${t('eventPage.item.addMore')})` : t('eventPage.item.iWillBringIt')}
                       </button>
                     ) : (
                       <div className="text-center py-1">
                         <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full inline-flex items-center">
-                          <span className="mr-1.5">הושלם</span>
+                          <span className="mr-1.5">{t('eventPage.item.completed')}</span>
                           <span className="text-xs" aria-hidden="true">✔️</span>
                         </span>
                       </div>
                     )
                   ) : (
-                    <p className="text-sm text-center text-gray-500 py-1">האירוע אינו פעיל</p>
+                    <p className="text-sm text-center text-gray-500 py-1">{t('eventPage.status.inactive')}</p>
                   )
                 )}
               </>

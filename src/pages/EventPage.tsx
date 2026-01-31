@@ -9,9 +9,10 @@ import { auth } from '../lib/firebase';
 import { signInAnonymously, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
 import { MenuItem as MenuItemType, Assignment as AssignmentType } from '../types';
-import { CalendarPlus, Clock, MapPin, ChefHat, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Shield, Minus, Settings } from 'lucide-react';
+import { CalendarPlus, Clock, ChefHat, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Shield, Minus, Settings } from 'lucide-react';
 import { isEventFinished } from '../utils/dateUtils';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
+import NavigationMenu from '../components/Common/NavigationMenu';
 import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
 import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
@@ -717,7 +718,7 @@ const EventPage: React.FC = () => {
 
         if (!isSelfAssignment) {
             // Manager deleting someone else
-            if (window.confirm(t('eventPage.messages.cancelAssignmentConfirm'))) {
+            if (window.confirm(t('eventPage.messages.cancelAssignmentConfirmWithName', { name: assignment.userName }))) {
                 try {
                     await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
                     toast.success(t('eventPage.messages.assignmentCancelled'));
@@ -944,17 +945,8 @@ const EventPage: React.FC = () => {
                         {/* Time (Static) */}
                         <p className="flex items-center"><Clock size={14} className="ml-1.5 flex-shrink-0" /> {currentEvent.details.time}</p>
 
-                        {/* Interactive Location -> Google Maps */}
-                        <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentEvent.details.location)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center hover:text-blue-600 hover:underline transition-colors group"
-                            title={t('eventPage.details.navigate')}
-                        >
-                            <MapPin size={14} className="ml-1.5 flex-shrink-0 group-hover:text-blue-500" />
-                            {currentEvent.details.location}
-                        </a>
+                        {/* Interactive Location -> Navigation Menu */}
+                        <NavigationMenu location={currentEvent.details.location} />
 
 
                         {/* Organizer (Static) */}
@@ -984,14 +976,28 @@ const EventPage: React.FC = () => {
                             <input
                                 type="text"
                                 value={searchTerm}
-                                onChange={(e) => { setSearchTerm(e.target.value); setView('items'); setSelectedCategory(null); }}
+                                onChange={(e) => {
+                                    const value = e.target.value;
+                                    setSearchTerm(value);
+                                    if (value.trim()) {
+                                        setView('items');
+                                        setSelectedCategory(null);
+                                    } else {
+                                        setView('categories');
+                                        setSelectedCategory(null);
+                                    }
+                                }}
                                 placeholder={t('eventPage.searchPlaceholder')}
                                 className="w-full pr-9 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 shadow-sm"
                             />
                             {searchTerm && (
                                 <button
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    onClick={() => {
+                                        setSearchTerm('');
+                                        setView('categories');
+                                        setSelectedCategory(null);
+                                    }}
+                                    className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 ${i18n.language === 'he' ? 'left-2' : 'right-10'}`}
                                     aria-label={t('common.clearSearch')}
                                 >
                                     <X className="h-4 w-4" />

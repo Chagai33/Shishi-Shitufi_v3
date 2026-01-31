@@ -11,6 +11,7 @@
                 "general": "General error"
             },
             "loading": "Loading...",
+            "loadingApp": "Loading application...",
             "save": "Save",
             "cancel": "Cancel",
             "delete": "Delete",
@@ -399,11 +400,11 @@
             "adminPanel": "Admin Panel",
             "stats": {
                 "required": {
-                    "text": "Required",
+                    "text": "Required {{count}}/{{total}}",
                     "tooltip": "Required Items"
                 },
                 "optional": {
-                    "text": "Optional",
+                    "text": "Optional {{count}}/{{total}}",
                     "tooltip": "Optional Items"
                 },
                 "assigned": "assigned"

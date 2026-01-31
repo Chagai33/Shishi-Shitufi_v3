@@ -11,6 +11,7 @@
                 "general": "שגיאה כללית"
             },
             "loading": "טוען...",
+            "loadingApp": "טוען את האפליקציה...",
             "save": "שמור",
             "cancel": "ביטול",
             "delete": "מחק",
@@ -399,11 +400,11 @@
             "adminPanel": "נהל אירועים",
             "stats": {
                 "required": {
-                    "text": "חובה",
+                    "text": "חובה {{count}}/{{total}}",
                     "tooltip": "פריטי חובה"
                 },
                 "optional": {
-                    "text": "רשות",
+                    "text": "רשות {{count}}/{{total}}",
                     "tooltip": "פריטי רשות"
                 },
                 "assigned": "שובצו"
@@ -566,7 +567,8 @@
                 "notesPlaceholder": "לדוגמה: כשר, ללא גלוטן, טבעוני...",
                 "fullName": "שם מלא *",
                 "nameDisplayPlaceholder": "השם שיוצג לכולם",
-                "nameHelp": "השם יישמר למכשיר זה עבור אירוע זה"
+                "nameHelp": "השם יישמר למכשיר זה עבור אירוע זה",
+                "isRequired": "פריט חובה"
             },
             "submit": "הוסף ושבץ אותי",
             "submitting": "מוסיף...",

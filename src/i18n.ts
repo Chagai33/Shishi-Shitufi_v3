@@ -26,11 +26,11 @@ i18n
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
     },
-    
+
     // Language detection options
     detection: {
-        order: ['localStorage', 'navigator'],
-        caches: ['localStorage'],
+      order: ['localStorage'], // Removed 'navigator' to default to fallbackLng (he) if no user pref
+      caches: ['localStorage'],
     }
   });
 

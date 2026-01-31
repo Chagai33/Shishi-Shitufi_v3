@@ -611,8 +611,9 @@ const EventPage: React.FC = () => {
     }, [currentEvent, localUser]);
 
     const MAX_USER_ITEMS = currentEvent?.details.userItemLimit ?? 3;
+    const showAdminButton = storeUser?.isAdmin || (localUser && currentEvent?.organizerId === localUser.uid);
 
-    const canAddMoreItems = (currentEvent?.details.allowUserItems ?? false) && userCreatedItemsCount < MAX_USER_ITEMS;
+    const canAddMoreItems = showAdminButton || ((currentEvent?.details.allowUserItems ?? false) && userCreatedItemsCount < MAX_USER_ITEMS);
     const assignmentStats = useMemo(() => {
         const requiredItems = menuItems.filter(item => item.isRequired);
         const optionalItems = menuItems.filter(item => !item.isRequired);
@@ -837,7 +838,7 @@ const EventPage: React.FC = () => {
     const participantName = participants.find(p => p.id === localUser?.uid)?.name || 'אורח';
     const isEventActive = currentEvent.details.isActive && !isEventFinished(currentEvent.details.date, currentEvent.details.time);
 
-    const showAdminButton = storeUser?.isAdmin || (localUser && currentEvent.organizerId === localUser.uid);
+
 
     const handleAddToCalendar = () => {
         if (!currentEvent) return;
@@ -1002,6 +1003,7 @@ const EventPage: React.FC = () => {
                             canAddMoreItems={canAddMoreItems}
                             userCreatedItemsCount={userCreatedItemsCount}
                             MAX_USER_ITEMS={MAX_USER_ITEMS}
+                            showLimit={!showAdminButton}
                         />
                         <div className="max-w-4xl mx-auto px-4 mt-8">
                             {/* Button removed as it is now inside CategorySelector */}
@@ -1031,7 +1033,7 @@ const EventPage: React.FC = () => {
                                     disabled={!canAddMoreItems}
                                 >
                                     <Plus size={16} className="inline-block ml-1" />
-                                    {t('eventPage.category.addItem')} ({userCreatedItemsCount}/{MAX_USER_ITEMS})
+                                    {t('eventPage.category.addItem')} {!showAdminButton && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
                                 </button>
                             )}
                         </div>

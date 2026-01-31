@@ -47,6 +47,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     quantity: 1,
     notes: '',
     isSplittable: false,
+    isRequired: false,
   });
 
   const categoryOptions = [
@@ -88,19 +89,19 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     return isValid;
   };
 
+  // Helper: Check if user can add more items
+  // const canAdd = isOrganizer || userItemCount < limit... (Handled in backend now too, but good for UI feedback)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const allMenuItems = selectMenuItems(useStore.getState());
 
     if (!authUser) {
-      console.error('❌ No authenticated user');
       toast.error(t('userItemForm.errors.mustLogin'));
-      console.groupEnd();
       return;
     }
 
     if (!validateForm()) {
-      console.error('❌ Form validation failed');
       toast.error(t('userItemForm.errors.fixErrors'));
       return;
     }
@@ -113,12 +114,13 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     if (isDuplicate) {
       if (!window.confirm(t('userItemForm.errors.duplicateItem', { name: formData.name.trim() }))) {
         setIsSubmitting(false);
-        return; // Stop the function if user clicked "Cancel"
+        return;
       }
     }
 
+    // Bypass 'User Name' checks if only creating item without assigning self (e.g. Admin creating generic item)
+    // However, logic below assumes we might join.
     if (showNameInput && !participantName.trim()) {
-      console.error('❌ Name required but not provided');
       toast.error(t('userItemForm.errors.missingName'));
       return;
     }
@@ -128,34 +130,35 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     try {
       let finalUserName = participantName.trim();
 
+      // If needed, join event
       if (showNameInput && finalUserName) {
         await FirebaseService.joinEvent(event.id, authUser.uid, finalUserName);
       } else {
         const existingParticipant = event.participants?.[authUser.uid];
         finalUserName = existingParticipant?.name || authUser.displayName || t('header.guest');
       }
+
       const newItemData: Omit<MenuItem, 'id'> = {
         name: formData.name.trim(),
         category: formData.category,
         quantity: formData.quantity,
         notes: formData.notes.trim() || '',
-        isSplittable: formData.quantity > 1, // Auto-split if more than 1 item needed
-        isRequired: false,
+        isSplittable: formData.quantity > 1,
+        isRequired: formData.isRequired, // Pass from form state
         createdAt: Date.now(),
         creatorId: authUser.uid,
         creatorName: finalUserName,
         eventId: event.id
       };
 
-      if (!newItemData.notes) {
-        delete (newItemData as any).notes;
-      }
+      if (!newItemData.notes) delete (newItemData as any).notes;
 
       // 1. Create Item (Total Quantity)
+      // Pass bypassLimit: isOrganizer to skip backend checks if needed (though backend checks organizerId too)
       const itemId = await FirebaseService.addMenuItem(event.id, {
         ...newItemData,
-        quantity: formData.quantity, // Total needed
-      });
+        quantity: formData.quantity,
+      }, { bypassLimit: isOrganizer });
 
       // 2. Create Assignment (My Contribution) - only if > 0
       if (itemId && myQuantity > 0) {
@@ -164,7 +167,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
           menuItemId: itemId,
           userId: authUser.uid,
           userName: finalUserName,
-          quantity: myQuantity, // What I bring
+          quantity: myQuantity,
           status: 'confirmed' as const,
           assignedAt: Date.now(),
           notes: formData.notes
@@ -172,32 +175,21 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
       }
 
       if (itemId) {
-        // We can't immediately add to store without fetching, but we assume subscription handles it or we do optimistic update
-        // For now, simpler to just close
         toast.success(t('userItemForm.errors.success'));
       } else {
-        console.error('❌ Failed to get item ID');
         throw new Error(t('userItemForm.errors.generalError'));
       }
 
       onClose();
     } catch (error: any) {
       console.error('❌ Error in form submission:', error);
-      console.error('📊 Error details:', {
-        message: error.message,
-        code: error.code,
-        stack: error.stack
-      });
-
       let errorMessage = t('userItemForm.errors.generalError');
       if (error.code === 'PERMISSION_DENIED') {
         errorMessage = t('userItemForm.errors.permissionDenied');
       } else if (error.message) {
         errorMessage = error.message;
       }
-
       toast.error(errorMessage);
-      console.groupEnd();
     } finally {
       setIsSubmitting(false);
     }
@@ -206,7 +198,6 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
   const handleInputChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => {
       const updates = { [field]: value };
-      // Reset isSplittable if quantity becomes 1
       if (field === 'quantity' && (typeof value === 'number' && value <= 1)) {
         Object.assign(updates, { isSplittable: false });
       }
@@ -359,6 +350,22 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
             </div>
           </div>
 
+          {/* Admin: Is Required Checkbox */}
+          {isOrganizer && (
+            <div className="mb-6 flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+              <input
+                id="isRequired"
+                type="checkbox"
+                checked={formData.isRequired}
+                onChange={(e) => handleInputChange('isRequired', e.target.checked)}
+                className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isRequired" className="mr-3 block text-sm font-semibold text-gray-800">
+                {t('userItemForm.fields.isRequired')}
+              </label>
+            </div>
+          )}
+
           {/* Auto-split logic applied implicitly for quantity > 1 */}
           <div className="flex space-x-3 rtl:space-x-reverse">
             <button
@@ -385,7 +392,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

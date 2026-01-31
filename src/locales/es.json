@@ -11,6 +11,7 @@
                 "general": "Error general"
             },
             "loading": "Cargando...",
+            "loadingApp": "Cargando la aplicación...",
             "save": "Guardar",
             "cancel": "Cancelar",
             "delete": "Eliminar",
@@ -398,11 +399,11 @@
             "adminPanel": "Panel de Admin",
             "stats": {
                 "required": {
-                    "text": "Obligatorio",
+                    "text": "Obligatorio {{count}}/{{total}}",
                     "tooltip": "Artículos Obligatorios"
                 },
                 "optional": {
-                    "text": "Opcional",
+                    "text": "Opcional {{count}}/{{total}}",
                     "tooltip": "Artículos Opcionales"
                 },
                 "assigned": "asignados"

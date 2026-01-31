@@ -21,6 +21,7 @@ interface CategorySelectorProps {
   canAddMoreItems: boolean;
   userCreatedItemsCount: number;
   MAX_USER_ITEMS: number;
+  showLimit?: boolean;
 }
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
@@ -31,6 +32,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   canAddMoreItems,
   userCreatedItemsCount,
   MAX_USER_ITEMS,
+  showLimit = true,
 }) => {
   const { t } = useTranslation();
 
@@ -135,7 +137,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
             }`}
         >
           <Plus size={20} className="ml-2" />
-          {t('eventPage.category.addItem')} ({userCreatedItemsCount}/{MAX_USER_ITEMS})
+          {t('eventPage.category.addItem')} {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
         </button>
       </div>
     </div>

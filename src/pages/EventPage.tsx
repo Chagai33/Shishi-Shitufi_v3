@@ -879,12 +879,20 @@ const EventPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-background">
+            {/* Skip Link for Accessibility */}
+            <a
+                href="#main-content"
+                className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"
+            >
+                {t('common.skipToContent') || 'דלג לתוכן הראשי'}
+            </a>
+
             <header className="bg-white shadow-sm p-3 sticky top-0 z-40">
-                <div className="max-w-4xl mx-auto flex justify-between items-center">
+                <nav className="max-w-4xl mx-auto flex justify-between items-center" aria-label={t('common.navigation') || 'ניווט ראשי'}>
 
                     <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                         <div>
-                            <h1 className="font-bold text-lg text-accent">{t('header.title')}</h1>
+                            <div className="font-bold text-lg text-accent">{t('header.title')}</div>
                             <p className="text-xs text-neutral-500">{t('header.subtitle')}</p>
                         </div>
                     </Link>
@@ -896,8 +904,9 @@ const EventPage: React.FC = () => {
                                 to="/"
                                 className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900 transition-colors text-sm font-medium"
                                 title={t('eventPage.adminPanelTooltip')}
+                                aria-label={t('eventPage.adminPanel')}
                             >
-                                <Settings size={20} className="block sm:hidden" />
+                                <Settings size={20} className="block sm:hidden" aria-hidden="true" />
                                 <span className="hidden sm:block">{t('eventPage.adminPanel')}</span>
                             </Link>
                         )}
@@ -912,14 +921,14 @@ const EventPage: React.FC = () => {
                                     {participantName}
                                 </a>
                             )}
-                            <UserIcon size={16} className="text-neutral-500" />
+                            <UserIcon size={16} className="text-neutral-500" aria-hidden="true" />
                         </div>
 
                     </div>
-                </div>
+                </nav>
             </header>
 
-            <main className="max-w-4xl mx-auto py-4 px-4">
+            <main id="main-content" className="max-w-4xl mx-auto py-4 px-4">
                 <div className="bg-white rounded-xl shadow-md p-4 mb-4">
                     <div className="flex justify-between items-start mb-3 gap-4">
                         <h1
@@ -948,22 +957,24 @@ const EventPage: React.FC = () => {
                         {/* Interactive Date -> Add to Calendar */}
                         <button
                             onClick={handleAddToCalendar}
+                            type="button"
                             className="flex items-center hover:text-accent hover:font-medium transition-colors group"
                             title={t('eventPage.details.addToCalendar')}
+                            aria-label={`${t('eventPage.details.addToCalendar')}: ${new Date(currentEvent.details.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US')}`}
                         >
-                            <CalendarPlus size={14} className="ml-1.5 flex-shrink-0 group-hover:text-accent" />
+                            <CalendarPlus size={14} className="ml-1.5 flex-shrink-0 group-hover:text-accent" aria-hidden="true" />
                             {new Date(currentEvent.details.date).toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US')}
                         </button>
 
                         {/* Time (Static) */}
-                        <p className="flex items-center"><Clock size={14} className="ml-1.5 flex-shrink-0" /> {currentEvent.details.time}</p>
+                        <p className="flex items-center"><Clock size={14} className="ml-1.5 flex-shrink-0" aria-hidden="true" /> {currentEvent.details.time}</p>
 
                         {/* Interactive Location -> Navigation Menu */}
                         <NavigationMenu location={currentEvent.details.location} />
 
 
                         {/* Organizer (Static) */}
-                        <p className="flex items-center"><UserIcon size={14} className="ml-1.5 flex-shrink-0" /> {t('eventPage.details.organizer')}: {currentEvent.organizerName}</p>
+                        <p className="flex items-center"><UserIcon size={14} className="ml-1.5 flex-shrink-0" aria-hidden="true" /> {t('eventPage.details.organizer')}: {currentEvent.organizerName}</p>
 
                         {/* Stats Badges (Moved here) */}
                         <div className="flex items-center gap-2 mr-auto sm:mr-0 border-r pr-4 border-gray-300 sm:border-0 sm:pr-0">
@@ -985,7 +996,7 @@ const EventPage: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-md p-3 mb-6">
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">
                         <div className="flex-grow relative">
-                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" aria-hidden="true" />
                             <input
                                 type="text"
                                 value={searchTerm}
@@ -1001,6 +1012,7 @@ const EventPage: React.FC = () => {
                                     }
                                 }}
                                 placeholder={t('eventPage.searchPlaceholder')}
+                                aria-label={t('eventPage.searchPlaceholder')}
                                 className="w-full pr-9 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 shadow-sm"
                             />
                             {searchTerm && (
@@ -1010,14 +1022,19 @@ const EventPage: React.FC = () => {
                                         setView('categories');
                                         setSelectedCategory(null);
                                     }}
+                                    type="button"
                                     className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 ${i18n.language === 'he' ? 'left-2' : 'right-10'}`}
                                     aria-label={t('common.clearSearch')}
                                 >
-                                    <X className="h-4 w-4" />
+                                    <X className="h-4 w-4" aria-hidden="true" />
                                 </button>
                             )}
                         </div>
-                        <button onClick={handleMyAssignmentsClick} className={`px-3 py-1.5 text-sm font-medium rounded-lg shadow-sm transition-colors whitespace-nowrap ${selectedCategory === 'my-assignments' ? 'bg-accent text-white' : 'bg-primary text-white hover:bg-primary/90'}`}>
+                        <button
+                            onClick={handleMyAssignmentsClick}
+                            type="button"
+                            className={`px-3 py-1.5 text-sm font-medium rounded-lg shadow-sm transition-colors whitespace-nowrap ${selectedCategory === 'my-assignments' ? 'bg-accent text-white' : 'bg-primary text-white hover:bg-primary/90'}`}
+                        >
                             {t('eventPage.filter.myAssignments')}
                         </button>
                     </div>
@@ -1047,7 +1064,14 @@ const EventPage: React.FC = () => {
                     </>
                 ) : (
                     <div>
-                        <button onClick={handleBackToCategories} className="flex items-center text-sm font-semibold text-accent hover:underline mb-4"><ArrowRight size={16} className="ml-1" />{t('eventPage.backToCategories')}</button>
+                        <button
+                            onClick={handleBackToCategories}
+                            type="button"
+                            className="flex items-center text-sm font-semibold text-accent hover:underline mb-4"
+                        >
+                            <ArrowRight size={16} className="ml-1" aria-hidden="true" />
+                            {t('eventPage.backToCategories')}
+                        </button>
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-bold text-neutral-800">
@@ -1064,11 +1088,13 @@ const EventPage: React.FC = () => {
                                             toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
                                         }
                                     }}
+                                    type="button"
                                     title={canAddMoreItems ? t('eventPage.category.addItemTooltip') : t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS })}
                                     className="bg-success text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center"
                                     disabled={!canAddMoreItems}
+                                    aria-label={`${t('eventPage.category.addItem')} ${!showAdminButton ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
                                 >
-                                    <Plus size={16} className="inline-block ml-1" />
+                                    <Plus size={16} className="inline-block ml-1" aria-hidden="true" />
                                     {t('eventPage.category.addItem')} {!showAdminButton && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
                                 </button>
                             )}
@@ -1158,7 +1184,7 @@ const EventPage: React.FC = () => {
                 <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 text-center">
                     <div className="flex justify-center mb-3">
                         <div className="bg-orange-100 rounded-full p-3">
-                            <ChefHat className="h-6 w-6 text-orange-500" />
+                            <ChefHat className="h-6 w-6 text-orange-500" aria-hidden="true" />
                         </div>
                     </div>
                     <h2 className="text-lg font-bold text-gray-800 mb-1">{t('eventPage.promo.title')}</h2>

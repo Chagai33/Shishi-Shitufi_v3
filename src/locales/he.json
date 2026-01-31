@@ -146,6 +146,7 @@
                 "errorSavingList": "שגיאה בשמירת הרשימה"
             },
             "actions": {
+                "selected": "נבחרו",
                 "cancelAssignments": "בטל שיבוצים",
                 "changeCategory": "שנה קטגוריה",
                 "changeRequired": "שנה סטטוס חובה",

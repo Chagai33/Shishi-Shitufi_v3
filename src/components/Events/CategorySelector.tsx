@@ -128,15 +128,17 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       <div className="mt-8">
         <button
           onClick={onAddItem}
+          type="button"
           disabled={!canAddMoreItems}
           title={canAddMoreItems ? t('eventPage.category.addItemTooltip') : t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS })}
+          aria-label={`${t('eventPage.category.addItem')} ${showLimit ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
           className={`w-full flex items-center justify-center text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500
             ${!canAddMoreItems
               ? 'bg-neutral-400 cursor-not-allowed'
               : 'bg-success hover:bg-success/90'
             }`}
         >
-          <Plus size={20} className="ml-2" />
+          <Plus size={20} className="ml-2" aria-hidden="true" />
           {t('eventPage.category.addItem')} {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
         </button>
       </div>

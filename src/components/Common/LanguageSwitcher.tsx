@@ -19,10 +19,12 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className = '' }) =
     return (
         <button
             onClick={handleLanguageChange}
-            className={`text-gray-600 hover:text-gray-900 transition-colors focus:outline-none p-1 rounded-full hover:bg-gray-100 ${className}`}
+            type="button"
+            aria-label={i18n.language === 'he' ? 'Switch to English' : 'החלף לעברית'}
+            className={`text-gray-600 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 p-1 rounded-full hover:bg-gray-100 ${className}`}
             title={i18n.language === 'he' ? 'Switch to English' : 'החלף לעברית'}
         >
-            <Globe size={20} />
+            <Globe size={20} aria-hidden="true" />
         </button>
     );
 };

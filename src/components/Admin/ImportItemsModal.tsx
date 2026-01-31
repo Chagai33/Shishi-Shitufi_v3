@@ -1,6 +1,7 @@
 // src/components/Admin/ImportItemsModal.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, Upload, FileText, Table, AlertCircle, CheckCircle, Trash2, List } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
@@ -51,6 +52,39 @@ export function ImportItemsModal({ event, onClose }: ImportItemsModalProps) {
     { value: 'drink', label: t('categories.drink') },
     { value: 'other', label: t('categories.other') }
   ];
+
+  // Accessibility: Unique IDs for ARIA labeling
+  const titleId = useId();
+  const duplicateTitleId = useId();
+
+  // Accessibility: Store reference to the element that opened the modal
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  // Accessibility: Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isImporting) {
+        if (showDuplicateConfirm) setShowDuplicateConfirm(false);
+        else onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose, isImporting, showDuplicateConfirm]);
+
+  // Accessibility: Store active element on mount, restore on unmount
+  useEffect(() => {
+    returnFocusRef.current = document.activeElement as HTMLElement;
+
+    return () => {
+      // Return focus when modal closes
+      if (returnFocusRef.current && typeof returnFocusRef.current.focus === 'function') {
+        returnFocusRef.current.focus();
+      }
+    };
+  }, []);
+
 
   const parseTextInput = (text: string): ImportItem[] => {
     const lines = text.trim().split('\n').filter(line => line.trim());
@@ -252,24 +286,49 @@ export function ImportItemsModal({ event, onClose }: ImportItemsModalProps) {
 
   if (showDuplicateConfirm) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
-        <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('importModal.duplicates.title')}</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            <Trans i18nKey="importModal.duplicates.desc" values={{ duplicates: itemsToImport.duplicateItems.length, new: itemsToImport.newItems.length }} components={{ strong: <strong />, br: <br /> }} />
-          </p>
-          <div className="space-y-3">
-            <button onClick={() => executeImport([...itemsToImport.newItems, ...itemsToImport.duplicateItems])} disabled={isImporting} className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors">
-              {isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importAll', { count: itemsToImport.newItems.length + itemsToImport.duplicateItems.length })}
-            </button>
-            <button onClick={() => executeImport(itemsToImport.newItems)} disabled={isImporting || itemsToImport.newItems.length === 0} className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors">
-              {isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importNew', { count: itemsToImport.newItems.length })}
-            </button>
-            <button onClick={() => setShowDuplicateConfirm(false)} disabled={isImporting} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors">
-              {t('importModal.duplicates.cancel')}
-            </button>
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]"
+        role="presentation"
+      >
+        <FocusTrap>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={duplicateTitleId}
+            className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6"
+          >
+            <h2 id={duplicateTitleId} className="text-lg font-semibold text-gray-900 mb-2">{t('importModal.duplicates.title')}</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              <Trans i18nKey="importModal.duplicates.desc" values={{ duplicates: itemsToImport.duplicateItems.length, new: itemsToImport.newItems.length }} components={{ strong: <strong />, br: <br /> }} />
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => executeImport([...itemsToImport.newItems, ...itemsToImport.duplicateItems])}
+                disabled={isImporting}
+                type="button"
+                className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              >
+                {isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importAll', { count: itemsToImport.newItems.length + itemsToImport.duplicateItems.length })}
+              </button>
+              <button
+                onClick={() => executeImport(itemsToImport.newItems)}
+                disabled={isImporting || itemsToImport.newItems.length === 0}
+                type="button"
+                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+              >
+                {isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importNew', { count: itemsToImport.newItems.length })}
+              </button>
+              <button
+                onClick={() => setShowDuplicateConfirm(false)}
+                disabled={isImporting}
+                type="button"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"
+              >
+                {t('importModal.duplicates.cancel')}
+              </button>
+            </div>
           </div>
-        </div>
+        </FocusTrap>
       </div>
     );
   }
@@ -279,57 +338,75 @@ export function ImportItemsModal({ event, onClose }: ImportItemsModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <div className="bg-green-100 rounded-lg p-2"><Upload className="h-5 w-5 text-green-600" /></div>
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('importModal.title')}</h2>
-              <p className="text-sm text-gray-600">{event.details.title}</p>
-            </div>
-          </div>
-          <button onClick={onClose} disabled={isImporting} className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"><X className="h-5 w-5" /></button>
-        </div>
-        <div className="p-6">
-          {!showPreview ? (
-            <>
-              <div className="mb-6">
-                <h3 className="text-md font-medium text-gray-900 mb-4">{t('importModal.methods.desc')}</h3>
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => setActiveMethod('preset')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'preset' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><List className="h-4 w-4" /><span>{t('importModal.methods.preset')}</span></button>
-                  <button onClick={() => setActiveMethod('text')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'text' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><FileText className="h-4 w-4" /><span>{t('importModal.methods.text')}</span></button>
-                  <button onClick={() => setActiveMethod('excel')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'excel' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><Table className="h-4 w-4" /><span>{t('importModal.methods.excel')}</span></button>
-                  <button onClick={() => setActiveMethod('csv')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'csv' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><Table className="h-4 w-4" /><span>{t('importModal.methods.csv')}</span></button>
-                </div>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      role="presentation"
+    >
+      <FocusTrap>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        >
+          <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
+              <div className="bg-green-100 rounded-lg p-2"><Upload className="h-5 w-5 text-green-600" aria-hidden="true" /></div>
+              <div>
+                <h2 id={titleId} className="text-lg font-semibold text-gray-900">{t('importModal.title')}</h2>
+                <p className="text-sm text-gray-600">{event.details.title}</p>
               </div>
-              {activeMethod === 'preset' && (<div className="mb-6"><div className="text-center py-8"><div className="bg-green-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4"><List className="h-8 w-8 text-green-600" /></div><h3 className="text-lg font-medium text-gray-900 mb-2">{t('importModal.preset.title')}</h3><p className="text-gray-500 mb-4">{t('importModal.preset.desc')}</p><button onClick={() => setShowPresetManager(true)} className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">{t('importModal.preset.openBtn')}</button></div></div>)}
-              {activeMethod === 'text' && (<div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">{t('importModal.text.label')}</label><textarea value={textInput} onChange={(e) => setTextInput(e.target.value)} placeholder={t('importModal.text.placeholder')} rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none" /><p className="text-xs text-gray-500 mt-2">{t('importModal.text.help')}</p><button onClick={handleTextParse} disabled={!textInput.trim()} className="mt-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors">{t('importModal.text.parseBtn')}</button></div>)}
-              {(activeMethod === 'excel' || activeMethod === 'csv') && (<div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">{t('importModal.file.label', { type: activeMethod === 'excel' ? 'Excel' : 'CSV' })}</label><input type="file" accept={activeMethod === 'excel' ? '.xlsx,.xls' : '.csv'} onChange={handleFileUpload} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" /><p className="text-xs text-gray-500 mt-2">{t('importModal.file.help')}</p></div>)}
-            </>
-          ) : (
-            <>
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-md font-medium text-gray-900">{t('importModal.preview.title', { count: importItems.length })}</h3>
-                  <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                    <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
-                    <button onClick={() => { setShowPreview(false); setImportItems([]); setTextInput(''); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isImporting}
+              type="button"
+              aria-label={t('common.close')}
+              className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            >
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
+          <div className="p-6">
+            {!showPreview ? (
+              <>
+                <div className="mb-6">
+                  <h3 className="text-md font-medium text-gray-900 mb-4">{t('importModal.methods.desc')}</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <button onClick={() => setActiveMethod('preset')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'preset' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><List className="h-4 w-4" /><span>{t('importModal.methods.preset')}</span></button>
+                    <button onClick={() => setActiveMethod('text')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'text' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><FileText className="h-4 w-4" /><span>{t('importModal.methods.text')}</span></button>
+                    <button onClick={() => setActiveMethod('excel')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'excel' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><Table className="h-4 w-4" /><span>{t('importModal.methods.excel')}</span></button>
+                    <button onClick={() => setActiveMethod('csv')} className={`flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 rounded-lg border transition-colors ${activeMethod === 'csv' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}><Table className="h-4 w-4" /><span>{t('importModal.methods.csv')}</span></button>
                   </div>
                 </div>
-                {importItems.length === 0 ? (<div className="text-center py-8"><AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" /><p className="text-gray-500">{t('importModal.preview.noItems')}</p></div>) : (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden"><div className="max-h-96 overflow-y-auto"><table className="w-full"><thead className="bg-gray-50 sticky top-0"><tr><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.select')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.name')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.category')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.quantity')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.notes')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.required')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.actions')}</th></tr></thead><tbody className="bg-white divide-y divide-gray-200">{importItems.map((item, index) => (<tr key={index} className={item.error ? 'bg-red-50' : ''}><td className="px-4 py-3"><input type="checkbox" checked={item.selected} onChange={(e) => updateItem(index, 'selected', e.target.checked)} disabled={!!item.error} className="rounded border-gray-300 text-green-600 focus:ring-green-500" /></td><td className="px-4 py-3"><input type="text" value={item.name} onChange={(e) => updateItem(index, 'name', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" />{item.error && (<p className="text-xs text-red-600 mt-1 flex items-center"><AlertCircle className="h-3 w-3 ml-1" />{item.error}</p>)}</td><td className="px-4 py-3"><select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm">{categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}</select></td><td className="px-4 py-3"><input type="number" min="1" max="100" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td><td className="px-4 py-3"><input type="text" value={item.notes || ''} onChange={(e) => updateItem(index, 'notes', e.target.value || undefined)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td><td className="px-4 py-3"><input type="checkbox" checked={item.isRequired} onChange={(e) => updateItem(index, 'isRequired', e.target.checked)} className="rounded border-gray-300 text-red-600 focus:ring-red-500" /></td><td className="px-4 py-3"><button onClick={() => removeItem(index)} className="text-red-600 hover:text-red-700" title="הסר פריט"><Trash2 className="h-4 w-4" /></button></td></tr>))}</tbody></table></div></div>
-                )}
-              </div>
-              {importItems.length > 0 && (<div className="bg-blue-50 rounded-lg p-4 mb-6"><div className="flex items-center space-x-3 rtl:space-x-reverse"><CheckCircle className="h-5 w-5 text-blue-600" /><div><p className="text-sm text-blue-800"><Trans i18nKey="importModal.preview.summary.selected" values={{ selected: selectedItemsCount, valid: validItemsCount }} components={{ strong: <strong /> }} /></p>{importItems.some(item => item.error) && (<p className="text-xs text-red-600 mt-1">{t('importModal.preview.summary.errors', { count: importItems.filter(item => item.error).length })}</p>)}</div></div></div>)}
-              <div className="flex space-x-3 rtl:space-x-reverse">
-                <button onClick={handleImport} disabled={selectedItemsCount === 0 || isImporting} className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">{isImporting ? (<> <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div> {t('importModal.preview.importingBtn')} </>) : (t('importModal.preview.importBtn', { count: selectedItemsCount }))}</button>
-                <button onClick={onClose} disabled={isImporting} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">{t('importModal.preview.cancelBtn')}</button>
-              </div>
-            </>
-          )}
+                {activeMethod === 'preset' && (<div className="mb-6"><div className="text-center py-8"><div className="bg-green-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4"><List className="h-8 w-8 text-green-600" /></div><h3 className="text-lg font-medium text-gray-900 mb-2">{t('importModal.preset.title')}</h3><p className="text-gray-500 mb-4">{t('importModal.preset.desc')}</p><button onClick={() => setShowPresetManager(true)} className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">{t('importModal.preset.openBtn')}</button></div></div>)}
+                {activeMethod === 'text' && (<div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">{t('importModal.text.label')}</label><textarea value={textInput} onChange={(e) => setTextInput(e.target.value)} placeholder={t('importModal.text.placeholder')} rows={8} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none" /><p className="text-xs text-gray-500 mt-2">{t('importModal.text.help')}</p><button onClick={handleTextParse} disabled={!textInput.trim()} className="mt-4 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg transition-colors">{t('importModal.text.parseBtn')}</button></div>)}
+                {(activeMethod === 'excel' || activeMethod === 'csv') && (<div className="mb-6"><label className="block text-sm font-medium text-gray-700 mb-2">{t('importModal.file.label', { type: activeMethod === 'excel' ? 'Excel' : 'CSV' })}</label><input type="file" accept={activeMethod === 'excel' ? '.xlsx,.xls' : '.csv'} onChange={handleFileUpload} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" /><p className="text-xs text-gray-500 mt-2">{t('importModal.file.help')}</p></div>)}
+              </>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-md font-medium text-gray-900">{t('importModal.preview.title', { count: importItems.length })}</h3>
+                    <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                      <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
+                      <button onClick={() => { setShowPreview(false); setImportItems([]); setTextInput(''); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
+                    </div>
+                  </div>
+                  {importItems.length === 0 ? (<div className="text-center py-8"><AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" /><p className="text-gray-500">{t('importModal.preview.noItems')}</p></div>) : (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden"><div className="max-h-96 overflow-y-auto"><table className="w-full"><thead className="bg-gray-50 sticky top-0"><tr><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.select')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.name')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.category')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.quantity')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.notes')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.required')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.actions')}</th></tr></thead><tbody className="bg-white divide-y divide-gray-200">{importItems.map((item, index) => (<tr key={index} className={item.error ? 'bg-red-50' : ''}><td className="px-4 py-3"><input type="checkbox" checked={item.selected} onChange={(e) => updateItem(index, 'selected', e.target.checked)} disabled={!!item.error} className="rounded border-gray-300 text-green-600 focus:ring-green-500" /></td><td className="px-4 py-3"><input type="text" value={item.name} onChange={(e) => updateItem(index, 'name', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" />{item.error && (<p className="text-xs text-red-600 mt-1 flex items-center"><AlertCircle className="h-3 w-3 ml-1" />{item.error}</p>)}</td><td className="px-4 py-3"><select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm">{categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}</select></td><td className="px-4 py-3"><input type="number" min="1" max="100" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td><td className="px-4 py-3"><input type="text" value={item.notes || ''} onChange={(e) => updateItem(index, 'notes', e.target.value || undefined)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td><td className="px-4 py-3"><input type="checkbox" checked={item.isRequired} onChange={(e) => updateItem(index, 'isRequired', e.target.checked)} className="rounded border-gray-300 text-red-600 focus:ring-red-500" /></td><td className="px-4 py-3"><button onClick={() => removeItem(index)} className="text-red-600 hover:text-red-700" title="הסר פריט"><Trash2 className="h-4 w-4" /></button></td></tr>))}</tbody></table></div></div>
+                  )}
+                </div>
+                {importItems.length > 0 && (<div className="bg-blue-50 rounded-lg p-4 mb-6"><div className="flex items-center space-x-3 rtl:space-x-reverse"><CheckCircle className="h-5 w-5 text-blue-600" aria-hidden="true" /><div><p className="text-sm text-blue-800"><Trans i18nKey="importModal.preview.summary.selected" values={{ selected: selectedItemsCount, valid: validItemsCount }} components={{ strong: <strong /> }} /></p>{importItems.some(item => item.error) && (<p className="text-xs text-red-600 mt-1">{t('importModal.preview.summary.errors', { count: importItems.filter(item => item.error).length })}</p>)}</div></div></div>)}
+                <div className="flex space-x-3 rtl:space-x-reverse">
+                  <button onClick={handleImport} disabled={selectedItemsCount === 0 || isImporting} type="button" className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">{isImporting ? (<> <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div> {t('importModal.preview.importingBtn')} </>) : (t('importModal.preview.importBtn', { count: selectedItemsCount }))}</button>
+                  <button onClick={onClose} disabled={isImporting} type="button" className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">{t('importModal.preview.cancelBtn')}</button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

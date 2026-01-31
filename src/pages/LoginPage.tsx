@@ -1,6 +1,6 @@
 // src/pages/LoginPage.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useId } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -20,6 +20,11 @@ const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const navigate = useNavigate();
+
+  // Accessibility IDs
+  const emailId = useId();
+  const passwordId = useId();
+  const displayNameId = useId();
 
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,11 +99,12 @@ const LoginPage: React.FC = () => {
           <form onSubmit={handleAuthAction} className="space-y-6">
             {!isLoginView && (
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label htmlFor={displayNameId} className="block text-sm font-medium text-gray-700">
                   {t('login.fields.displayName')}
                 </label>
                 <div className="mt-1">
                   <input
+                    id={displayNameId}
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
@@ -110,11 +116,12 @@ const LoginPage: React.FC = () => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor={emailId} className="block text-sm font-medium text-gray-700">
                 {t('login.fields.email')}
               </label>
               <div className="mt-1">
                 <input
+                  id={emailId}
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -126,11 +133,12 @@ const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor={passwordId} className="block text-sm font-medium text-gray-700">
                 {t('login.fields.password')}
               </label>
               <div className="mt-1 relative">
                 <input
+                  id={passwordId}
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -141,9 +149,10 @@ const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? t('common.hidePassword') : t('common.showPassword')}
                   className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
                 </button>
               </div>
             </div>
@@ -190,8 +199,9 @@ const LoginPage: React.FC = () => {
 
           <div className="mt-6 text-center">
             <button
+              type="button"
               onClick={() => setIsLoginView(!isLoginView)}
-              className="text-sm font-medium text-orange-600 hover:text-orange-500"
+              className="text-sm font-medium text-orange-600 hover:text-orange-500 focus:outline-none focus:underline"
             >
               {isLoginView ? t('login.toggle.toRegister') : t('login.toggle.toLogin')}
             </button>

@@ -43,12 +43,21 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ location }) => {
             }
         };
 
+        // Accessibility: ESC key handler
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && isOpen) {
+                setIsOpen(false);
+            }
+        };
+
         if (isOpen) {
             document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleEscape);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
         };
     }, [isOpen]);
 
@@ -56,10 +65,14 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ location }) => {
         <div className="relative inline-block" ref={menuRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
+                type="button"
+                aria-expanded={isOpen}
+                aria-haspopup="true"
+                aria-label={`${t('eventPage.details.navigate')}: ${location}`}
                 className="flex items-center hover:text-blue-600 hover:underline transition-colors group text-sm text-neutral-600"
                 title={t('eventPage.details.navigate')}
             >
-                <MapPin size={14} className="ml-1.5 flex-shrink-0 group-hover:text-blue-500" />
+                <MapPin size={14} className="ml-1.5 flex-shrink-0 group-hover:text-blue-500" aria-hidden="true" />
                 {location}
             </button>
 

@@ -146,6 +146,7 @@
                 "errorSavingList": "Error al guardar la lista"
             },
             "actions": {
+                "selected": "Seleccionado",
                 "cancelAssignments": "Cancelar Asignaciones",
                 "changeCategory": "Cambiar Categoría",
                 "changeRequired": "Cambiar Estado Obligatorio",

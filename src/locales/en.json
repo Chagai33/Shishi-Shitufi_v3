@@ -146,6 +146,7 @@
                 "errorSavingList": "Error saving list"
             },
             "actions": {
+                "selected": "Selected",
                 "cancelAssignments": "Cancel Assignments",
                 "changeCategory": "Change Category",
                 "changeRequired": "Change Required Status",

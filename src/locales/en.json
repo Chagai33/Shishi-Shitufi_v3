@@ -198,6 +198,7 @@
                     "participants": "{{count}} participants"
                 },
                 "actions": {
+                    "goToEvent": "To Event Page",
                     "share": "Share",
                     "participantsView": "Participants View",
                     "bulkEdit": "Bulk Edit",

@@ -56,7 +56,7 @@ const EventCard: React.FC<{
 
     return (
         <div
-            className={`bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex flex-col border-r-4 ${isPast
+            className={`relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex flex-col border-r-4 ${isPast
                 ? 'border-neutral-400 opacity-75'
                 : event.details.isActive
                     ? 'border-accent hover:scale-[1.02]'
@@ -94,7 +94,7 @@ const EventCard: React.FC<{
                     </div>
                 )}
             </div>
-            <div className="bg-neutral-50 p-4 border-t rounded-b-xl">
+            <div className="relative z-10 bg-neutral-50 p-4 border-t rounded-b-xl">
                 <div className="flex justify-between items-center">
                     <button
                         onClick={copyToClipboard}
@@ -106,11 +106,9 @@ const EventCard: React.FC<{
                     <button
                         onClick={(e) => handleActionClick(e, () => navigate(`/event/${event.id}`))}
                         type="button"
-                        className="p-2 text-green-600 hover:text-green-700 hover:bg-green-100 rounded-lg transition-colors"
-                        title={t('dashboard.eventCard.actions.participantsView')}
-                        aria-label={t('dashboard.eventCard.actions.participantsView')}
+                        className="text-sm font-medium text-green-600 hover:text-green-700 hover:bg-green-50 px-3 py-1 rounded-lg transition-colors"
                     >
-                        <Eye size={16} aria-hidden="true" />
+                        {t('dashboard.eventCard.actions.goToEvent')}
                     </button>
                     <button
                         onClick={(e) => handleActionClick(e, () => setShowAdminActions(!showAdminActions))}

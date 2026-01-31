@@ -633,7 +633,7 @@ export class FirebaseService {
 
           // Calculate total assigned quantity from all assignments for this item
           Object.values(currentEventData.assignments).forEach((assignment: any) => {
-            if (assignment.menuItemId === item.id) {
+            if (assignment.menuItemId === assignmentData.menuItemId) {
               currentAssignedQuantity += (assignment.quantity || 0);
             }
           });

@@ -198,6 +198,7 @@
                     "participants": "{{count}} משתתפים"
                 },
                 "actions": {
+                    "goToEvent": "לעמוד האירוע",
                     "share": "שתף",
                     "participantsView": "תצוגת משתתפים",
                     "bulkEdit": "עריכה מרוכזת",

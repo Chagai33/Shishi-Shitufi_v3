@@ -598,7 +598,9 @@ const EventPage: React.FC = () => {
     const { eventId } = useParams<{ eventId: string }>();
     const [localUser, setLocalUser] = useState<FirebaseUser | null>(null);
     const [isJoining, setIsJoining] = useState(false);
+
     const [isEventLoading, setIsEventLoading] = useState(true);
+    const [isTitleExpanded, setIsTitleExpanded] = useState(false);
 
     const { currentEvent, setCurrentEvent, clearCurrentEvent, isLoading, user: storeUser } = useStore();
 
@@ -870,6 +872,8 @@ const EventPage: React.FC = () => {
         );
     }
 
+
+
     return (
         <div className="min-h-screen bg-background">
             <header className="bg-white shadow-sm p-3 sticky top-0 z-40">
@@ -914,20 +918,17 @@ const EventPage: React.FC = () => {
 
             <main className="max-w-4xl mx-auto py-4 px-4">
                 <div className="bg-white rounded-xl shadow-md p-4 mb-4">
-                    <div className="flex justify-between items-start mb-3">
-                        <h1 className="text-xl font-bold text-neutral-900">{currentEvent.details.title}</h1>
-                        <div className="flex flex-col items-end gap-y-2">
-                            {assignmentStats.requiredTotal > 0 && (
-                                <div className="text-xs font-semibold text-red-700 bg-red-100 px-2 py-1 rounded-full whitespace-nowrap" title={t('eventPage.stats.required.tooltip')}>
-                                    <span>{t('eventPage.stats.required.text', { count: assignmentStats.requiredAssigned, total: assignmentStats.requiredTotal })}</span>
-                                </div>
-                            )}
-                            {assignmentStats.optionalTotal > 0 && (
-                                <div className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full whitespace-nowrap" title={t('eventPage.stats.optional.tooltip')}>
-                                    <span>{t('eventPage.stats.optional.text', { count: assignmentStats.optionalAssigned, total: assignmentStats.optionalTotal })}</span>
-                                </div>
-                            )}
-                        </div>
+                    <div className="flex justify-between items-start mb-3 gap-4">
+                        <h1
+                            className="text-xl font-bold text-neutral-900 break-words cursor-pointer active:opacity-70 transition-opacity"
+                            title={isTitleExpanded ? t('common.showLess') : currentEvent.details.title}
+                            onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+                        >
+                            {(!isTitleExpanded && currentEvent.details.title.length > 32)
+                                ? `${currentEvent.details.title.slice(0, 32)}...`
+                                : currentEvent.details.title}
+                        </h1>
+
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-600">
                         {/* Interactive Date -> Add to Calendar */}
@@ -955,8 +956,24 @@ const EventPage: React.FC = () => {
                             {currentEvent.details.location}
                         </a>
 
+
                         {/* Organizer (Static) */}
                         <p className="flex items-center"><UserIcon size={14} className="ml-1.5 flex-shrink-0" /> {t('eventPage.details.organizer')}: {currentEvent.organizerName}</p>
+
+                        {/* Stats Badges (Moved here) */}
+                        <div className="flex items-center gap-2 mr-auto sm:mr-0 border-r pr-4 border-gray-300 sm:border-0 sm:pr-0">
+                            {/* Added border/padding for visual separation if needed, but flex-wrap handles flow */}
+                            {assignmentStats.requiredTotal > 0 && (
+                                <div className="text-xs font-semibold text-red-700 bg-red-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                    {t('eventPage.stats.required.text', { count: assignmentStats.requiredAssigned, total: assignmentStats.requiredTotal })}
+                                </div>
+                            )}
+                            {assignmentStats.optionalTotal > 0 && (
+                                <div className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full whitespace-nowrap">
+                                    {t('eventPage.stats.optional.text', { count: assignmentStats.optionalAssigned, total: assignmentStats.optionalTotal })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

@@ -197,7 +197,8 @@ export function ImportItemsModal({ event, onClose }: ImportItemsModalProps) {
             createdAt: Date.now(),
             creatorId: authUser?.uid || 'admin',
             creatorName: authUser?.displayName || 'Admin',
-            eventId: event.id
+            eventId: event.id,
+            isSplittable: item.quantity > 1, // Auto-set splittable if quantity > 1
           };
           const itemId = await FirebaseService.addMenuItem(event.id, menuItemData);
           if (itemId) {

@@ -14,6 +14,7 @@ interface UserMenuItemFormProps {
   onClose: () => void;
   category?: MenuCategory;
   availableCategories?: string[];
+  isOrganizer?: boolean; // New prop
 }
 
 interface FormErrors {
@@ -21,19 +22,20 @@ interface FormErrors {
   quantity?: string;
 }
 
-export function UserMenuItemForm({ event, onClose, category, availableCategories }: UserMenuItemFormProps) {
+export function UserMenuItemForm({ event, onClose, category, availableCategories, isOrganizer }: UserMenuItemFormProps) {
   const { t } = useTranslation();
-  const { user: authUser } = useAuth(); // <-- The line that was restored
+  const { user: authUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
-  const [myQuantity, setMyQuantity] = useState(1);
+  // Default to 1 for regular users, 0 for organizers (so they can just add items)
+  const [myQuantity, setMyQuantity] = useState(isOrganizer ? 0 : 1);
 
-  // Helper Stepper Component
-  const Stepper = ({ value, onChange, max }: { value: number, onChange: (val: number) => void, max?: number }) => (
+  // Helper Stepper Component - Updated to accept min prop
+  const Stepper = ({ value, onChange, max, min = 1 }: { value: number, onChange: (val: number) => void, max?: number, min?: number }) => (
     <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden h-10 w-full dir-ltr">
-      <button type="button" onClick={() => onChange(Math.max(1, value - 1))} className="w-10 h-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 border-r border-gray-200"><Minus size={16} /></button>
+      <button type="button" onClick={() => onChange(Math.max(min, value - 1))} className={`w-10 h-full flex items-center justify-center border-r border-gray-200 ${value <= min ? 'bg-gray-100 text-gray-300 cursor-not-allowed' : 'bg-gray-50 hover:bg-gray-100'}`} disabled={value <= min}><Minus size={16} /></button>
       <div className="flex-1 flex items-center justify-center bg-white font-semibold text-gray-800">{value}</div>
       <button type="button" onClick={() => onChange(max ? Math.min(max, value + 1) : value + 1)} className="w-10 h-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 border-l border-gray-200"><Plus size={16} /></button>
     </div>
@@ -330,11 +332,12 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                   value={myQuantity}
                   onChange={setMyQuantity}
                   max={formData.quantity}
+                  min={isOrganizer ? 0 : 1} // Organizer can set 0
                 />
               </div>
               <div className="col-span-2 text-xs text-gray-500 text-center -mt-2">
                 {myQuantity < formData.quantity ?
-                  t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity }) :
+                  (myQuantity === 0 ? "אתה לא מביא כלום (מנהל)" : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
                   t('userItemForm.fields.youBringAllMsg')}
               </div>
             </div>

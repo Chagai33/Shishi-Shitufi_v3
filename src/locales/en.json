@@ -392,7 +392,8 @@
                 "addMoreSuccess": "Added successfully",
                 "addMoreTitle": "Add More Items",
                 "quantityToAdd": "Quantity to Add",
-                "add": "Add"
+                "add": "Add",
+                "assignSuccess": "Successfully assigned to item: {{itemName}}"
             },
             "adminPanelTooltip": "Admin Panel",
             "adminPanel": "Admin Panel",

@@ -37,11 +37,25 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   // Helper function to calculate status and progress for each category
   const getCategoryProgress = (category: string) => {
     const itemsInCategory = menuItems.filter(item => item.category === category);
-    const assignedItemsInCategory = itemsInCategory.filter(item =>
-      assignments.some(a => a.menuItemId === item.id)
-    );
+
+    // Count items as "completed" only if ALL their units are assigned
+    const completedItems = itemsInCategory.filter(item => {
+      const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+
+      if (itemAssignments.length === 0) return false;
+
+      // For splittable items, check if total assigned >= quantity
+      if (item.isSplittable || item.quantity > 1) {
+        const totalAssigned = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+        return totalAssigned >= item.quantity;
+      }
+
+      // For non-splittable items, any assignment means completed
+      return true;
+    });
+
     return {
-      assigned: assignedItemsInCategory.length,
+      assigned: completedItems.length,
       total: itemsInCategory.length,
     };
   };

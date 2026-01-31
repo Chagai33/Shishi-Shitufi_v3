@@ -392,7 +392,8 @@
                 "addMoreSuccess": "הוסף בהצלחה",
                 "addMoreTitle": "הוסף עוד פריטים",
                 "quantityToAdd": "כמות להוספה",
-                "add": "הוסף"
+                "add": "הוסף",
+                "assignSuccess": "שובצת בהצלחה לפריט: {{itemName}}"
             },
             "adminPanelTooltip": "פאנל ניהול",
             "adminPanel": "נהל אירועים",
@@ -432,11 +433,13 @@
                 "progress": "התקדמות",
                 "iBring": "אני מביא:",
                 "editQuantity": "ערוך כמות",
+                "editItem": "ערוך פריט",
                 "cancel": "בטל",
                 "addMore": "הוסף עוד",
                 "iWillParticipate": "אני אשתתף בזה",
                 "completed": "הפריט הושלם",
                 "takenBy": "נלקח ע\"י",
+                "cancelAssignment": "בטל שיבוץ",
                 "iWillBringIt": "אני אביא את זה"
             },
             "status": {
@@ -475,6 +478,9 @@
                 "welcomeUser": "ברוך הבא, {{name}}!",
                 "joinError": "שגיאה בהצטרפות לאירוע.",
                 "itemNotFound": "הפריט לא נמצא",
+                "confirmDeleteItemWithParticipants": "האם אתה בטוח? פעולה זו תמחק את הפריט ותבטל {{count}} שיבוצים פעילים.",
+                "confirmUnassignCreatorKeepItem": "אתה מבטל את השיבוץ שלך, אך הפריט יישמר עבור המשתתפים האחרים.",
+                "confirmDeleteEmptyItem": "האם למחוק את הפריט?",
                 "deleteItemConfirm": "פעולה זו תמחק גם את הפריט וגם את השיבוץ",
                 "itemDeleted": "הפריט והשיבוץ נמחקו",
                 "deleteItemError": "שגיאה במחיקת הפריט",
@@ -520,6 +526,30 @@
             "cake": "עוגה",
             "juice": "מיץ",
             "water": "מים"
+        },
+        "editItemModal": {
+            "title": "עריכת פריט",
+            "fields": {
+                "name": "שם הפריט *",
+                "category": "קטגוריה *",
+                "quantity": "כמות נדרשת",
+                "assignedInfo": "כמות משובצת: {{assigned}} - לא ניתן להקטין מתחת לזה",
+                "notes": "הערות (אופציונלי)",
+                "notesPlaceholder": "לדוגמה: כשר, ללא גלוטן, טבעוני..."
+            },
+            "submit": "שמור שינויים",
+            "submitting": "שומר...",
+            "cancel": "ביטול",
+            "success": "הפריט עודכן בהצלחה!",
+            "errors": {
+                "nameRequired": "שם הפריט הוא שדה חובה",
+                "nameLength": "שם הפריט חייב להכיל לפחות 2 תווים",
+                "quantityMin": "הכמות חייבת להיות לפחות 1",
+                "quantityBelowAssigned": "לא ניתן להקטין את הכמות מתחת ל-{{assigned}} (כמות משובצת)",
+                "quantityMax": "הכמות לא יכולה להיות יותר מ-100",
+                "fixErrors": "יש לתקן את השגיאות בטופס",
+                "generalError": "שגיאה בעדכון הפריט"
+            }
         },
         "userItemForm": {
             "title": "הוסף פריט משלך",

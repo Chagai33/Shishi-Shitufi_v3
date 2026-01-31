@@ -13,6 +13,7 @@ import { CalendarPlus, Clock, MapPin, ChefHat, User as UserIcon, AlertCircle, Ed
 import { isEventFinished } from '../utils/dateUtils';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
+import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
 import LanguageSwitcher from '../components/Common/LanguageSwitcher';
 
@@ -36,11 +37,14 @@ const MenuItemCard: React.FC<{
     onAssign: () => void;
     onEdit: () => void;
     onCancel: (a?: AssignmentType) => void;
+    onDeleteItem?: () => void; // New prop for deleting the entire item
     onEditAssignment?: (a: AssignmentType) => void; // New prop for editing specific assignment
+    onEditItem?: () => void; // New prop for editing the item itself (for creators)
     isMyAssignment: boolean;
     isEventActive: boolean;
     currentUserId?: string;
-}> = ({ item, assignment, assignments = [], onAssign, onEdit, onEditAssignment, onCancel, isMyAssignment, isEventActive, currentUserId }) => {
+    isOrganizer?: boolean; // New prop for organizer status
+}> = ({ item, assignment, assignments = [], onAssign, onEdit, onEditAssignment, onCancel, onDeleteItem, onEditItem, isMyAssignment, isEventActive, currentUserId, isOrganizer }) => {
     const { t } = useTranslation();
     const assignedByOther = assignment && !isMyAssignment;
     const isSplittable = item.isSplittable || item.quantity > 1; // Enforce splittable if quantity > 1
@@ -73,7 +77,36 @@ const MenuItemCard: React.FC<{
             {/* Upper Part: Item Details */}
             <div className="p-4 flex-grow">
                 <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-gray-800 text-lg leading-tight">{item.name}</h4>
+                    <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-gray-800 text-lg leading-tight">{item.name}</h4>
+                            {/* Delete Item Button (Organizer Only) */}
+                            {/* Logic: Show ONLY if I am the organizer (admin). Creators cannot force-delete via header. */}
+                            {isOrganizer && isEventActive && onDeleteItem && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteItem();
+                                    }}
+                                    className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50"
+                                    title={t('common.delete')}
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
+                        </div>
+                        {/* Edit button for creators */}
+                        {(isOrganizer || (currentUserId && item.creatorId === currentUserId)) && isEventActive && onEditItem && (
+                            <button
+                                onClick={onEditItem}
+                                className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1 mt-1"
+                                title={t('eventPage.item.editItem')}
+                            >
+                                <Edit size={12} />
+                                {t('eventPage.item.editItem')}
+                            </button>
+                        )}
+                    </div>
                     <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
                         {t(`categories.${item.category}`)}
                     </span>
@@ -109,9 +142,24 @@ const MenuItemCard: React.FC<{
                             <div className="mt-3 text-xs text-gray-600">
                                 <ul className="space-y-1">
                                     {assignments.map(a => (
-                                        <li key={a.id} className="flex items-center gap-1">
-                                            <UserIcon size={10} />
-                                            <span className="font-medium">{a.userName}</span>: {a.quantity}
+                                        <li key={a.id} className="flex items-center justify-between gap-1 group/row">
+                                            <div className="flex items-center gap-1">
+                                                <UserIcon size={10} />
+                                                <span className="font-medium">{a.userName}</span>: {a.quantity}
+                                            </div>
+                                            {/* Organizer can delete ANY assignment */}
+                                            {isOrganizer && isEventActive && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onCancel(a);
+                                                    }}
+                                                    className="text-red-400 hover:text-red-600 p-0.5 transition-opacity"
+                                                    title={t('eventPage.item.cancel')}
+                                                >
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
@@ -194,20 +242,25 @@ const MenuItemCard: React.FC<{
                                 <p className="text-xs text-gray-500 italic">"{assignment.notes}"</p>
                             )}
 
-                            {isMyAssignment && isEventActive && (
+                            {isEventActive && (
                                 <div className="flex gap-2 pt-1">
-                                    <button
-                                        onClick={onEdit}
-                                        className="flex-1 text-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-1.5 rounded flex items-center justify-center transition-colors"
-                                    >
-                                        <Edit size={12} className="ml-1" /> {t('common.edit')}
-                                    </button>
-                                    <button
-                                        onClick={() => onCancel(assignment)}
-                                        className="flex-1 text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded flex items-center justify-center transition-colors"
-                                    >
-                                        <Trash2 size={12} className="ml-1" /> {t('common.delete')}
-                                    </button>
+                                    {isMyAssignment && (
+                                        <button
+                                            onClick={onEdit}
+                                            className="flex-1 text-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-1.5 rounded flex items-center justify-center transition-colors"
+                                        >
+                                            <Edit size={12} className="ml-1" /> {t('common.edit')}
+                                        </button>
+                                    )}
+                                    {/* Show delete/cancel if it's my assignment OR if I am the organizer */}
+                                    {(isMyAssignment || isOrganizer) && (
+                                        <button
+                                            onClick={() => onCancel(assignment)}
+                                            className="flex-1 text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded flex items-center justify-center transition-colors"
+                                        >
+                                            <Trash2 size={12} className="ml-1" /> {t('eventPage.item.cancelAssignment')}
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -366,16 +419,14 @@ const AssignmentModal: React.FC<{
                                     <label className="block text-sm font-medium text-gray-700">
                                         {t('eventPage.assignment.registerAs')} <span className="text-blue-600 font-bold">{tempUserName}</span>
                                     </label>
-                                    {!isEdit && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsEditingName(!isEditingName)}
-                                            className="text-xs text-orange-600 hover:text-orange-700 underline flex items-center"
-                                        >
-                                            <Edit size={12} className="ml-1" />
-                                            {t('eventPage.assignment.changeName')}
-                                        </button>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditingName(!isEditingName)}
+                                        className="text-xs text-orange-600 hover:text-orange-700 underline flex items-center"
+                                    >
+                                        <Edit size={12} className="ml-1" />
+                                        {t('eventPage.assignment.changeName')}
+                                    </button>
                                 </div>
 
                                 {isEditingName && (
@@ -581,7 +632,7 @@ const EventPage: React.FC = () => {
         };
     }, [menuItems, assignments]);
 
-    const [modalState, setModalState] = useState<{ type: 'assign' | 'edit' | 'add-user-item' | 'add-more'; item?: MenuItemType; assignment?: AssignmentType; category?: string } | null>(null);
+    const [modalState, setModalState] = useState<{ type: 'assign' | 'edit' | 'add-user-item' | 'add-more' | 'edit-item'; item?: MenuItemType; assignment?: AssignmentType; category?: string } | null>(null);
     const [itemToAssignAfterJoin, setItemToAssignAfterJoin] = useState<MenuItemType | null>(null);
     const [showNameModal, setShowNameModal] = useState(false);
 
@@ -655,9 +706,33 @@ const EventPage: React.FC = () => {
         }
 
         const isCreator = item.creatorId === localUser.uid;
+        const isSelfAssignment = assignment.userId === localUser.uid;
 
-        if (isCreator) {
-            if (window.confirm(t('eventPage.messages.deleteItemConfirm'))) {
+        // Logic split:
+        // 1. If deleting SOMEONE ELSE (Manager/Admin action) -> Just Unassign.
+        // 2. If deleting SELF (Creator/User action) -> Unassign, but check if item should be deleted.
+
+        if (!isSelfAssignment) {
+            // Manager deleting someone else
+            if (window.confirm(t('eventPage.messages.cancelAssignmentConfirm'))) {
+                try {
+                    await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
+                    toast.success(t('eventPage.messages.assignmentCancelled'));
+                } catch (error) {
+                    toast.error(t('eventPage.messages.cancelAssignmentError'));
+                }
+            }
+            return;
+        }
+
+        // Deleting SELF
+        // Check if there are OTHER active assignments
+        const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+        const hasOthers = itemAssignments.some(a => a.userId !== localUser.uid);
+
+        if (isCreator && !hasOthers) {
+            // I am Creator + Last One -> Ask to delete ITEM
+            if (window.confirm(t('eventPage.messages.confirmDeleteEmptyItem'))) {
                 try {
                     await FirebaseService.deleteMenuItem(eventId, item.id);
                     toast.success(t('eventPage.messages.itemDeleted'));
@@ -665,7 +740,18 @@ const EventPage: React.FC = () => {
                     toast.error(t('eventPage.messages.deleteItemError'));
                 }
             }
+        } else if (isCreator && hasOthers) {
+            // I am Creator + Others Exist -> Warn item stays -> Unassign me
+            if (window.confirm(t('eventPage.messages.confirmUnassignCreatorKeepItem'))) {
+                try {
+                    await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
+                    toast.success(t('eventPage.messages.assignmentCancelled'));
+                } catch (error) {
+                    toast.error(t('eventPage.messages.cancelAssignmentError'));
+                }
+            }
         } else {
+            // Regular user unassigning -> Standard confirm
             if (window.confirm(t('eventPage.messages.cancelAssignmentConfirm'))) {
                 try {
                     await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
@@ -677,7 +763,28 @@ const EventPage: React.FC = () => {
         }
     };
 
+    const handleDeleteItem = async (item: MenuItemType) => {
+        if (!eventId || !localUser) return;
+
+        const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+        const count = itemAssignments.length;
+
+        const confirmMsg = count > 0
+            ? t('eventPage.messages.confirmDeleteItemWithParticipants', { count })
+            : t('eventPage.messages.confirmDeleteEmptyItem');
+
+        if (window.confirm(confirmMsg)) {
+            try {
+                await FirebaseService.deleteMenuItem(eventId, item.id);
+                toast.success(t('eventPage.messages.itemDeleted'));
+            } catch (error) {
+                toast.error(t('eventPage.messages.deleteItemError'));
+            }
+        }
+    }
+
     const handleEditClick = (item: MenuItemType, assignment: AssignmentType) => setModalState({ type: 'edit', item, assignment });
+    const handleEditItemClick = (item: MenuItemType) => setModalState({ type: 'edit-item', item });
     const handleBackToCategories = () => { setView('categories'); setSelectedCategory(null); setSearchTerm(''); };
     const handleCategoryClick = (category: string) => { setSelectedCategory(category); setView('items'); };
 
@@ -961,9 +1068,12 @@ const EventPage: React.FC = () => {
                                                                 assignments={assignments.filter(a => a.menuItemId === item.id)}
                                                                 onAssign={() => handleAssignClick(item)}
                                                                 onEdit={() => handleEditClick(item, assignment!)}
+                                                                onEditItem={() => handleEditItemClick(item)}
                                                                 onCancel={(a) => handleCancelClick(a || assignment!)}
+                                                                onDeleteItem={() => handleDeleteItem(item)}
                                                                 isMyAssignment={localUser?.uid === assignment?.userId}
                                                                 isEventActive={isEventActive}
+                                                                isOrganizer={!!showAdminButton}
                                                                 currentUserId={localUser?.uid}
                                                             />
                                                         })}
@@ -984,10 +1094,13 @@ const EventPage: React.FC = () => {
                                                                 assignments={assignments.filter(a => a.menuItemId === item.id)}
                                                                 onAssign={() => handleAssignClick(item)}
                                                                 onEdit={() => handleEditClick(item, assignment!)}
+                                                                onEditItem={() => handleEditItemClick(item)}
                                                                 onEditAssignment={(a) => handleEditClick(item, a)} // Fix: Pass this prop here too
                                                                 onCancel={(a) => handleCancelClick(a || assignment!)}
+                                                                onDeleteItem={() => handleDeleteItem(item)}
                                                                 isMyAssignment={localUser?.uid === assignment?.userId}
                                                                 isEventActive={isEventActive}
+                                                                isOrganizer={!!showAdminButton}
                                                                 currentUserId={localUser?.uid}
                                                             />
                                                         })}
@@ -1032,6 +1145,17 @@ const EventPage: React.FC = () => {
                         event={currentEvent}
                         onClose={() => setModalState(null)}
                         category={modalState.category}
+                        isOrganizer={!!showAdminButton}
+                    />
+                )
+            }
+            {
+                modalState?.type === 'edit-item' && modalState.item && (
+                    <EditItemModal
+                        item={modalState.item}
+                        eventId={eventId!}
+                        assignments={assignments}
+                        onClose={() => setModalState(null)}
                     />
                 )
             }

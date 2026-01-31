@@ -373,6 +373,21 @@ export class FirebaseService {
     updates: Partial<MenuItem>
   ): Promise<void> {
     try {
+      // Validate quantity if being updated
+      if (updates.quantity !== undefined) {
+        const assignmentsRef = ref(database, `events/${eventId}/assignments`);
+        const assignmentsSnapshot = await get(assignmentsRef);
+        const assignments = assignmentsSnapshot.val() || {};
+
+        const totalAssigned = Object.values(assignments)
+          .filter((a: any) => a.menuItemId === itemId)
+          .reduce((sum: number, a: any) => sum + (a.quantity || 0), 0);
+
+        if (updates.quantity < totalAssigned) {
+          throw new Error(`לא ניתן להקטין את הכמות מתחת ל-${totalAssigned} (כמות משובצת)`);
+        }
+      }
+
       // Sanitize updates to remove undefined values and convert empty strings to null
       const sanitizedUpdates: { [key: string]: any } = {};
       Object.entries(updates).forEach(([key, value]) => {
@@ -413,8 +428,17 @@ export class FirebaseService {
 
         console.log('🔧 Transaction started. Current event data:', currentEventData);
 
+        // Check for active assignments - prevent deletion if any exist
         const itemToDelete = currentEventData.menuItems[itemId];
         const creatorId = itemToDelete.creatorId;
+
+        const assignments = currentEventData.assignments || {};
+        const hasOtherUserAssignments = Object.values(assignments)
+          .some((a: any) => a.menuItemId === itemId && a.userId !== creatorId);
+
+        if (hasOtherUserAssignments) {
+          console.warn('⚠️ Deleting item with active assignments for other users.');
+        }
 
         // Step 1: Update counter (if relevant)
         if (creatorId && currentEventData.userItemCounts?.[creatorId]) {
@@ -556,7 +580,7 @@ export class FirebaseService {
         // For now, we proceed.
 
         // --- 3. Splittable vs Non-Splittable Logic ---
-        if (item.isSplittable) {
+        if (item.isSplittable || item.quantity > 1) {
           // --- Splittable Item Logic ---
           let currentAssignedQuantity = 0;
 

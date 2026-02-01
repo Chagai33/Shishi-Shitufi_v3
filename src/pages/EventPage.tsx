@@ -615,6 +615,7 @@ const EventPage: React.FC = () => {
 
     const MAX_USER_ITEMS = currentEvent?.details.userItemLimit ?? 3;
     const showAdminButton = storeUser?.isAdmin || (localUser && currentEvent?.organizerId === localUser.uid);
+    const isOrganizer = !!showAdminButton;
 
     const canAddMoreItems = showAdminButton || ((currentEvent?.details.allowUserItems ?? false) && userCreatedItemsCount < MAX_USER_ITEMS);
     const assignmentStats = useMemo(() => {
@@ -644,6 +645,7 @@ const EventPage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [view, setView] = useState<'categories' | 'items'>('categories');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [lastManualCategory, setLastManualCategory] = useState<string>('main');
 
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, (user) => {
@@ -803,6 +805,26 @@ const EventPage: React.FC = () => {
             setView('items');
         }
     };
+    const handleAssignedClick = () => {
+        if (view === 'items' && selectedCategory === 'assigned') {
+            setView('categories');
+            setSelectedCategory(null);
+            setSearchTerm('');
+        } else {
+            setSelectedCategory('assigned');
+            setView('items');
+        }
+    };
+    const handleUnassignedClick = () => {
+        if (view === 'items' && selectedCategory === 'unassigned') {
+            setView('categories');
+            setSelectedCategory(null);
+            setSearchTerm('');
+        } else {
+            setSelectedCategory('unassigned');
+            setView('items');
+        }
+    };
 
     const itemsToDisplay = useMemo(() => {
         let baseItems = menuItems;
@@ -811,6 +833,10 @@ const EventPage: React.FC = () => {
         }
         if (selectedCategory === 'my-assignments' && localUser) {
             baseItems = baseItems.filter(item => assignments.some(a => a.menuItemId === item.id && a.userId === localUser.uid));
+        } else if (selectedCategory === 'assigned') {
+            baseItems = baseItems.filter(item => assignments.some(a => a.menuItemId === item.id));
+        } else if (selectedCategory === 'unassigned') {
+            baseItems = baseItems.filter(item => !assignments.some(a => a.menuItemId === item.id));
         } else if (selectedCategory) {
             baseItems = baseItems.filter(item => item.category === selectedCategory);
         }
@@ -992,10 +1018,37 @@ const EventPage: React.FC = () => {
                         <button
                             onClick={handleMyAssignmentsClick}
                             type="button"
-                            className={`px-3 py-1.5 text-sm font-medium rounded-lg shadow-sm transition-colors whitespace-nowrap ${selectedCategory === 'my-assignments' ? 'bg-accent text-white' : 'bg-primary text-white hover:bg-primary/90'}`}
+                            className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${selectedCategory === 'my-assignments'
+                                ? 'bg-accent text-white border-accent'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                }`}
                         >
-                            {t('eventPage.filter.myAssignments')}
+                            {t('eventPage.filter.my-assignments')}
                         </button>
+                        {isOrganizer && (
+                            <>
+                                <button
+                                    onClick={handleAssignedClick}
+                                    type="button"
+                                    className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${selectedCategory === 'assigned'
+                                        ? 'bg-accent text-white border-accent'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {t('eventPage.filter.assigned')}
+                                </button>
+                                <button
+                                    onClick={handleUnassignedClick}
+                                    type="button"
+                                    className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${selectedCategory === 'unassigned'
+                                        ? 'bg-accent text-white border-accent'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {t('eventPage.filter.unassigned')}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -1034,7 +1087,11 @@ const EventPage: React.FC = () => {
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-bold text-neutral-800">
-                                    {searchTerm ? t('eventPage.list.searchResults') : selectedCategory === 'my-assignments' ? t('eventPage.filter.myAssignments') : t(`categories.${selectedCategory!}`)}
+                                    {searchTerm
+                                        ? t('eventPage.list.searchResults')
+                                        : (selectedCategory === 'my-assignments' || selectedCategory === 'assigned' || selectedCategory === 'unassigned')
+                                            ? t(`eventPage.filter.${selectedCategory}`)
+                                            : t(`categories.${selectedCategory!}`)}
                                 </h2>
 
                             </div>
@@ -1167,8 +1224,9 @@ const EventPage: React.FC = () => {
                     <UserMenuItemForm
                         event={currentEvent}
                         onClose={() => setModalState(null)}
-                        category={modalState.category}
-                        isOrganizer={!!showAdminButton}
+                        category={(modalState.category || lastManualCategory) as any}
+                        isOrganizer={isOrganizer}
+                        onSuccess={(cat) => setLastManualCategory(cat)}
                     />
                 )
             }

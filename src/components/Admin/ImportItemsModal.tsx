@@ -513,15 +513,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItem
 
                       <button
                         type="button"
-                        onClick={() => {
-                          console.log('Single Item button clicked');
-                          if (onAddSingleItem) {
-                            console.log('Calling onAddSingleItem callback');
-                            onAddSingleItem();
-                          } else {
-                            console.error('onAddSingleItem callback is undefined');
-                          }
-                        }}
+                        onClick={() => onAddSingleItem?.()}
                         className="flex flex-col md:flex-row items-center justify-center gap-2 p-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 h-full"
                       >
                         <Plus className="h-5 w-5 md:h-5 md:w-5" aria-hidden="true" />

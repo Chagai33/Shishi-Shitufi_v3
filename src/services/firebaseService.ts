@@ -168,10 +168,6 @@ export class FirebaseService {
     eventId: string,
     callback: (eventData: ShishiEvent | null) => void
   ): () => void {
-    console.group('📖 FirebaseService.subscribeToEvent');
-    console.log('📥 Input parameters:', { eventId });
-    console.log('🔗 Event path:', `events/${eventId}`);
-
     const eventRef = ref(database, `events/${eventId}`);
 
     const onValueChange = async (snapshot: any) => {
@@ -244,9 +240,6 @@ export class FirebaseService {
     itemData: Omit<MenuItem, 'id'>,
     options?: { bypassLimit?: boolean }
   ): Promise<string> {
-    console.group('➕ FirebaseService.addMenuItem (Transactional)');
-    console.log('📥 Input:', { eventId, itemData, options });
-
     const eventRef = ref(database, `events/${eventId}`);
     let newItemId: string | null = null;
 
@@ -303,8 +296,6 @@ export class FirebaseService {
       if (!newItemId) {
         throw new Error("Failed to generate item ID.");
       }
-      console.log('✅ Item added successfully');
-      console.groupEnd();
       return newItemId;
 
     } catch (error) {
@@ -363,7 +354,7 @@ export class FirebaseService {
         if (!currentEventData.assignments) currentEventData.assignments = {};
         if (!currentEventData.participants) currentEventData.participants = {};
         if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
-        console.log('✅ Event structure ensured');
+
 
         // Prepare item object
         const finalItemData: any = {
@@ -388,7 +379,7 @@ export class FirebaseService {
           status: 'confirmed',
           assignedAt: Date.now()
         };
-        console.log('📋 Assignment data:', assignmentData);
+
 
         // --- Direct data update in transaction ---
         currentEventData.menuItems[newItemId] = finalItemData;
@@ -407,7 +398,6 @@ export class FirebaseService {
 
     } catch (error) {
       console.error('❌ Error in addMenuItemAndAssign Transaction:', error);
-      console.groupEnd();
       throw error; // Re-throw error so toast displays it
     }
   }
@@ -469,11 +459,9 @@ export class FirebaseService {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
         if (currentEventData === null || !currentEventData.menuItems?.[itemId]) {
           // If event or item don't exist, nothing to do.
-          console.log('Transaction aborted: Event or menu item not found.');
           return;
         }
 
-        console.log('🔧 Transaction started. Current event data:', currentEventData);
 
         // Check for active assignments - prevent deletion if any exist
         const itemToDelete = currentEventData.menuItems[itemId];
@@ -515,12 +503,8 @@ export class FirebaseService {
         // Return the updated object so the transaction writes it
         return currentEventData;
       });
-
-      console.log('✅ Menu item and related data deleted successfully via transaction');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in deleteMenuItem transaction:', error);
-      console.groupEnd();
       throw error;
     }
   }
@@ -537,8 +521,6 @@ export class FirebaseService {
     userId: string,
     userName: string
   ): Promise<void> {
-    console.group('👥 FirebaseService.joinEvent');
-    console.log('📥 Input parameters:', { eventId, userId, userName });
 
     try {
       await this.ensureEventStructure(eventId);
@@ -549,15 +531,9 @@ export class FirebaseService {
         joinedAt: Date.now()
       };
 
-      console.log('👤 Participant data:', participantData);
-      console.log('💾 Saving participant to Firebase...');
-
       await set(participantRef, participantData);
-      console.log('✅ Participant joined successfully!');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in joinEvent:', error);
-      console.groupEnd();
       throw error;
     }
   }
@@ -566,17 +542,12 @@ export class FirebaseService {
    * מסיר משתתף מהאירוע
    */
   static async leaveEvent(eventId: string, userId: string): Promise<void> {
-    console.group('👋 FirebaseService.leaveEvent');
-    console.log('📥 Input parameters:', { eventId, userId });
 
     try {
       const participantRef = ref(database, `events/${eventId}/participants/${userId}`);
       await remove(participantRef);
-      console.log('✅ Participant left successfully');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in leaveEvent:', error);
-      console.groupEnd();
       throw error;
     }
   }
@@ -592,11 +563,7 @@ export class FirebaseService {
     eventId: string,
     assignmentData: Omit<Assignment, 'id'>
   ): Promise<string> {
-    console.group('📋 FirebaseService.createAssignment');
-    console.log('📥 Input parameters:', { eventId, assignmentData });
 
-    console.group('📋 FirebaseService.createAssignment (Transactional)');
-    console.log('📥 Input parameters:', { eventId, assignmentData });
 
     const eventRef = ref(database, `events/${eventId}`);
     const newAssignmentRef = push(ref(database, `events/${eventId}/assignments`));
@@ -672,13 +639,9 @@ export class FirebaseService {
         return currentEventData;
       });
 
-      console.log('✅ Assignment created successfully via transaction');
-      console.groupEnd();
-
       return newAssignmentId;
     } catch (error) {
       console.error('❌ Error in createAssignment transaction:', error);
-      console.groupEnd();
       throw error;
     }
   }
@@ -693,8 +656,6 @@ export class FirebaseService {
     assignmentId: string,
     updates: { quantity: number; notes?: string; userName?: string }
   ): Promise<void> {
-    console.group('📝 FirebaseService.updateAssignment (Enhanced)');
-    console.log('📥 Input parameters:', { eventId, assignmentId, updates });
 
     try {
       const dbUpdates: { [key: string]: any } = {};
@@ -717,8 +678,6 @@ export class FirebaseService {
 
           // Only proceed if the name has actually changed.
           if (currentUserId && updates.userName !== currentUserName) {
-            console.log(`👤 Name change detected for user ${currentUserId}: "${currentUserName}" -> "${updates.userName}"`);
-
             // Fetch all event data to find other instances of this user.
             const eventRef = ref(database, `events/${eventId}`);
             const eventSnapshot = await get(eventRef);
@@ -732,25 +691,20 @@ export class FirebaseService {
               for (const anId in allAssignments) {
                 if (allAssignments[anId].userId === currentUserId) {
                   dbUpdates[`events/${eventId}/assignments/${anId}/userName`] = updates.userName;
-                  console.log(`🔄 Queued name update for assignment: ${anId}`);
 
                   const menuItemId = allAssignments[anId].menuItemId;
                   if (menuItemId) {
                     dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
-                    console.log(`🔗 Queued name update for linked menu item (assignedToName): ${menuItemId}`);
                   }
                 }
               }
 
-              // *** START OF THE FIX ***
               // Iterate through all menu items to update creatorName.
               for (const menuItemId in allMenuItems) {
                 if (allMenuItems[menuItemId].creatorId === currentUserId) {
                   dbUpdates[`events/${eventId}/menuItems/${menuItemId}/creatorName`] = updates.userName;
-                  console.log(`✍️ Queued name update for created menu item (creatorName): ${menuItemId}`);
                 }
               }
-              // *** END OF THE FIX ***
             }
           } else {
             // If only quantity/notes changed, or name is the same, update just in case.
@@ -763,18 +717,15 @@ export class FirebaseService {
         }
       }
 
-      console.log('💾 Applying atomic batch updates:', dbUpdates);
       // Perform a single, atomic update for all changes.
       await update(ref(database), dbUpdates);
 
-      console.log('✅ Assignment(s) updated successfully');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in updateAssignment:', error);
-      console.groupEnd();
       throw error;
     }
   }
+
   /**
    * מבטל שיבוץ
    */
@@ -783,8 +734,6 @@ export class FirebaseService {
     assignmentId: string,
     menuItemId: string
   ): Promise<void> {
-    console.group('❌ FirebaseService.cancelAssignment');
-    console.log('📥 Input parameters:', { eventId, assignmentId, menuItemId });
 
     try {
       const updates: { [key: string]: null } = {};
@@ -797,20 +746,16 @@ export class FirebaseService {
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
       updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
 
-      console.log('💾 Updates to apply:', updates);
       await update(ref(database), updates);
-      console.log('✅ Assignment cancelled successfully');
-      console.groupEnd();
     } catch (error) {
       console.error('❌ Error in cancelAssignment:', error);
-      console.groupEnd();
       throw error;
     }
   }
 
-  // ===================================
+  // ===============================
   // Preset lists management
-  // ===================================
+  // ===============================
 
   /**
    * מאזין לשינויים באוסף הרשימות המוכנות
@@ -1018,17 +963,12 @@ export class FirebaseService {
     isValid: boolean;
     issues: string[];
   }> {
-    console.group('🔍 FirebaseService.validateEventData');
-    console.log('📥 Input parameters:', { eventId });
-
     const issues: string[] = [];
 
     try {
       const eventSnapshot = await get(ref(database, `events/${eventId}`));
 
       if (!eventSnapshot.exists()) {
-        console.log('❌ Event does not exist');
-        console.groupEnd();
         return { isValid: false, issues: ['האירוע לא קיים'] };
       }
 
@@ -1061,14 +1001,9 @@ export class FirebaseService {
         }
       });
 
-      const isValid = issues.length === 0;
-      console.log('🔍 Validation result:', { isValid, issues });
-      console.groupEnd();
-
-      return { isValid, issues };
+      return { isValid: issues.length === 0, issues };
     } catch (error) {
       console.error('❌ Error validating event data:', error);
-      console.groupEnd();
       return { isValid: false, issues: ['שגיאה בבדיקת הנתונים'] };
     }
   }

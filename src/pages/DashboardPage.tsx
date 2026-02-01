@@ -352,6 +352,7 @@ const DashboardPage: React.FC = () => {
 
     const [showPresetManager, setShowPresetManager] = useState(false);
     const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+    const [bulkEditInitialAddForm, setBulkEditInitialAddForm] = useState(false);
 
 
 
@@ -420,8 +421,9 @@ const DashboardPage: React.FC = () => {
         setShowImportModal(true);
     };
 
-    const handleBulkEdit = (event: ShishiEvent) => {
+    const handleBulkEdit = (event: ShishiEvent, showAddForm = false) => {
         setSelectedEventForBulkEdit(event);
+        setBulkEditInitialAddForm(showAddForm);
         setShowBulkManager(true);
     };
 
@@ -437,9 +439,11 @@ const DashboardPage: React.FC = () => {
             <BulkItemsManager
                 event={selectedEventForBulkEdit}
                 allEvents={events}
+                initialShowAddItemForm={bulkEditInitialAddForm}
                 onBack={() => {
                     setShowBulkManager(false);
                     setSelectedEventForBulkEdit(null);
+                    setBulkEditInitialAddForm(false);
                 }}
             />
         );
@@ -574,6 +578,12 @@ const DashboardPage: React.FC = () => {
                     onClose={() => {
                         setShowImportModal(false);
                         setSelectedEventForImport(null);
+                    }}
+                    onAddSingleItem={() => {
+                        const eventToBulkEdit = selectedEventForImport;
+                        setShowImportModal(false);
+                        setSelectedEventForImport(null);
+                        handleBulkEdit(eventToBulkEdit, true);
                     }}
                 />
             )}

@@ -15,7 +15,8 @@ interface UserMenuItemFormProps {
   onClose: () => void;
   category?: MenuCategory;
   availableCategories?: string[];
-  isOrganizer?: boolean; // New prop
+  isOrganizer?: boolean;
+  onSuccess?: (category: MenuCategory) => void;
 }
 
 interface FormErrors {
@@ -23,7 +24,7 @@ interface FormErrors {
   quantity?: string;
 }
 
-export function UserMenuItemForm({ event, onClose, category, availableCategories, isOrganizer }: UserMenuItemFormProps) {
+export function UserMenuItemForm({ event, onClose, category, availableCategories, isOrganizer, onSuccess }: UserMenuItemFormProps) {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -219,6 +220,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
 
       if (itemId) {
         toast.success(t('userItemForm.errors.success'));
+        onSuccess?.(formData.category);
       } else {
         throw new Error(t('userItemForm.errors.generalError'));
       }

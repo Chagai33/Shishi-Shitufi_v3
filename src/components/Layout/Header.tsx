@@ -9,9 +9,11 @@ import LanguageSwitcher from '../Common/LanguageSwitcher';
 
 export function Header() {
   const { t } = useTranslation();
-  const { user } = useStore();
+  const { user, currentEvent } = useStore();
   const { logout } = useAuth();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+
+  const isOrganizer = user?.isAdmin || (currentEvent && user && currentEvent.organizerId === user.id) || (!currentEvent && user?.id);
 
   const hasUserName = user?.name && user.name.trim().length > 0;
 
@@ -58,7 +60,7 @@ export function Header() {
               <LanguageSwitcher />
 
               {/* Settings / Admin Link - Placeholder for now or link to dashboard if logged in */}
-              {user && (
+              {user && isOrganizer && (
                 <Link
                   to="/dashboard"
                   className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"

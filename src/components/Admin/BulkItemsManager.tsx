@@ -16,6 +16,7 @@ interface BulkItemsManagerProps {
   onBack: () => void;
   event?: ShishiEvent;
   allEvents: ShishiEvent[];
+  initialShowAddItemForm?: boolean;
 }
 
 interface EditableItem extends MenuItem {
@@ -179,7 +180,7 @@ const MobileItemCard = ({
 };
 
 
-function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerProps) {
+function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemForm = false }: BulkItemsManagerProps) {
   const { t } = useTranslation();
   const { updateMenuItem, deleteAssignment } = useStore();
   const [realtimeEvents, setRealtimeEvents] = useState<ShishiEvent[]>(allEvents);
@@ -250,7 +251,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   const [bulkCategory, setBulkCategory] = useState<MenuCategory>('main');
   const [bulkRequired, setBulkRequired] = useState(false);
   const [editAllMode, setEditAllMode] = useState(false);
-  const [showAddItemForm, setShowAddItemForm] = useState(false);
+  const [showAddItemForm, setShowAddItemForm] = useState(initialShowAddItemForm);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showPresetManager, setShowPresetManager] = useState(false);
   const [newItem, setNewItem] = useState({
@@ -599,7 +600,8 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     );
 
     if (existingItem) {
-      if (!confirm(t('bulkEdit.messages.duplicateItem', { name: newItem.name, event: getEventName(event.id) }))) {
+      const eventName = getEventName(event.id);
+      if (!confirm(t('bulkEdit.messages.duplicateItem', { name: newItem.name, event: eventName }))) {
         return;
       }
     }
@@ -610,7 +612,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         name: newItem.name.trim(),
         category: newItem.category,
         quantity: newItem.quantity,
-        notes: newItem.notes.trim() || undefined,
+        notes: (newItem.notes || '').trim() || undefined,
         isRequired: newItem.isRequired,
         isSplittable: newItem.quantity > 1, // Auto-calculated
         createdAt: Date.now(),
@@ -619,21 +621,30 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         eventId: event.id
       };
 
-      const itemId = await FirebaseService.addMenuItem(event.id, itemData);
+      const itemId = await FirebaseService.addMenuItem(event.id, itemData, { bypassLimit: true });
       if (itemId) {
         toast.success(t('bulkEdit.messages.itemAdded'));
-        setShowAddItemForm(false);
-        setNewItem({
-          name: '',
-          category: 'main',
-          quantity: 1,
-          notes: '',
-          isRequired: false
-        });
+
+        // Senior Logic: If we came here FROM a shortcut (Dashboard/Import),
+        // we return back automatically after adding the item.
+        if (initialShowAddItemForm) {
+          onBack();
+        } else {
+          // Keep category but reset other fields
+          setNewItem(prev => ({
+            name: '',
+            category: prev.category,
+            quantity: 1,
+            notes: '',
+            isRequired: false
+          }));
+          setShowAddItemForm(false);
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding item:', error);
-      toast.error(t('bulkEdit.messages.errorAdding'));
+      const errorMessage = error.message || t('bulkEdit.messages.errorAdding');
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -1143,7 +1154,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
               <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
                 <h2 className="text-xl font-bold text-gray-900">הוספת פריט חדש</h2>
                 <button
-                  onClick={() => setShowAddItemForm(false)}
+                  onClick={() => initialShowAddItemForm ? onBack() : setShowAddItemForm(false)}
                   className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-white rounded-full"
                 >
                   <X className="h-5 w-5" />
@@ -1248,10 +1259,10 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                     {isLoading ? 'מוסיף...' : 'הוסף פריט'}
                   </button>
                   <button
-                    onClick={() => setShowAddItemForm(false)}
+                    onClick={() => initialShowAddItemForm ? onBack() : setShowAddItemForm(false)}
                     className="px-6 py-3.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
                   >
-                    ביטול
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -1291,9 +1302,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             event={event!}
             onClose={() => setShowImportModal(false)}
             onAddSingleItem={() => {
-              console.log('BulkItemsManager: onAddSingleItem triggered. Closing import modal and opening add item form.');
               setShowImportModal(false);
-              console.log('BulkItemsManager: Setting showAddItemForm to true');
               setShowAddItemForm(true);
             }}
           />

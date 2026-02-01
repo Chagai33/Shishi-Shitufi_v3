@@ -19,7 +19,8 @@
             "edit": "ערוך",
             "close": "סגור",
             "confirm": "אישור",
-            "back": "חזור"
+            "back": "חזור",
+            "moreActions": "פעולות נוספות"
         },
         "errors": {
             "auth": {
@@ -149,6 +150,7 @@
                 "enterItemName": "נא להזין שם פריט",
                 "selectEvent": "בחר אירוע",
                 "itemAdded": "הפריט נוסף בהצלחה",
+                "duplicateItem": "פריט בשם \"{{name}}\" כבר קיים באירוע {{event}}. האם להוסיף אותו בכל זאת?",
                 "errorAdding": "שגיאה בהוספת הפריט",
                 "selectToSave": "בחר פריטים לשמירה",
                 "enterListNameError": "שגיאה: נא להזין שם לרשימה",
@@ -383,7 +385,10 @@
             "dessert": "קינוחים",
             "drink": "משקאות",
             "other": "אחר",
-            "equipment": "ציוד כללי"
+            "equipment": "ציוד",
+            "unassigned": "לא משויך",
+            "assigned": "שובצו",
+            "null": "כללי"
         },
         "eventPage": {
             "assignment": {
@@ -495,7 +500,9 @@
                 "clear": "נקה חיפוש"
             },
             "filter": {
-                "myAssignments": "השיבוצים שלי",
+                "my-assignments": "השיבוצים שלי",
+                "assigned": "שובצו",
+                "unassigned": "לא שובצו",
                 "backToCategories": "חזור לקטגוריות",
                 "searchResults": "תוצאות חיפוש"
             },

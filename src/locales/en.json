@@ -205,6 +205,7 @@
                     "import": "Import Items",
                     "manageParticipants": "Manage Participants",
                     "editDetails": "Edit Details",
+                    "manage": "Manage",
                     "delete": "Delete Event"
                 },
                 "messages": {

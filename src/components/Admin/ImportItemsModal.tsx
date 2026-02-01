@@ -593,7 +593,127 @@ export function ImportItemsModal({ event, onClose }: ImportItemsModalProps) {
                     </div>
                   </div>
                   {importItems.length === 0 ? (<div className="text-center py-8"><AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" /><p className="text-gray-500">{t('importModal.preview.noItems')}</p></div>) : (
-                    <div className="border border-gray-200 rounded-lg overflow-hidden"><div className="max-h-96 overflow-y-auto"><table className="w-full"><thead className="bg-gray-50 sticky top-0"><tr><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.select')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.name')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.category')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.quantity')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.notes')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.required')}</th><th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.actions')}</th></tr></thead><tbody className="bg-white divide-y divide-gray-200">{importItems.map((item, index) => (<tr key={index} className={item.error ? 'bg-red-50' : ''}><td className="px-4 py-3"><input type="checkbox" checked={item.selected} onChange={(e) => updateItem(index, 'selected', e.target.checked)} disabled={!!item.error} className="rounded border-gray-300 text-green-600 focus:ring-green-500" /></td><td className="px-4 py-3"><input type="text" value={item.name} onChange={(e) => updateItem(index, 'name', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" />{item.error && (<p className="text-xs text-red-600 mt-1 flex items-center"><AlertCircle className="h-3 w-3 ml-1" />{item.error}</p>)}</td><td className="px-4 py-3"><select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm">{categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}</select></td><td className="px-4 py-3"><input type="number" min="1" max="100" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td><td className="px-4 py-3"><input type="text" value={item.notes || ''} onChange={(e) => updateItem(index, 'notes', e.target.value || undefined)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td><td className="px-4 py-3"><input type="checkbox" checked={item.isRequired} onChange={(e) => updateItem(index, 'isRequired', e.target.checked)} className="rounded border-gray-300 text-red-600 focus:ring-red-500" /></td><td className="px-4 py-3"><button onClick={() => removeItem(index)} className="text-red-600 hover:text-red-700" title="הסר פריט"><Trash2 className="h-4 w-4" /></button></td></tr>))}</tbody></table></div></div>
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      {/* Desktop View: Table */}
+                      <div className="hidden md:block max-h-96 overflow-y-auto">
+                        <table className="w-full">
+                          <thead className="bg-gray-50 sticky top-0">
+                            <tr>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.select')}</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.name')}</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.category')}</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.quantity')}</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.notes')}</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.required')}</th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('importModal.preview.table.actions')}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {importItems.map((item, index) => (
+                              <tr key={index} className={item.error ? 'bg-red-50' : ''}>
+                                <td className="px-4 py-3"><input type="checkbox" checked={item.selected} onChange={(e) => updateItem(index, 'selected', e.target.checked)} disabled={!!item.error} className="rounded border-gray-300 text-green-600 focus:ring-green-500" /></td>
+                                <td className="px-4 py-3">
+                                  <input type="text" value={item.name} onChange={(e) => updateItem(index, 'name', e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" />
+                                  {item.error && (<p className="text-xs text-red-600 mt-1 flex items-center"><AlertCircle className="h-3 w-3 ml-1" />{item.error}</p>)}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                    {categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                                  </select>
+                                </td>
+                                <td className="px-4 py-3"><input type="number" min="1" max="100" value={item.quantity} onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td>
+                                <td className="px-4 py-3"><input type="text" value={item.notes || ''} onChange={(e) => updateItem(index, 'notes', e.target.value || undefined)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm" /></td>
+                                <td className="px-4 py-3"><input type="checkbox" checked={item.isRequired} onChange={(e) => updateItem(index, 'isRequired', e.target.checked)} className="rounded border-gray-300 text-red-600 focus:ring-red-500" /></td>
+                                <td className="px-4 py-3"><button onClick={() => removeItem(index)} className="text-red-600 hover:text-red-700" title="הסר פריט"><Trash2 className="h-4 w-4" /></button></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile View: Cards */}
+                      <div className="md:hidden space-y-4 p-4 max-h-[60vh] overflow-y-auto">
+                        {importItems.map((item, index) => (
+                          <div key={index} className={`bg-white border rounded-lg p-4 shadow-sm ${item.error ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+                            <div className="flex items-center justify-between mb-3 border-b pb-2">
+                              <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                                <input
+                                  type="checkbox"
+                                  checked={item.selected}
+                                  onChange={(e) => updateItem(index, 'selected', e.target.checked)}
+                                  disabled={!!item.error}
+                                  className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                />
+                                <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
+                              </div>
+                              <button onClick={() => removeItem(index)} className="text-red-500 hover:text-red-700 p-1">
+                                <Trash2 className="h-5 w-5" />
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('importModal.preview.table.name')}</label>
+                                <input
+                                  type="text"
+                                  value={item.name}
+                                  onChange={(e) => updateItem(index, 'name', e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                />
+                                {item.error && (<p className="text-xs text-red-600 mt-1 flex items-center"><AlertCircle className="h-3 w-3 ml-1" />{item.error}</p>)}
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('importModal.preview.table.quantity')}</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={item.quantity}
+                                    onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-medium text-gray-500 mb-1">{t('importModal.preview.table.category')}</label>
+                                  <select
+                                    value={item.category}
+                                    onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                  >
+                                    {categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">{t('importModal.preview.table.notes')}</label>
+                                <input
+                                  type="text"
+                                  value={item.notes || ''}
+                                  onChange={(e) => updateItem(index, 'notes', e.target.value || undefined)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                  placeholder={t('importModal.preview.table.notes')}
+                                />
+                              </div>
+
+                              <div className="flex items-center pt-2">
+                                <label className="flex items-center space-x-2 rtl:space-x-reverse cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={item.isRequired}
+                                    onChange={(e) => updateItem(index, 'isRequired', e.target.checked)}
+                                    className="rounded border-gray-300 text-red-600 focus:ring-red-500 h-4 w-4"
+                                  />
+                                  <span className="text-sm text-gray-700">{t('importModal.preview.table.required')}</span>
+                                </label>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
                 {importItems.length > 0 && (<div className="bg-blue-50 rounded-lg p-4 mb-6"><div className="flex items-center space-x-3 rtl:space-x-reverse"><CheckCircle className="h-5 w-5 text-blue-600" aria-hidden="true" /><div><p className="text-sm text-blue-800"><Trans i18nKey="importModal.preview.summary.selected" values={{ selected: selectedItemsCount, valid: validItemsCount }} components={{ strong: <strong /> }} /></p>{importItems.some(item => item.error) && (<p className="text-xs text-red-600 mt-1">{t('importModal.preview.summary.errors', { count: importItems.filter(item => item.error).length })}</p>)}</div></div></div>)}

@@ -6,13 +6,10 @@ import { useStore } from '../store/useStore';
 import { FirebaseService } from '../services/firebaseService';
 import { ShishiEvent, EventDetails } from '../types';
 import { toast } from 'react-hot-toast';
-import { Plus, LogOut, Calendar, MapPin, Clock, Share2, Eye, ChefHat, Home, ChevronDown, ListChecks, ArrowRight } from 'lucide-react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { Plus, Calendar, MapPin, Clock, ChefHat, Home, ListChecks, ArrowRight, Trash2, Edit, Sparkles, Share2, MoreVertical } from 'lucide-react';
 import { ImportItemsModal } from '../components/Admin/ImportItemsModal';
 import { BulkItemsManager } from '../components/Admin/BulkItemsManager';
 import { PresetListsManager } from '../components/Admin/PresetListsManager';
-import LanguageSwitcher from '../components/Common/LanguageSwitcher';
 import FocusTrap from 'focus-trap-react';
 
 import { useTranslation } from 'react-i18next';
@@ -23,9 +20,8 @@ const EventCard: React.FC<{
     onDelete: (eventId: string, title: string) => void,
     onEdit: (event: ShishiEvent) => void,
     onImport: (event: ShishiEvent) => void,
-    onManageParticipants: (event: ShishiEvent) => void,
     onBulkEdit: (event: ShishiEvent) => void;
-}> = ({ event, onDelete, onEdit, onImport, onManageParticipants, onBulkEdit }) => {
+}> = ({ event, onDelete, onEdit, onImport, onBulkEdit }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const [showAdminActions, setShowAdminActions] = useState(false);
@@ -43,10 +39,6 @@ const EventCard: React.FC<{
         action();
     };
 
-    const handleCardClick = () => {
-        // Instead of going to event page, go directly to centralized management
-        onBulkEdit(event);
-    };
     const menuItemsCount = event.menuItems ? Object.keys(event.menuItems).length : 0;
     const assignmentsCount = event.assignments ? Object.keys(event.assignments).length : 0;
     const participantsWithAssignmentsCount = event.assignments
@@ -56,34 +48,64 @@ const EventCard: React.FC<{
 
     return (
         <div
-            className={`relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 flex flex-col border-r-4 ${isPast
-                ? 'border-neutral-400 opacity-75'
+            className={`relative bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col border border-neutral-200 border-r-4 ${isPast
+                ? 'border-r-neutral-300 opacity-75'
                 : event.details.isActive
-                    ? 'border-accent hover:scale-[1.02]'
-                    : 'border-neutral-300'
+                    ? 'border-r-primary'
+                    : 'border-r-neutral-300'
                 }`}>
-            <div className="p-6 flex-grow">
-                <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-lg font-bold text-neutral-900">{event.details.title}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${isPast
-                        ? 'bg-neutral-100 text-neutral-600'
-                        : event.details.isActive ? 'bg-success/10 text-success' : 'bg-error/10 text-error'
-                        }`}>
-                        {isPast ? t('dashboard.eventCard.status.ended') : event.details.isActive ? t('dashboard.eventCard.status.active') : t('dashboard.eventCard.status.inactive')}
-                    </span>
-                </div>
-                <div className="space-y-2 text-sm text-neutral-600 mb-4">
-                    <p className="flex items-center"><Calendar size={14} className="ml-2 text-accent" aria-hidden="true" /> {new Date(event.details.date).toLocaleDateString('he-IL')}</p>
-                    <p className="flex items-center"><Clock size={14} className="ml-2 text-accent" aria-hidden="true" /> {event.details.time}</p>
-                    <p className="flex items-center"><MapPin size={14} className="ml-2 text-accent" aria-hidden="true" /> {event.details.location}</p>
+            <div className="p-4">
+                <div className="flex justify-between items-start mb-1">
+                    {/* Content Side */}
+                    <div className="flex flex-col gap-3 pr-2 flex-grow">
+                        <h3 className="text-xl font-bold text-neutral-900 leading-tight">{event.details.title}</h3>
+
+                        <div className="flex flex-col gap-1.5 text-sm text-neutral-700 font-medium">
+                            <p className="flex items-center gap-2"><Calendar size={15} className="text-primary shrink-0" aria-hidden="true" /> {new Date(event.details.date).toLocaleDateString('he-IL')}</p>
+                            <p className="flex items-center gap-2"><Clock size={15} className="text-primary shrink-0" aria-hidden="true" /> {event.details.time}</p>
+                            <p className="flex items-center gap-2"><MapPin size={15} className="text-primary shrink-0" aria-hidden="true" /> {event.details.location}</p>
+                        </div>
+                    </div>
+
+                    {/* Actions Side (Vertical Stack) */}
+                    <div className="flex flex-col items-end gap-3 pointer-events-auto relative z-20 shrink-0 pl-1">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${isPast
+                            ? 'bg-neutral-100 text-neutral-700'
+                            : event.details.isActive ? 'bg-primary/10 text-primary' : 'bg-error/10 text-error'
+                            }`}>
+                            {isPast ? t('dashboard.eventCard.status.ended') : event.details.isActive ? t('dashboard.eventCard.status.active') : t('dashboard.eventCard.status.inactive')}
+                        </span>
+
+                        {/* Permanent Edit/Delete Icons (Vertical Stack) */}
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={(e) => handleActionClick(e, () => onEdit(event))}
+                                type="button"
+                                aria-label={`${t('dashboard.eventCard.actions.editDetails')}: ${event.details.title}`}
+                                title={t('dashboard.eventCard.actions.editDetails')}
+                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white shadow-sm border border-gray-100"
+                            >
+                                <Edit size={18} aria-hidden="true" />
+                            </button>
+                            <button
+                                onClick={(e) => handleActionClick(e, () => onDelete(event.id, event.details.title))}
+                                type="button"
+                                aria-label={`${t('dashboard.eventCard.actions.delete')}: ${event.details.title}`}
+                                title={t('dashboard.eventCard.actions.delete')}
+                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 bg-white shadow-sm border border-gray-100"
+                            >
+                                <Trash2 size={18} aria-hidden="true" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {menuItemsCount > 0 && (
                     <div className="mt-4 pt-4 border-t border-neutral-200">
-                        <p className="text-xs text-neutral-500 mb-2">
-                            <span className="font-medium text-neutral-700">{t('dashboard.eventCard.stats.items', { count: assignmentsCount, total: menuItemsCount })}</span>
+                        <p className="text-xs text-neutral-600 mb-2 font-semibold">
+                            <span className="text-neutral-900">{t('dashboard.eventCard.stats.items', { count: assignmentsCount, total: menuItemsCount })}</span>
                             <span className="mx-2">|</span>
-                            <span className="font-medium text-neutral-700">{t('dashboard.eventCard.stats.participants', { count: participantsWithAssignmentsCount })}</span>
+                            <span className="text-neutral-900">{t('dashboard.eventCard.stats.participants', { count: participantsWithAssignmentsCount })}</span>
                         </p>
                         <div className="w-full bg-neutral-200 rounded-full h-1.5">
                             <div
@@ -94,81 +116,76 @@ const EventCard: React.FC<{
                     </div>
                 )}
             </div>
-            <div className="relative z-10 bg-neutral-50 p-4 border-t rounded-b-xl">
-                <div className="flex justify-between items-center">
+            <div className="relative z-10 bg-neutral-50 border-t rounded-b-xl">
+                {/* Footer Actions: Clean Action Bar */}
+                <div className="flex items-center divide-x divide-x-reverse divide-neutral-200">
+
+                    {/* Share Button (Right) */}
                     <button
                         onClick={copyToClipboard}
                         type="button"
-                        className="flex items-center text-sm text-info hover:text-info/80 font-semibold"
+                        className="flex-1 py-3 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 first:rounded-br-xl transition-colors group"
+                        title={t('dashboard.eventCard.actions.share')}
                     >
-                        <Share2 size={16} className="ml-1" aria-hidden="true" /> {t('dashboard.eventCard.actions.share')}
+                        <Share2 size={20} className="group-hover:text-blue-600 transition-colors" />
                     </button>
+
+                    {/* Go To Event (Center) */}
                     <button
                         onClick={(e) => handleActionClick(e, () => navigate(`/event/${event.id}`))}
                         type="button"
-                        className="text-sm font-medium text-green-600 hover:text-green-700 hover:bg-green-50 px-3 py-1 rounded-lg transition-colors"
+                        className="flex-[2] py-3 flex items-center justify-center font-medium text-sm text-neutral-700 hover:bg-neutral-100 hover:text-orange-600 transition-colors gap-2"
                     >
                         {t('dashboard.eventCard.actions.goToEvent')}
+                        <ArrowRight size={16} className="rtl:rotate-180" />
                     </button>
+
+                    {/* AI Import (Left) */}
                     <button
-                        onClick={(e) => handleActionClick(e, () => setShowAdminActions(!showAdminActions))}
+                        onClick={(e) => handleActionClick(e, () => onImport(event))}
                         type="button"
-                        aria-expanded={showAdminActions}
-                        className="flex items-center text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-md hover:bg-blue-200"
+                        className="flex-1 py-3 flex items-center justify-center text-neutral-600 hover:bg-purple-50 transition-colors group"
+                        title={t('dashboard.eventCard.actions.import')}
                     >
-                        {t('dashboard.eventCard.admin')}
-                        <ChevronDown size={16} className={`mr-1 transition-transform ${showAdminActions ? 'rotate-180' : ''}`} aria-hidden="true" />
+                        <Sparkles size={20} className="text-purple-600 group-hover:scale-110 transition-transform" />
                     </button>
-                </div>
-                {showAdminActions && (
-                    <div className="mt-4 pt-4 border-t space-y-2">
+
+                    {/* More Actions (Far Left) */}
+                    <div className="relative flex-1 flex justify-center border-r border-gray-200 rtl:border-l rtl:border-r-0">
                         <button
-                            onClick={() => onBulkEdit(event)}
+                            onClick={(e) => handleActionClick(e, () => setShowAdminActions(!showAdminActions))}
                             type="button"
-                            className="w-full flex items-center text-left text-sm p-2 rounded-md hover:bg-neutral-200"
+                            className="w-full py-3 flex items-center justify-center text-neutral-600 hover:bg-neutral-100 last:rounded-bl-xl transition-colors"
+                            title={t('common.moreActions')}
                         >
-                            <ListChecks size={14} className="ml-2" aria-hidden="true" /> {t('dashboard.eventCard.actions.bulkEdit')}
+                            <MoreVertical size={20} />
                         </button>
-                        <button
-                            onClick={(e) => handleActionClick(e, () => onImport(event))}
-                            type="button"
-                            className="w-full text-left text-sm p-2 rounded-md hover:bg-neutral-200"
-                        >
-                            {t('dashboard.eventCard.actions.import')}
-                        </button>
-                        <button
-                            onClick={(e) => handleActionClick(e, () => onManageParticipants(event))}
-                            type="button"
-                            className="w-full text-left text-sm p-2 rounded-md hover:bg-neutral-200"
-                        >
-                            {t('dashboard.eventCard.actions.manageParticipants')}
-                        </button>
-                        <button
-                            onClick={(e) => handleActionClick(e, () => onEdit(event))}
-                            type="button"
-                            className="w-full text-left text-sm p-2 rounded-md hover:bg-neutral-200"
-                        >
-                            {t('dashboard.eventCard.actions.editDetails')}
-                        </button>
-                        <button
-                            onClick={(e) => handleActionClick(e, () => onDelete(event.id, event.details.title))}
-                            type="button"
-                            className="w-full text-left text-sm p-2 rounded-md hover:bg-red-100 text-error"
-                        >
-                            {t('dashboard.eventCard.actions.delete')}
-                        </button>
+
+                        {showAdminActions && (
+                            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50">
+                                <button
+                                    onClick={(e) => handleActionClick(e, () => onBulkEdit(event))}
+                                    type="button"
+                                    className="w-full flex items-center text-left text-sm p-3 hover:bg-neutral-50 transition-colors text-gray-700"
+                                >
+                                    <ListChecks size={16} className="ml-2" aria-hidden="true" />
+                                    {t('dashboard.eventCard.actions.bulkEdit')}
+                                </button>
+
+                            </div>
+                        )}
                     </div>
-                )}
+
+                </div>
+
+                {/* More Actions (Absolute Positioned for cleaner main bar) */}
+                <div className="absolute left-2 top-0 bottom-0 flex items-center hidden">
+                    {/* Kept hidden or remove if redundant. Users can accept just the 3 main actions. 
+                     If 'More' is critical, it can replace one or sit in the corner. 
+                     For now, sticking to the 3 main requested actions. */}
+                </div>
+
             </div>
-            {/* Main card action button */}
-            <button
-                onClick={handleCardClick}
-                type="button"
-                aria-label={`${t('dashboard.eventCard.actions.manage')}: ${event.details.title}`}
-                className="absolute inset-0 w-full h-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-                <span className="sr-only">{t('dashboard.eventCard.actions.manage')}: {event.details.title}</span>
-            </button>
         </div>
     );
 };
@@ -337,14 +354,7 @@ const DashboardPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
 
-    const logout = async () => {
-        try {
-            await signOut(auth);
-            toast.success(t('dashboard.main.messages.logoutSuccess'));
-        } catch (error) {
-            toast.error(t('dashboard.main.messages.logoutError'));
-        }
-    };
+
 
     const fetchEvents = useCallback(async () => {
         if (!user) return;
@@ -367,8 +377,30 @@ const DashboardPage: React.FC = () => {
 
 
 
-    const activeEvents = events.filter(event => event.details.isActive);
-    const inactiveEvents = events.filter(event => !event.details.isActive);
+    // Calculate effective date for event expiration (3:00 AM rule)
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // If it's before 3:00 AM, we consider "today" to be "yesterday" for expiration purposes.
+    // This allows events from the previous night to remain active until 3 AM.
+    const referenceDate = new Date();
+    if (currentHour < 3) {
+        referenceDate.setDate(referenceDate.getDate() - 1);
+    }
+
+    // Format to YYYY-MM-DD using local time components to avoid UTC shifts
+    const year = referenceDate.getFullYear();
+    const month = String(referenceDate.getMonth() + 1).padStart(2, '0');
+    const day = String(referenceDate.getDate()).padStart(2, '0');
+    const referenceDateStr = `${year}-${month}-${day}`;
+
+    const activeEvents = events
+        .filter(event => event.details.isActive && event.details.date >= referenceDateStr)
+        .sort((a, b) => new Date(a.details.date).getTime() - new Date(b.details.date).getTime());
+
+    const inactiveEvents = events
+        .filter(event => !event.details.isActive || event.details.date < referenceDateStr)
+        .sort((a, b) => new Date(b.details.date).getTime() - new Date(a.details.date).getTime());
     const displayedEvents = activeTab === 'active' ? activeEvents : inactiveEvents;
     const handleDeleteEvent = async (eventId: string, title: string) => {
         if (!user) return;
@@ -393,9 +425,7 @@ const DashboardPage: React.FC = () => {
         setShowBulkManager(true);
     };
 
-    const handleManageParticipants = (event: ShishiEvent) => {
-        toast(t('dashboard.main.messages.manageParticipantsComingSoon', { title: event.details.title }));
-    };
+
 
     const handleEditEvent = (event: ShishiEvent) => {
         setEditingEvent(event);
@@ -453,33 +483,7 @@ const DashboardPage: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <header className="bg-white shadow-sm">
-                <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div className="flex items-center">
-                        <ChefHat className="h-8 w-8 text-orange-500" aria-hidden="true" />
-                        <h1 className="ml-3 text-2xl font-bold text-gray-900">{user?.name}{t('dashboard.main.adminSuffix')}</h1>
-                    </div>
-                    <div className="flex items-center space-x-4 rtl:space-x-reverse">
-                        <a
-                            href="https://www.linkedin.com/in/chagai-yechiel/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            {t('dashboard.main.developedBy')}
-                        </a>
-                        <LanguageSwitcher />
-                        <button
-                            onClick={logout}
-                            type="button"
-                            className="text-sm font-medium text-gray-600 hover:text-red-500 flex items-center"
-                        >
-                            <LogOut size={16} className="ml-1" aria-hidden="true" />
-                            {t('header.logout')}
-                        </button>
-                    </div>
-                </div>
-            </header>
+
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 px-4 sm:px-0 space-y-4 sm:space-y-0">
                     <div className="flex items-center space-x-4 rtl:space-x-reverse">
@@ -533,7 +537,6 @@ const DashboardPage: React.FC = () => {
                                 onDelete={handleDeleteEvent}
                                 onEdit={handleEditEvent}
                                 onImport={handleImportItems}
-                                onManageParticipants={handleManageParticipants}
                                 onBulkEdit={handleBulkEdit}
                             />
                         ))}

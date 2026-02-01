@@ -33,6 +33,17 @@ exports.parseShoppingList = onCall(
       throw new HttpsError("invalid-argument", "Please provide a shopping list text or image.");
     }
 
+    // Security/Safety Checks
+    if (text && text.length > 2000) {
+      throw new HttpsError("invalid-argument", "Text too long. Max 2000 characters.");
+    }
+
+    // Base64 string length check: 5MB image ≈ 6.7MB base64. 
+    // Setting limit to 7,000,000 chars to be safe.
+    if (image && image.length > 7000000) {
+      throw new HttpsError("invalid-argument", "Image too large. Max 5MB.");
+    }
+
     try {
       // 3. Initialize Gemini
       const genAI = new GoogleGenerativeAI(apiKey);

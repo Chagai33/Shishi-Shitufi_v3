@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Calendar, Users, Shield, LogIn, LogOut } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -11,6 +12,7 @@ interface HeaderProps {
 }
 
 export function Header({ currentView, onViewChange }: HeaderProps) {
+  const { t } = useTranslation();
   const { user } = useStore();
   const isAdmin = user?.isAdmin || false;
   const { logout } = useAuth();
@@ -41,8 +43,8 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 <Calendar className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 leading-none">שישי שיתופי</h1>
-                <p className="text-xs text-gray-500 mt-1">ניהול ארוחות קהילתיות</p>
+                <h1 className="text-lg font-bold text-gray-900 leading-none">{t('header.title')}</h1>
+                <p className="text-xs text-gray-500 mt-1">{t('header.subtitle')}</p>
               </div>
             </Link>
 
@@ -53,12 +55,12 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               <button
                 onClick={() => onViewChange('events')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${currentView === 'events'
-                    ? 'bg-orange-50 text-orange-700 font-medium'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  ? 'bg-orange-50 text-orange-700 font-medium'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
               >
                 <Calendar className="h-4 w-4" />
-                <span className={`${currentView === 'events' ? 'inline' : 'hidden md:inline'}`}>אירועים</span>
+                <span className={`${currentView === 'events' ? 'inline' : 'hidden md:inline'}`}>{t('header.nav.events')}</span>
               </button>
 
               {/* Admin Panel Button */}
@@ -66,19 +68,19 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
                 <button
                   onClick={() => onViewChange('admin')}
                   className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all ${currentView === 'admin'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50'
+                    ? 'bg-orange-50 text-orange-700 font-medium'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                     }`}
                 >
                   <Shield className="h-4 w-4" />
-                  <span className="hidden sm:inline font-medium">פאנל ניהול</span>
+                  <span className="font-medium">{t('header.nav.admin')}</span>
                 </button>
               )}
 
               <div className="h-6 w-px bg-gray-200 mx-1"></div>
 
               {/* User Info */}
-              <div className="flex items-center gap-2 px-1" title={hasUserName ? user.name : 'אורח'}>
+              <div className="flex items-center gap-2 px-1" title={hasUserName ? user.name : t('header.guest')}>
                 {hasUserName && (
                   <span className="text-sm font-medium text-gray-700 hidden md:block max-w-[100px] truncate">
                     {user.name}
@@ -93,7 +95,7 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               {isAdmin ? (
                 <button
                   onClick={logout}
-                  title="התנתק"
+                  title={t('header.logout')}
                   className="p-2 rounded-md text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
                 >
                   <LogOut className="h-5 w-5" />
@@ -101,10 +103,10 @@ export function Header({ currentView, onViewChange }: HeaderProps) {
               ) : (
                 <button
                   onClick={handleAdminLogin}
-                  title="התחבר כמנהל"
+                  title={t('header.adminLogin')}
                   className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                 >
-                  <span className="hidden sm:inline">כניסת מנהל</span>
+                  <span className="hidden sm:inline">{t('header.adminLogin')}</span>
                   <LogIn className="h-4 w-4" />
                 </button>
               )}

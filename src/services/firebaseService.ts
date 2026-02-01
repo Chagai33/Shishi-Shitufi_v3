@@ -235,31 +235,78 @@ export class FirebaseService {
   /**
    * Adds a new item to the menu
    */
+  /**
+   * Adds a new item to the menu (Transactional)
+   * Updates userItemCounts and enforces limits unless bypassed (admin/organizer)
+   */
   static async addMenuItem(
     eventId: string,
-    itemData: Omit<MenuItem, 'id'>
+    itemData: Omit<MenuItem, 'id'>,
+    options?: { bypassLimit?: boolean }
   ): Promise<string> {
+    console.group('➕ FirebaseService.addMenuItem (Transactional)');
+    console.log('📥 Input:', { eventId, itemData, options });
+
+    const eventRef = ref(database, `events/${eventId}`);
+    let newItemId: string | null = null;
+
     try {
-      await this.ensureEventStructure(eventId);
-      const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
-      const newItemId = newItemRef.key!;
+      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
+        if (!currentEventData) return; // Event not found
 
-      // Clean undefined values before saving
-      const finalItemData = {
-        ...itemData,
-        id: newItemId,
-        notes: itemData.notes || null // Convert undefined to null or remove completely
-      };
+        // --- Validation & Limit Check ---
+        const details = currentEventData.details;
+        const creatorId = itemData.creatorId;
+        const userItemCount = (creatorId && currentEventData.userItemCounts?.[creatorId]) || 0;
 
-      // Remove fields with null/undefined values
-      Object.keys(finalItemData).forEach(key => {
-        if (finalItemData[key as keyof typeof finalItemData] === undefined) {
-          delete finalItemData[key as keyof typeof finalItemData];
+        const isOrganizer = creatorId === currentEventData.organizerId;
+        const shouldBypassLimit = isOrganizer || options?.bypassLimit;
+
+        // Check 1: Is adding allowed?
+        if (details.allowUserItems === false && !isOrganizer) {
+          throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
         }
+
+        // Check 2: Limit reached? (Skip if Admin/Organizer)
+        if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
+          throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
+        }
+
+        // --- Prepare Data ---
+        const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
+        newItemId = newItemRef.key!;
+
+        if (!currentEventData.menuItems) currentEventData.menuItems = {};
+        if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
+
+        // Sanitize item data
+        const finalItemData: any = {
+          ...itemData,
+          id: newItemId,
+          notes: itemData.notes || null
+        };
+        Object.keys(finalItemData).forEach(key => {
+          if (finalItemData[key] === undefined) delete finalItemData[key];
+        });
+
+        // --- Update State ---
+        currentEventData.menuItems[newItemId] = finalItemData;
+
+        // Increment counter if we have a creatorId
+        if (creatorId) {
+          currentEventData.userItemCounts[creatorId] = userItemCount + 1;
+        }
+
+        return currentEventData;
       });
 
-      await set(newItemRef, finalItemData);
+      if (!newItemId) {
+        throw new Error("Failed to generate item ID.");
+      }
+      console.log('✅ Item added successfully');
+      console.groupEnd();
       return newItemId;
+
     } catch (error) {
       console.error('❌ Error in addMenuItem:', error);
       console.groupEnd();
@@ -373,6 +420,21 @@ export class FirebaseService {
     updates: Partial<MenuItem>
   ): Promise<void> {
     try {
+      // Validate quantity if being updated
+      if (updates.quantity !== undefined) {
+        const assignmentsRef = ref(database, `events/${eventId}/assignments`);
+        const assignmentsSnapshot = await get(assignmentsRef);
+        const assignments = assignmentsSnapshot.val() || {};
+
+        const totalAssigned = Object.values(assignments)
+          .filter((a: any) => a.menuItemId === itemId)
+          .reduce((sum: number, a: any) => sum + (a.quantity || 0), 0);
+
+        if (updates.quantity < totalAssigned) {
+          throw new Error(`לא ניתן להקטין את הכמות מתחת ל-${totalAssigned} (כמות משובצת)`);
+        }
+      }
+
       // Sanitize updates to remove undefined values and convert empty strings to null
       const sanitizedUpdates: { [key: string]: any } = {};
       Object.entries(updates).forEach(([key, value]) => {
@@ -413,8 +475,17 @@ export class FirebaseService {
 
         console.log('🔧 Transaction started. Current event data:', currentEventData);
 
+        // Check for active assignments - prevent deletion if any exist
         const itemToDelete = currentEventData.menuItems[itemId];
         const creatorId = itemToDelete.creatorId;
+
+        const assignments = currentEventData.assignments || {};
+        const hasOtherUserAssignments = Object.values(assignments)
+          .some((a: any) => a.menuItemId === itemId && a.userId !== creatorId);
+
+        if (hasOtherUserAssignments) {
+          console.warn('⚠️ Deleting item with active assignments for other users.');
+        }
 
         // Step 1: Update counter (if relevant)
         if (creatorId && currentEventData.userItemCounts?.[creatorId]) {
@@ -556,13 +627,13 @@ export class FirebaseService {
         // For now, we proceed.
 
         // --- 3. Splittable vs Non-Splittable Logic ---
-        if (item.isSplittable) {
+        if (item.isSplittable || item.quantity > 1) {
           // --- Splittable Item Logic ---
           let currentAssignedQuantity = 0;
 
           // Calculate total assigned quantity from all assignments for this item
           Object.values(currentEventData.assignments).forEach((assignment: any) => {
-            if (assignment.menuItemId === item.id) {
+            if (assignment.menuItemId === assignmentData.menuItemId) {
               currentAssignedQuantity += (assignment.quantity || 0);
             }
           });

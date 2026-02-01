@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, User, Phone, Mail, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { saveUserToLocalStorage, updateUserInLocalStorage } from '../../utils/userUtils';
@@ -22,6 +23,15 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
   const [email, setEmail] = useState(user?.email || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  // Accessibility: Unique ID for ARIA labeling
+  const titleId = useId();
+  const nameErrorId = useId();
+  const phoneErrorId = useId();
+  const emailErrorId = useId();
+
+  // Accessibility: Store reference to the element that opened the modal
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -62,7 +72,7 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
 
       saveUserToLocalStorage(updatedUser);
       setUser(updatedUser);
-      
+
       toast.success('הפרטים נשמרו בהצלחה!');
       onComplete();
     } catch (error) {
@@ -85,141 +95,191 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
         setEmail(value);
         break;
     }
-    
+
     // Clear error when user starts typing
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
+  // Accessibility: Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isSubmitting) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose, isSubmitting]);
+
+  // Accessibility: Store active element on mount, restore on unmount
+  useEffect(() => {
+    returnFocusRef.current = document.activeElement as HTMLElement;
+
+    return () => {
+      // Return focus when modal closes
+      if (returnFocusRef.current && typeof returnFocusRef.current.focus === 'function') {
+        returnFocusRef.current.focus();
+      }
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">פרטים אישיים</h2>
-          <button
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6">
-          <div className="mb-6">
-            <p className="text-gray-600 text-sm">
-              כדי לשבץ פריטים, יש להזין פרטים אישיים. הפרטים נשמרים רק במכשיר שלך.
-            </p>
-          </div>
-
-          {/* Name */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              שם מלא *
-            </label>
-            <div className="relative">
-              <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="הזן שם מלא"
-                className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                disabled={isSubmitting}
-                required
-              />
-            </div>
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle className="h-4 w-4 ml-1" />
-                {errors.name}
-              </p>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              טלפון (אופציונלי)
-            </label>
-            <div className="relative">
-              <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="050-1234567"
-                className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  errors.phone ? 'border-red-500' : 'border-gray-300'
-                }`}
-                disabled={isSubmitting}
-              />
-            </div>
-            {errors.phone && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle className="h-4 w-4 ml-1" />
-                {errors.phone}
-              </p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              אימייל (אופציונלי)
-            </label>
-            <div className="relative">
-              <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="example@email.com"
-                className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-                disabled={isSubmitting}
-              />
-            </div>
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600 flex items-center">
-                <AlertCircle className="h-4 w-4 ml-1" />
-                {errors.email}
-              </p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex space-x-3 rtl:space-x-reverse">
-            <button
-              onClick={handleSave}
-              disabled={!name.trim() || isSubmitting}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
-                  שומר...
-                </>
-              ) : (
-                'שמור פרטים'
-              )}
-            </button>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      role="presentation"
+    >
+      <FocusTrap>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className="bg-white rounded-xl shadow-xl max-w-md w-full"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b">
+            <h2 id={titleId} className="text-lg font-semibold text-gray-900">פרטים אישיים</h2>
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+              type="button"
+              aria-label="סגור חלון"
+              className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
             >
-              ביטול
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
+
+          {/* Content */}
+          <div className="p-6">
+            <div className="mb-6">
+              <p className="text-gray-600 text-sm">
+                כדי לשבץ פריטים, יש להזין פרטים אישיים. הפרטים נשמרים רק במכשיר שלך.
+              </p>
+            </div>
+
+            {/* Name */}
+            <div className="mb-4">
+              <label htmlFor="name-input" className="block text-sm font-medium text-gray-700 mb-2">
+                שם מלא <span className="text-red-500" aria-label="שדה חובה">*</span>
+              </label>
+              <div className="relative">
+                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+                <input
+                  id="name-input"
+                  type="text"
+                  value={name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="הזן שם מלא"
+                  autoComplete="name"
+                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  disabled={isSubmitting}
+                  required
+                  aria-required="true"
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? nameErrorId : undefined}
+                />
+              </div>
+              {errors.name && (
+                <p id={nameErrorId} className="mt-1 text-sm text-red-600 flex items-center" role="alert">
+                  <AlertCircle className="h-4 w-4 ml-1" aria-hidden="true" />
+                  {errors.name}
+                </p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div className="mb-4">
+              <label htmlFor="phone-input" className="block text-sm font-medium text-gray-700 mb-2">
+                טלפון (אופציונלי)
+              </label>
+              <div className="relative">
+                <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+                <input
+                  id="phone-input"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="050-1234567"
+                  autoComplete="tel"
+                  inputMode="tel"
+                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.phone ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  disabled={isSubmitting}
+                  aria-invalid={!!errors.phone}
+                  aria-describedby={errors.phone ? phoneErrorId : undefined}
+                />
+              </div>
+              {errors.phone && (
+                <p id={phoneErrorId} className="mt-1 text-sm text-red-600 flex items-center" role="alert">
+                  <AlertCircle className="h-4 w-4 ml-1" aria-hidden="true" />
+                  {errors.phone}
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="mb-6">
+              <label htmlFor="email-input" className="block text-sm font-medium text-gray-700 mb-2">
+                אימייל (אופציונלי)
+              </label>
+              <div className="relative">
+                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+                <input
+                  id="email-input"
+                  type="email"
+                  value={email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="example@email.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  disabled={isSubmitting}
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? emailErrorId : undefined}
+                />
+              </div>
+              {errors.email && (
+                <p id={emailErrorId} className="mt-1 text-sm text-red-600 flex items-center" role="alert">
+                  <AlertCircle className="h-4 w-4 ml-1" aria-hidden="true" />
+                  {errors.email}
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex space-x-3 rtl:space-x-reverse">
+              <button
+                onClick={handleSave}
+                disabled={!name.trim() || isSubmitting}
+                type="button"
+                className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
+                    שומר…
+                  </>
+                ) : (
+                  'שמור פרטים'
+                )}
+              </button>
+              <button
+                onClick={onClose}
+                disabled={isSubmitting}
+                type="button"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
+              >
+                ביטול
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </FocusTrap>
     </div>
   );
 }

@@ -1,0 +1,618 @@
+{
+    "translation": {
+        "common": {
+            "user": "User",
+            "errorOccurred": "An error occurred",
+            "saving": "Saving...",
+            "saveChanges": "Save Changes",
+            "backToHome": "Back to Home",
+            "clearSearch": "Clear Search",
+            "errors": {
+                "general": "General error"
+            },
+            "loading": "Loading...",
+            "loadingApp": "Loading application...",
+            "save": "Save",
+            "cancel": "Cancel",
+            "showLess": "Show Less",
+            "delete": "Delete",
+            "edit": "Edit",
+            "close": "Close",
+            "confirm": "Confirm",
+            "back": "Back"
+        },
+        "errors": {
+            "auth": {
+                "userNotFound": "User not found",
+                "wrongPassword": "Wrong password",
+                "emailInUse": "Email already in use",
+                "tooManyRequests": "Too many requests, try again later",
+                "permissionDenied": "Permission denied"
+            },
+            "general": "An error occurred. Please try again.",
+            "required": "This field is required"
+        },
+        "importModal": {
+            "preview": {
+                "table": {
+                    "yes": "Yes",
+                    "no": "No",
+                    "select": "Select",
+                    "name": "Item Name",
+                    "category": "Category",
+                    "quantity": "Qty",
+                    "notes": "Notes",
+                    "required": "Required",
+                    "actions": "Actions"
+                },
+                "title": "Preview ({{count}} items)",
+                "selectAll": "Select All",
+                "deselectAll": "Deselect All",
+                "back": "Back to Import",
+                "noItems": "No items found",
+                "errors": {
+                    "nameLength": "Item name must be at least 2 characters",
+                    "quantityRange": "Quantity must be between 1 and 100"
+                },
+                "summary": {
+                    "selected": "<strong>{{selected}}</strong> items selected from <strong>{{valid}}</strong> valid items",
+                    "errors": "{{count}} items with errors will not be imported"
+                },
+                "importBtn": "Import {{count}} Items",
+                "importingBtn": "Importing...",
+                "cancelBtn": "Cancel"
+            },
+            "methods": {
+                "desc": "Select import method",
+                "preset": "Preset List",
+                "text": "Free Text",
+                "excel": "Excel",
+                "csv": "CSV"
+            },
+            "title": "Import Items",
+            "preset": {
+                "title": "Preset Lists",
+                "desc": "Choose from preset lists or create a new one",
+                "openBtn": "Open Preset Lists",
+                "loadedSuccess": "Loaded {{count}} items from list"
+            },
+            "text": {
+                "label": "Paste items list",
+                "placeholder": "Bread, 2\nGreen Salad, 1, Fresh leaves",
+                "help": "Format: Item Name, Quantity (Optional), Notes (Optional)\nEach item on a separate line. Default quantity is 1.",
+                "parseBtn": "Process Text",
+                "emptyError": "Please enter text",
+                "parseError": "Error processing text"
+            },
+            "file": {
+                "label": "Upload {{type}} file",
+                "help": "Format: Column 1 - Item Name, Column 2 - Quantity (Optional), Column 3 - Notes (Optional)\nFirst line can be headers and will be ignored.",
+                "unsupportedType": "Unsupported file type",
+                "parseError": "Error processing file"
+            },
+            "duplicates": {
+                "title": "Duplicate Items Found",
+                "desc": "Found <strong>{{duplicates}}</strong> items that already exist in the event.<br/>In addition, found <strong>{{new}}</strong> new items.<br/>How would you like to proceed?",
+                "importAll": "Import All ({{count}} items)",
+                "importNew": "Import New Only ({{count}} items)",
+                "cancel": "Cancel"
+            }
+        },
+        "presetList": {
+            "title": "Manage Preset Lists",
+            "createNew": "Create New List",
+            "edit": "Edit",
+            "delete": "Delete",
+            "use": "Use",
+            "empty": "No preset lists found",
+            "form": {
+                "name": "List Name",
+                "addItem": "Add Item",
+                "save": "Save List",
+                "saving": "Saving...",
+                "cancel": "Cancel"
+            },
+            "confirmDelete": "Delete list \"{{name}}\"?"
+        },
+        "bulkEdit": {
+            "filters": {
+                "allOf": "All of the list",
+                "assigned": "Assigned",
+                "unassigned": "Unassigned",
+                "allEvents": "All Events",
+                "search": "Search",
+                "event": "Event",
+                "category": "Category",
+                "all": "All",
+                "assignment": "Assignment",
+                "createdBy": "Created By",
+                "admin": "Admin",
+                "users": "Users"
+            },
+            "messages": {
+                "itemUpdated": "Item updated successfully",
+                "errorUpdating": "Error updating item",
+                "errorGeneral": "General error occurred",
+                "selectAction": "Select an action",
+                "noAssignedToCancel": "No assignments to cancel in selected items",
+                "confirmCancelAssignments": "Are you sure you want to cancel {{count}} assignments?",
+                "error": "Error",
+                "enterItemName": "Please enter item name",
+                "selectEvent": "Select Event",
+                "itemAdded": "Item added successfully",
+                "errorAdding": "Error adding item",
+                "selectToSave": "Select items to save",
+                "enterListNameError": "Error: Please enter list name",
+                "errorSavingList": "Error saving list"
+            },
+            "actions": {
+                "selected": "Selected",
+                "cancelAssignments": "Cancel Assignments",
+                "changeCategory": "Change Category",
+                "changeRequired": "Change Required Status",
+                "delete": "Delete Items",
+                "saveAsList": "Save as List",
+                "execute": "Execute",
+                "cancel": "Cancel"
+            },
+            "saveAll": "Save All",
+            "cancelEdit": "Cancel Edit",
+            "editAll": "Edit All",
+            "addItem": "Add Item",
+            "import": "Import",
+            "table": {
+                "noItems": "No items",
+                "noItemsDesc": "No items found to display",
+                "items": "Items",
+                "name": "Name",
+                "event": "Event",
+                "quantity": "Quantity",
+                "notes": "Notes",
+                "required": "Required",
+                "splittable": "Splittable",
+                "assignment": "Assignment"
+            },
+            "title": "Bulk Edit",
+            "save": "Save Changes",
+            "saving": "Saving...",
+            "cancel": "Cancel",
+            "success": "Changes saved successfully",
+            "error": "Error saving changes",
+            "stats": {
+                "itemsDisplayed": "Items displayed",
+                "selected": "Selected",
+                "withChanges": "With changes",
+                "assigned": "Assigned"
+            }
+        },
+        "dashboard": {
+            "eventCard": {
+                "admin": "Manage",
+                "status": {
+                    "active": "Active",
+                    "inactive": "Inactive",
+                    "ended": "Ended"
+                },
+                "stats": {
+                    "items": "{{count}} of {{total}} items assigned",
+                    "participants": "{{count}} participants"
+                },
+                "actions": {
+                    "goToEvent": "To Event Page",
+                    "share": "Share",
+                    "participantsView": "Participants View",
+                    "bulkEdit": "Bulk Edit",
+                    "import": "Import Items",
+                    "manageParticipants": "Manage Participants",
+                    "editDetails": "Edit Details",
+                    "delete": "Delete Event"
+                },
+                "messages": {
+                    "linkCopied": "Link copied!"
+                }
+            },
+            "eventForm": {
+                "title": {
+                    "create": "Create New Event",
+                    "edit": "Edit Event"
+                },
+                "fields": {
+                    "eventName": "Event Name",
+                    "location": "Location",
+                    "description": "Description (Optional)",
+                    "isActive": "Set as Active",
+                    "allowUserItems": "Allow participants to add items",
+                    "userItemLimit": "Items limit per user"
+                },
+                "submit": {
+                    "creating": "Creating...",
+                    "updating": "Updating...",
+                    "create": "Create Event",
+                    "update": "Update Event"
+                },
+                "cancel": "Cancel",
+                "messages": {
+                    "userNotLoggedIn": "Error: User not logged in.",
+                    "fillRequired": "Please fill all required fields.",
+                    "createSuccess": "Event created successfully!",
+                    "updateSuccess": "Event updated successfully!",
+                    "createError": "Error creating event.",
+                    "updateError": "Error updating event."
+                }
+            },
+            "main": {
+                "adminSuffix": " - Admin",
+                "developedBy": "Developed by Chagai Yechiel",
+                "filters": {
+                    "activeEvents": "Active Events ({{count}})",
+                    "inactiveEvents": "Past Events ({{count}})"
+                },
+                "createButton": "Create New Event",
+                "loading": "Loading data...",
+                "empty": {
+                    "activeTitle": "No active events",
+                    "inactiveTitle": "No past events",
+                    "activeDesc": "Click \"Create New Event\" to start.",
+                    "inactiveDesc": "Disabled or ended events will appear here."
+                },
+                "messages": {
+                    "logoutSuccess": "Logged out successfully",
+                    "logoutError": "Error logging out",
+                    "fetchError": "Error loading events.",
+                    "deleteConfirm": "Are you sure you want to delete event \"{{title}}\"? This action cannot be undone.",
+                    "deleteSuccess": "Event deleted successfully",
+                    "deleteError": "Error deleting event",
+                    "manageParticipantsComingSoon": "Manage participants for {{title}} - Coming soon!"
+                }
+            },
+            "general": "General Error"
+        },
+        "landing": {
+            "header": {
+                "login": "Login"
+            },
+            "hero": {
+                "badge": "Smart Event Management",
+                "title": "Community Meal Management",
+                "titleHighlight": "Made Easy",
+                "subtitle": "The platform that turns logistical coordination into a seamless experience, so you can focus on food and human connection.",
+                "cta": "Start for Free"
+            },
+            "useCases": {
+                "title": "Perfect for Any Gathering",
+                "items": [
+                    "Family picnics in the park",
+                    "Friends' trips and camping",
+                    "Community Shabbat and holiday meals",
+                    "Office parties and corporate events"
+                ]
+            },
+            "differentiator": {
+                "title": "Simplest for Participants",
+                "text": {
+                    "part1": "Our biggest advantage is simplicity:",
+                    "highlight": "Participants don't need to register!",
+                    "part2": "Just send them a link, they choose what to bring, and that's it.\nNo passwords, no downloads, no headache."
+                }
+            },
+            "story": {
+                "title": "Why did we build this?",
+                "p1": "\"Sometimes the best ideas are born not in the office, but around a Shabbat table. As someone who participates in community meals, I experienced the magic of shared meals - but also the logistical headache.\"",
+                "p2": "\"Managing 'who brings what' via Google Sheets was cumbersome, not mobile-friendly, and prone to errors. Someone accidentally deleted a row, others struggled with editing on the phone, and the event manager worked too hard.\"",
+                "p3": "\"Shishi-Shitufi was born to solve exactly this. We built a dedicated solution that creates a seamless experience, zero errors, and peace of mind for event managers.\""
+            }
+        },
+        "login": {
+            "subtitle": {
+                "login": "Login to verify events",
+                "register": "Create new account and start organizing"
+            },
+            "fields": {
+                "displayName": "Display Name",
+                "email": "Email Address",
+                "password": "Password"
+            },
+            "terms": {
+                "agree": "I agree to the",
+                "terms": "Terms of Service",
+                "and": "and",
+                "privacy": "Privacy Policy"
+            },
+            "submit": {
+                "login": "Login",
+                "register": "Create Account"
+            },
+            "toggle": {
+                "toRegister": "No account? Create one",
+                "toLogin": "Already have an account? Login"
+            },
+            "messages": {
+                "loginSuccess": "Logged in successfully!",
+                "termsRequired": "Please accept terms and privacy policy.",
+                "displayNameRequired": "Display name is required",
+                "registerSuccess": "Registered successfully! Welcome.",
+                "authErrors": {
+                    "invalidCredential": "Invalid email or password.",
+                    "emailInUse": "Email is already in use.",
+                    "weakPassword": "Password too weak. Min 6 chars required.",
+                    "invalidEmail": "Invalid email address."
+                }
+            }
+        },
+        "header": {
+            "title": "Shishi-Shitufi",
+            "subtitle": "Community Meal Management",
+            "nav": {
+                "events": "Events",
+                "admin": "Admin Panel"
+            },
+            "guest": "Guest",
+            "logout": "Logout",
+            "adminLogin": "Admin Login"
+        },
+        "languages": {
+            "he": "Hebrew",
+            "en": "English",
+            "es": "Spanish"
+        },
+        "account": {
+            "delete": {
+                "processing": "Deleting account and data...",
+                "success": "Account deleted successfully. Thank you for using our service!",
+                "error": "Error deleting account.",
+                "confirmMessage": "Are you sure you want to delete your account?\nThis action is **irreversible** and will delete all your events, items, and assignments.",
+                "confirmButton": "Yes, delete account"
+            }
+        },
+        "categories": {
+            "starter": "Starter",
+            "main": "Main Course",
+            "dessert": "Dessert",
+            "drink": "Drinks",
+            "other": "Other",
+            "equipment": "General Equipment"
+        },
+        "eventPage": {
+            "assignment": {
+                "nameRequired": "Name is required",
+                "quantityPositive": "Quantity must be positive",
+                "updateSuccess": "Updated successfully",
+                "newNamePlaceholder": "New Name",
+                "quantityToBring": "Quantity to bring",
+                "confirmAssignment": "Confirm Assignment",
+                "editTitle": "Edit Assignment",
+                "addTitle": "Assign Item",
+                "suggestedQuantity": "Suggested Quantity",
+                "registerAs": "Register as:",
+                "changeName": "Change Name",
+                "newName": "New Name*",
+                "fullName": "Full Name*",
+                "namePlaceholder": "Name displayed to everyone",
+                "quantityIBring": "Quantity I'll Bring*",
+                "bringAll": "Bring All",
+                "remaining": "Remaining",
+                "notesOptional": "Notes (Optional)",
+                "notesPlaceholder": "e.g., Gluten-free, Vegan...",
+                "confirm": "Confirm Assignment",
+                "addMoreSuccess": "Added successfully",
+                "addMoreTitle": "Add More Items",
+                "quantityToAdd": "Quantity to Add",
+                "add": "Add",
+                "assignSuccess": "Successfully assigned to item: {{itemName}}"
+            },
+            "adminPanelTooltip": "Admin Panel",
+            "adminPanel": "Admin Panel",
+            "stats": {
+                "required": {
+                    "text": "Required {{count}}/{{total}}",
+                    "tooltip": "Required Items"
+                },
+                "optional": {
+                    "text": "Optional {{count}}/{{total}}",
+                    "tooltip": "Optional Items"
+                },
+                "assigned": "assigned"
+            },
+            "searchPlaceholder": "Search...",
+            "backToCategories": "Back to Categories",
+            "list": {
+                "searchResults": "Search Results",
+                "noItems": "No items",
+                "noItemsInCategory": "No items in this category",
+                "noMyAssignments": "You haven't signed up for anything yet",
+                "available": "Available Items",
+                "assignedHeader": "Assigned Items",
+                "completed": "Completed Items",
+                "empty": "No items found."
+            },
+            "category": {
+                "addItemTooltip": "Add item to this category",
+                "addItem": "Add Item"
+            },
+            "promo": {
+                "register": "Register",
+                "title": "Want to create your own event?",
+                "subtitle": "It takes a minute to sign up, and it's completely free.",
+                "button": "Sign Up Now"
+            },
+            "item": {
+                "quantityRequired": "Required Quantity",
+                "createdBy": "Created by",
+                "progress": "Progress",
+                "iBring": "I'm bringing:",
+                "editQuantity": "Edit Quantity",
+                "cancel": "Cancel",
+                "addMore": "Add More",
+                "iWillParticipate": "I'll participate in this",
+                "completed": "Item Completed",
+                "takenBy": "Taken by",
+                "cancelAssignment": "Cancel Assignment",
+                "editItem": "Edit Item",
+                "iWillBringIt": "I'll bring it"
+            },
+            "status": {
+                "ended": "Event Ended",
+                "inactive": "Event Inactive",
+                "inactiveSubtitle": "New items cannot be assigned."
+            },
+            "welcome": {
+                "title": "Welcome!",
+                "subtitle": "To participate, please enter your name.",
+                "namePlaceholder": "Your Name",
+                "join": "Join Event"
+            },
+            "error": {
+                "oops": "Oops!",
+                "eventNotFound": "The event you are looking for does not exist."
+            },
+            "details": {
+                "organizer": "Organizer",
+                "navigate": "Navigate to Location",
+                "navigateTooltip": "Choose Navigation App",
+                "addToCalendar": "Add to Google Calendar"
+            },
+            "navigation": {
+                "title": "Navigate with",
+                "waze": "Waze",
+                "googleMaps": "Google Maps",
+                "appleMaps": "Apple Maps"
+            },
+            "search": {
+                "placeholder": "Search item...",
+                "clear": "Clear search"
+            },
+            "filter": {
+                "myAssignments": "My Assignments",
+                "backToCategories": "Back to Categories",
+                "searchResults": "Search Results"
+            },
+            "actions": {
+                "addItem": "Add Item",
+                "bulkEdit": "Bulk Edit"
+            },
+            "noActiveEvent": "No active event at the moment",
+            "adminPrompt": "Go to Admin Panel to create or activate an event",
+            "comingSoon": "New event coming soon",
+            "quickSearch": "Quick Search",
+            "messages": {
+                "welcomeUser": "Welcome, {{name}}!",
+                "joinError": "Error joining event.",
+                "itemNotFound": "Item not found",
+                "confirmDeleteEmptyItem": "Are you sure you want to delete this item?",
+                "confirmDeleteItemWithParticipants": "This item has {{count}} assignments. Are you sure you want to delete it?",
+                "deleteItemConfirm": "This action will delete both the item and the assignment",
+                "itemDeleted": "Item and assignment deleted",
+                "deleteItemError": "Error deleting item",
+                "cancelAssignmentConfirm": "Are you sure you want to cancel the assignment?",
+                "cancelAssignmentConfirmWithName": "Are you sure you want to cancel the assignment for {{name}}?",
+                "assignmentCancelled": "Assignment cancelled",
+                "cancelAssignmentError": "Error cancelling assignment",
+                "missingName": "To assign, a full name is required.",
+                "missingNewName": "A new name is required.",
+                "quantityZero": "Quantity must be greater than 0.",
+                "quantityTooHigh": "Requested quantity exceeds available quantity (max {{max}}).",
+                "assignmentUpdated": "Assignment updated successfully!",
+                "assignmentCreated": "Successfully assigned to item: {{itemName}}",
+                "limitReached": "You have reached the limit of {{limit}} items you can add."
+            },
+            "participantsList": {
+                "title": "Participants List",
+                "button": "Participants",
+                "tooltip": "View participants and assignments",
+                "empty": "No assignments yet",
+                "deleteConfirm": "Cancel assignment of {{name}} for {{item}}?",
+                "assignmentDeleted": "Assignment deleted successfully",
+                "total": "Total {{count}} assignments"
+            }
+        },
+        "footer": {
+            "terms": "Terms of Use",
+            "privacy": "Privacy Policy",
+            "feedback": "Feedback",
+            "deleteAccount": "Delete Account",
+            "developedBy": "Developed by",
+            "iconsBy": "Icons by"
+        },
+        "items": {
+            "tables": "Tables",
+            "chairs": "Chairs",
+            "tablecloths": "Tablecloths",
+            "plates": "Plates",
+            "cups": "Cups",
+            "cutlery": "Cutlery",
+            "trays": "Trays",
+            "waterPitchers": "Water Pitchers",
+            "napkins": "Napkins",
+            "challah": "Challah",
+            "redWine": "Red Wine",
+            "whiteWine": "White Wine",
+            "greenSalad": "Green Salad",
+            "hummus": "Hummus",
+            "tahini": "Tahini",
+            "pitas": "Pitas",
+            "cheeses": "Cheeses",
+            "fruit": "Fruit",
+            "cake": "Cake",
+            "juice": "Juice",
+            "water": "Water"
+        },
+        "editItemModal": {
+            "title": "Edit Item",
+            "fields": {
+                "name": "Item Name *",
+                "category": "Category *",
+                "quantity": "Required Quantity",
+                "assignedInfo": "Assigned quantity: {{assigned}} - cannot reduce below this",
+                "notes": "Notes (Optional)",
+                "notesPlaceholder": "e.g. Kosher, Gluten free, Vegan..."
+            },
+            "submit": "Save Changes",
+            "submitting": "Saving...",
+            "cancel": "Cancel",
+            "success": "Item updated successfully!",
+            "errors": {
+                "nameRequired": "Item name is required",
+                "nameLength": "Item name must be at least 2 characters",
+                "quantityMin": "Quantity must be at least 1",
+                "quantityBelowAssigned": "Cannot reduce quantity below {{assigned}} (assigned quantity)",
+                "quantityMax": "Quantity cannot exceed 100",
+                "fixErrors": "Please fix form errors",
+                "generalError": "Error updating item"
+            }
+        },
+        "userItemForm": {
+            "title": "Add Your Own Item",
+            "fields": {
+                "name": "Item Name *",
+                "namePlaceholder": "e.g. Cheesecake",
+                "category": "Category *",
+                "quantityTotal": "Required Quantity (Total)",
+                "myContribution": "I Bring",
+                "bringAll": "I'll bring everything",
+                "remainingMsg": "{{count}} remaining for others",
+                "youBringAllMsg": "You bring everything",
+                "notes": "Notes (Optional)",
+                "notesPlaceholder": "e.g. Kosher, Gluten free, Vegan...",
+                "fullName": "Full Name *",
+                "nameDisplayPlaceholder": "Display Name",
+                "nameHelp": "The name will be saved on this device for this event"
+            },
+            "submit": "Add & Assign Me",
+            "submitting": "Adding...",
+            "cancel": "Cancel",
+            "errors": {
+                "mustLogin": "You must login to add an item",
+                "fixErrors": "Please fix form errors",
+                "nameRequired": "Item name is required",
+                "nameLength": "Item name must be at least 2 characters",
+                "quantityMin": "Quantity must be at least 1",
+                "quantityMax": "Quantity cannot exceed 100",
+                "duplicateItem": "Item \"{{name}}\" already exists. Add anyway?",
+                "missingName": "Name is required to add an item",
+                "success": "Item added successfully!",
+                "generalError": "Error adding item",
+                "permissionDenied": "Permission denied. Check Firebase settings"
+            }
+        }
+    }
+}

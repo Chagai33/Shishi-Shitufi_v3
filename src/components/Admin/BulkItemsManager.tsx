@@ -1,12 +1,13 @@
 // src/components/Admin/BulkItemsManager.tsx
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowRight, Edit, Trash2, Save, X, CheckSquare, Square, Search, Filter, AlertCircle, CheckCircle, RefreshCw, Slash, Plus, Upload } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { ArrowRight, Edit, Save, X, CheckSquare, Square, Search, AlertCircle, CheckCircle, Plus, Upload } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { MenuItem, MenuCategory, ShishiEvent, Assignment } from '../../types';
-import { ref, onValue, off } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { database } from '../../lib/firebase';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ImportItemsModal } from './ImportItemsModal';
 import { PresetListsManager } from './PresetListsManager';
@@ -37,7 +38,8 @@ const FilterButton = ({ label, isActive, onClick }: { label: string, isActive: b
 );
 
 function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerProps) {
-  const { updateMenuItem, deleteMenuItem, deleteAssignment } = useStore();
+  const { t } = useTranslation();
+  const { updateMenuItem, deleteAssignment } = useStore();
   const [realtimeEvents, setRealtimeEvents] = useState<ShishiEvent[]>(allEvents);
 
   // Set up real-time listeners for all events
@@ -125,14 +127,14 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   }, [allItems]);
 
   const categoryOptions = [
-    { value: 'starter', label: 'מנה ראשונה' }, { value: 'main', label: 'מנה עיקרית' },
-    { value: 'dessert', label: 'קינוח' }, { value: 'drink', label: 'שתייה' },
-    { value: 'other', label: 'אחר' }
+    { value: 'starter', label: t('categories.starter') }, { value: 'main', label: t('categories.main') },
+    { value: 'dessert', label: t('categories.dessert') }, { value: 'drink', label: t('categories.drink') },
+    { value: 'other', label: t('categories.other') }
   ];
 
   const assignedOptions = [
-    { value: 'all', label: 'כל הפריטים' }, { value: 'assigned', label: 'משובצים' },
-    { value: 'unassigned', label: 'לא משובצים' },
+    { value: 'all', label: t('bulkEdit.filters.allOf') }, { value: 'assigned', label: t('bulkEdit.filters.assigned') },
+    { value: 'unassigned', label: t('bulkEdit.filters.unassigned') },
   ];
 
   const filteredItems = useMemo(() => {
@@ -174,9 +176,12 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   };
   const selectedCount = (filteredItems || []).filter(item => item.isSelected).length;
   const changedCount = (editableItems || []).filter(item => item.hasChanges).length;
+  const assignedCount = (filteredItems || []).filter(item =>
+    (allAssignments || []).some(a => a.menuItemId === item.id)
+  ).length;
 
   const toggleItemSelection = (itemId: string) => { setEditableItems(prev => (prev || []).map(item => item.id === itemId ? { ...item, isSelected: !item.isSelected } : item)); };
-  const toggleSelectAll = () => { const allSelected = (filteredItems || []).every(item => item.isSelected); const filteredIds = (filteredItems || []).map(item => item.id); setEditableItems(prev => (prev || []).map(item => filteredIds.includes(item.id) ? { ...item, isSelected: !allSelected } : item)); };
+
   const startEditing = (itemId: string) => { setEditableItems(prev => (prev || []).map(item => item.id === itemId ? { ...item, isEditing: true } : item)); };
   const cancelEditing = (itemId: string) => { setEditableItems(prev => (prev || []).map(item => item.id === itemId ? { ...item.originalData, isEditing: false, isSelected: item.isSelected, hasChanges: false, originalData: item.originalData } : item)); };
   const updateItemField = (itemId: string, field: keyof MenuItem, value: any) => {
@@ -222,11 +227,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       setEditableItems(prev => prev.map(i =>
         i.id === itemId ? { ...i, isEditing: false, hasChanges: false, originalData: { ...i, isEditing: false, hasChanges: false, isSelected: i.isSelected, originalData: i.originalData } } : i
       ));
-      toast.success('הפריט עודכן בהצלחה');
+      toast.success(t('bulkEdit.messages.itemUpdated'));
 
     } catch (error) {
       console.error('Error saving item:', error);
-      toast.error('שגיאה בשמירת הפריט');
+      toast.error(t('bulkEdit.messages.errorUpdating'));
     } finally {
       setIsLoading(false);
     }
@@ -270,14 +275,14 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           }
           return item;
         }));
-        toast.success(`${successCount} פריטים עודכנו בהצלחה`);
+        toast.success(t('bulkEdit.messages.itemsUpdated', { count: successCount }));
       }
       if (errorCount > 0) {
-        toast.error(`${errorCount} פריטים נכשלו בעדכון`);
+        toast.error(t('bulkEdit.messages.itemsUpdateFailed', { count: errorCount }));
       }
     } catch (error) {
       console.error('Error in saveAllChanges:', error);
-      toast.error('שגיאה כללית בשמירת השינויים');
+      toast.error(t('bulkEdit.messages.errorGeneral'));
     } finally {
       setIsLoading(false);
     }
@@ -287,7 +292,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   const executeBulkAction = async () => {
     const selectedItems = filteredItems.filter(item => item.isSelected);
     if (selectedItems.length === 0) {
-      toast.error('יש לבחור פריטים לפעולה');
+      toast.error(t('bulkEdit.messages.selectAction'));
       return;
     }
 
@@ -298,7 +303,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     try {
       switch (bulkAction) {
         case 'delete':
-          if (!confirm(`האם אתה בטוח שברצונך למחוק ${selectedItems.length} פריטים? הפעולה כוללת מחיקת שיבוצים קיימים.`)) {
+          if (!confirm(t('bulkEdit.messages.confirmDelete', { count: selectedItems.length }))) {
             setIsLoading(false);
             return;
           }
@@ -318,11 +323,11 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
         case 'cancel_assignments':
           const assignedItemsToCancel = selectedItems.filter(item => allAssignments.some(a => a.menuItemId === item.id));
           if (assignedItemsToCancel.length === 0) {
-            toast.error('לא נבחרו פריטים משובצים לביטול.');
+            toast.error(t('bulkEdit.messages.noAssignedToCancel'));
             setIsLoading(false);
             return;
           }
-          if (!confirm(`האם אתה בטוח שברצונך לבטל ${assignedItemsToCancel.length} שיבוצים?`)) {
+          if (!confirm(t('bulkEdit.messages.confirmCancelAssignments', { count: assignedItemsToCancel.length }))) {
             setIsLoading(false);
             return;
           }
@@ -383,18 +388,18 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       if (successCount > 0) {
         let successMessage = '';
         switch (bulkAction) {
-          case 'delete': successMessage = `${successCount} פריטים נמחקו בהצלחה`; break;
-          case 'category': successMessage = `קטגוריה עודכנה עבור ${successCount} פריטים`; break;
-          case 'required': successMessage = `סטטוס חובה עודכן עבור ${successCount} פריטים`; break;
-          case 'cancel_assignments': successMessage = `בוטלו שיבוצים עבור ${successCount} פריטים`; break;
+          case 'delete': successMessage = t('bulkEdit.messages.successDelete', { count: successCount }); break;
+          case 'category': successMessage = t('bulkEdit.messages.successCategory', { count: successCount }); break;
+          case 'required': successMessage = t('bulkEdit.messages.successRequired', { count: successCount }); break;
+          case 'cancel_assignments': successMessage = t('bulkEdit.messages.successCancelAssignments', { count: successCount }); break;
         }
         toast.success(successMessage);
       }
-      if (errorCount > 0) toast.error(`הפעולה נכשלה עבור ${errorCount} פריטים`);
+      if (errorCount > 0) toast.error(t('bulkEdit.messages.failure', { count: errorCount }));
 
     } catch (error) {
       console.error('Bulk action error:', error);
-      toast.error('שגיאה בביצוע הפעולה');
+      toast.error(t('bulkEdit.messages.error'));
     } finally {
       setIsLoading(false);
       setBulkAction(null);
@@ -431,12 +436,12 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
 
   const handleAddItem = async () => {
     if (!newItem.name.trim()) {
-      toast.error('יש להזין שם פריט');
+      toast.error(t('bulkEdit.messages.enterItemName'));
       return;
     }
 
     if (!event) {
-      toast.error('יש לבחור אירוע');
+      toast.error(t('bulkEdit.messages.selectEvent'));
       return;
     }
 
@@ -447,7 +452,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     );
 
     if (existingItem) {
-      if (!confirm(`פריט בשם "${newItem.name}" כבר קיים באירוע "${getEventName(event.id)}". האם להוסיף בכל זאת?`)) {
+      if (!confirm(t('bulkEdit.messages.duplicateItem', { name: newItem.name, event: getEventName(event.id) }))) {
         return;
       }
     }
@@ -469,7 +474,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
 
       const itemId = await FirebaseService.addMenuItem(event.id, itemData);
       if (itemId) {
-        toast.success('הפריט נוסף בהצלחה');
+        toast.success(t('bulkEdit.messages.itemAdded'));
         setShowAddItemForm(false);
         setNewItem({
           name: '',
@@ -481,7 +486,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       }
     } catch (error) {
       console.error('Error adding item:', error);
-      toast.error('שגיאה בהוספת הפריט');
+      toast.error(t('bulkEdit.messages.errorAdding'));
     } finally {
       setIsLoading(false);
     }
@@ -490,13 +495,13 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   const handleSaveAsPreset = async () => {
     const selectedItems = filteredItems.filter(item => item.isSelected);
     if (selectedItems.length === 0) {
-      toast.error('יש לבחור פריטים לשמירה');
+      toast.error(t('bulkEdit.messages.selectToSave'));
       return;
     }
 
-    const listName = prompt(`הזן שם לרשימה החדשה (${selectedItems.length} פריטים):`);
+    const listName = prompt(t('bulkEdit.messages.enterListName', { count: selectedItems.length }));
     if (!listName || !listName.trim()) {
-      toast.error('יש להזין שם לרשימה');
+      toast.error(t('bulkEdit.messages.enterListNameError'));
       return;
     }
 
@@ -527,15 +532,15 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       const listId = await FirebaseService.createPresetList(listData);
 
       if (listId) {
-        toast.success(`רשימה "${listName.trim()}" נשמרה בהצלחה עם ${presetItems.length} פריטים`);
+        toast.success(t('bulkEdit.messages.listSaved', { name: listName.trim(), count: presetItems.length }));
         // Cancel item selection
         setEditableItems(prev => prev.map(item => ({ ...item, isSelected: false })));
       } else {
-        throw new Error('לא התקבל מזהה רשימה');
+        throw new Error(t('dashboard.general'));
       }
     } catch (error: any) {
       console.error('Error saving preset list:', error);
-      toast.error(error.message || 'שגיאה בשמירת הרשימה');
+      toast.error(error.message || t('bulkEdit.messages.errorSavingList'));
     } finally {
       setIsLoading(false);
     }
@@ -553,19 +558,12 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             <ArrowRight className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">עריכת פריטים</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('bulkEdit.title')}</h1>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded-full">
-                {event ? event.details.title : 'כלל האירועים'}
+                {event ? event.details.title : t('bulkEdit.filters.allEvents')}
               </span>
-              <a
-                href="https://www.linkedin.com/in/chagai-yechiel/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-400 hover:text-blue-600 transition-colors"
-              >
-                (פותח ע"י חגי יחיאל)
-              </a>
+
             </div>
           </div>
         </div>
@@ -573,7 +571,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           {changedCount > 0 && (
             <button onClick={saveAllChanges} disabled={isLoading} className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-5 py-2.5 rounded-xl shadow-sm hover:shadow-md flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95">
               <Save className="h-4 w-4" />
-              <span>שמור הכל ({changedCount})</span>
+              <span>{t('bulkEdit.saveAll')} ({changedCount})</span>
             </button>
           )}
           <button
@@ -584,14 +582,14 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
               }`}
           >
             <Edit className="h-4 w-4" />
-            <span>{editAllMode ? 'בטל עריכה' : 'ערוך הכל'}</span>
+            <span>{editAllMode ? t('bulkEdit.cancelEdit') : t('bulkEdit.editAll')}</span>
           </button>
           <button
             onClick={() => setShowAddItemForm(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="h-4 w-4" />
-            <span>הוסף פריט</span>
+            <span>{t('bulkEdit.addItem')}</span>
           </button>
           {event && (
             <button
@@ -599,7 +597,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
               className="bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 px-5 py-2.5 rounded-xl shadow-sm hover:shadow flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95"
             >
               <Upload className="h-4 w-4" />
-              <span>ייבא</span>
+              <span>{t('bulkEdit.import')}</span>
             </button>
           )}
         </div>
@@ -612,7 +610,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="חפש פריטים..."
+              placeholder={t('bulkEdit.filters.search')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pr-10 pl-4 py-2.5 bg-gray-50 border-transparent focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all text-sm outline-none"
@@ -622,9 +620,9 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
           <div className="flex-1 flex flex-wrap gap-y-4 gap-x-8">
             {!event && (
               <div className="flex flex-col space-y-2">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">אירוע</label>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.event')}</label>
                 <div className="flex flex-wrap gap-2">
-                  <FilterButton label="כל האירועים" isActive={filterEvent === 'all'} onClick={() => setFilterEvent('all')} />
+                  <FilterButton label={t('bulkEdit.filters.allEvents')} isActive={filterEvent === 'all'} onClick={() => setFilterEvent('all')} />
                   {(realtimeEvents || []).map(e => (
                     <FilterButton key={e.id} label={e.details.title} isActive={filterEvent === e.id} onClick={() => setFilterEvent(e.id)} />
                   ))}
@@ -633,9 +631,9 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             )}
 
             <div className="flex flex-col space-y-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">קטגוריה</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.category')}</label>
               <div className="flex flex-wrap gap-2">
-                <FilterButton label="הכל" isActive={filterCategory === 'all'} onClick={() => setFilterCategory('all')} />
+                <FilterButton label={t('bulkEdit.filters.all')} isActive={filterCategory === 'all'} onClick={() => setFilterCategory('all')} />
                 {categoryOptions.map(option => (
                   <FilterButton key={option.value} label={option.label} isActive={filterCategory === option.value} onClick={() => setFilterCategory(option.value)} />
                 ))}
@@ -643,7 +641,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             </div>
 
             <div className="flex flex-col space-y-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">שיבוץ</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.assignment')}</label>
               <div className="flex flex-wrap gap-2">
                 {assignedOptions.map(option => (
                   <FilterButton key={option.value} label={option.label} isActive={filterAssigned === option.value} onClick={() => setFilterAssigned(option.value)} />
@@ -652,16 +650,19 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             </div>
 
             <div className="flex flex-col space-y-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">נוצר ע"י</label>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.createdBy')}</label>
               <div className="flex flex-wrap gap-2">
-                <FilterButton label="הכל" isActive={filterAddedBy === 'all'} onClick={() => setFilterAddedBy('all')} />
-                <FilterButton label="מנהל" isActive={filterAddedBy === 'admin'} onClick={() => setFilterAddedBy('admin')} />
-                <FilterButton label="משתמשים" isActive={filterAddedBy === 'user'} onClick={() => setFilterAddedBy('user')} />
+                <FilterButton label={t('bulkEdit.filters.all')} isActive={filterAddedBy === 'all'} onClick={() => setFilterAddedBy('all')} />
+                <FilterButton label={t('bulkEdit.filters.admin')} isActive={filterAddedBy === 'admin'} onClick={() => setFilterAddedBy('admin')} />
+                <FilterButton label={t('bulkEdit.filters.users')} isActive={filterAddedBy === 'user'} onClick={() => setFilterAddedBy('user')} />
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Stats Bar */}
+
 
       {/* Bulk Actions */}
       {selectedCount > 0 && (
@@ -671,23 +672,23 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
               <div className="bg-blue-100 p-2 rounded-full">
                 <CheckCircle className="h-5 w-5 text-blue-600" />
               </div>
-              <span className="text-blue-900 font-semibold">{selectedCount} פריטים נבחרו</span>
+              <span className="text-blue-900 font-semibold">{t('bulkEdit.actions.selected', { count: selectedCount })}</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {!bulkAction ? (
                 <>
-                  <button onClick={() => setBulkAction('cancel_assignments')} className="bg-white hover:bg-yellow-50 text-yellow-700 border border-yellow-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">בטל שיבוצים</button>
-                  <button onClick={() => setBulkAction('category')} className="bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">שנה קטגוריה</button>
-                  <button onClick={() => setBulkAction('required')} className="bg-white hover:bg-orange-50 text-orange-700 border border-orange-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">שנה חובה</button>
-                  <button onClick={() => setBulkAction('delete')} className="bg-white hover:bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm icon-delete">מחק</button>
-                  <button onClick={handleSaveAsPreset} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">שמור כרשימה</button>
+                  <button onClick={() => setBulkAction('cancel_assignments')} className="bg-white hover:bg-yellow-50 text-yellow-700 border border-yellow-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">{t('bulkEdit.actions.cancelAssignments')}</button>
+                  <button onClick={() => setBulkAction('category')} className="bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">{t('bulkEdit.actions.changeCategory')}</button>
+                  <button onClick={() => setBulkAction('required')} className="bg-white hover:bg-orange-50 text-orange-700 border border-orange-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">{t('bulkEdit.actions.changeRequired')}</button>
+                  <button onClick={() => setBulkAction('delete')} className="bg-white hover:bg-red-50 text-red-700 border border-red-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm icon-delete">{t('bulkEdit.actions.delete')}</button>
+                  <button onClick={handleSaveAsPreset} className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm">{t('bulkEdit.actions.saveAsList')}</button>
                 </>
               ) : (
                 <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
                   {bulkAction === 'category' && (<select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value as MenuCategory)} className="px-3 py-1.5 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm outline-none shadow-sm text-gray-900">{categoryOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>)}
-                  {bulkAction === 'required' && (<select value={bulkRequired.toString()} onChange={(e) => setBulkRequired(e.target.value === 'true')} className="px-3 py-1.5 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm outline-none shadow-sm text-gray-900"><option value="true">חובה</option><option value="false">לא חובה</option></select>)}
-                  <button onClick={executeBulkAction} disabled={isLoading} className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">{isLoading ? 'מבצע...' : 'בצע'}</button>
-                  <button onClick={() => setBulkAction(null)} className="text-gray-500 hover:text-gray-700 px-3 py-1.5 text-sm font-medium">ביטול</button>
+                  {bulkAction === 'required' && (<select value={bulkRequired.toString()} onChange={(e) => setBulkRequired(e.target.value === 'true')} className="px-3 py-1.5 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm outline-none shadow-sm text-gray-900"><option value="true">{t('importModal.preview.table.yes')}</option><option value="false">{t('importModal.preview.table.no')}</option></select>)}
+                  <button onClick={executeBulkAction} disabled={isLoading} className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">{isLoading ? '...' : t('bulkEdit.actions.execute')}</button>
+                  <button onClick={() => setBulkAction(null)} className="text-gray-500 hover:text-gray-700 px-3 py-1.5 text-sm font-medium">{t('bulkEdit.actions.cancel')}</button>
                 </div>
               )}
             </div>
@@ -703,8 +704,8 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             <div className="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertCircle className="h-10 w-10 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">לא נמצאו פריטים</h3>
-            <p className="text-gray-500 max-w-sm mx-auto">לא מצאנו פריטים התואמים את החיפוש שלך. נסה לשנות את הפילטרים או להוסיף פריט חדש.</p>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">{t('bulkEdit.table.noItems')}</h3>
+            <p className="text-gray-500 max-w-sm mx-auto">{t('bulkEdit.table.noItemsDesc')}</p>
           </div>
         ) : (
           ['starter', 'main', 'dessert', 'drink', 'other'].map(category => {
@@ -729,10 +730,10 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                     </h3>
                     <div className="flex items-center space-x-6 rtl:space-x-reverse text-sm">
                       <div className="flex items-center gap-2 text-gray-500">
-                        <span className="font-medium text-gray-900">{stats.total}</span> פריטים
+                        <span className="font-medium text-gray-900">{stats.total}</span> {t('bulkEdit.table.items')}
                       </div>
                       <div className="flex items-center gap-2 text-green-600">
-                        <span className="font-medium">{stats.assigned}</span> משובצים
+                        <span className="font-medium">{stats.assigned}</span> {t('bulkEdit.filters.assigned')}
                       </div>
                       <div className="w-24 bg-gray-100 rounded-full h-2 overflow-hidden">
                         <div
@@ -769,15 +770,15 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                             )}
                           </button>
                         </th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">שם פריט</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.name')}</th>
                         {!event && (
-                          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">אירוע</th>
+                          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.event')}</th>
                         )}
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">כמות</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">הערות</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">חובה</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">לחלוקה</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">שיבוץ</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">{t('bulkEdit.table.quantity')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.notes')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">{t('bulkEdit.table.required')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">{t('bulkEdit.table.splittable')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.assignment')}</th>
                         <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-20"></th>
                       </tr>
                     </thead>
@@ -950,10 +951,10 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       </div>
       <div className="mt-6 bg-gray-50 rounded-lg p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-          <div><p className="text-2xl font-bold text-gray-900">{(filteredItems || []).length}</p><p className="text-sm text-gray-600">פריטים מוצגים</p></div>
-          <div><p className="text-2xl font-bold text-blue-600">{selectedCount}</p><p className="text-sm text-gray-600">נבחרו</p></div>
-          <div><p className="text-2xl font-bold text-yellow-600">{changedCount}</p><p className="text-sm text-gray-600">עם שינויים</p></div>
-          <div><p className="text-2xl font-bold text-green-600">{(filteredItems || []).filter(item => (allAssignments || []).some(a => a.menuItemId === item.id)).length}</p><p className="text-sm text-gray-600">משובצים</p></div>
+          <div><p className="text-2xl font-bold text-gray-900">{(filteredItems || []).length}</p><p className="text-sm text-gray-600">{t('bulkEdit.stats.itemsDisplayed')}</p></div>
+          <div><p className="text-2xl font-bold text-blue-600">{selectedCount}</p><p className="text-sm text-gray-600">{t('bulkEdit.stats.selected')}</p></div>
+          <div><p className="text-2xl font-bold text-yellow-600">{changedCount}</p><p className="text-sm text-gray-600">{t('bulkEdit.stats.withChanges')}</p></div>
+          <div><p className="text-2xl font-bold text-green-600">{(filteredItems || []).filter(item => (allAssignments || []).some(a => a.menuItemId === item.id)).length}</p><p className="text-sm text-gray-600">{t('bulkEdit.stats.assigned')}</p></div>
         </div>
       </div>
 
@@ -1085,7 +1086,7 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       {showPresetManager && (
         <PresetListsManager
           onClose={() => setShowPresetManager(false)}
-          onSelectList={(items) => {
+          onSelectList={() => {
             // Do nothing when selecting list - this is only for saving purposes
             setShowPresetManager(false);
             // Cancel item selection after saving

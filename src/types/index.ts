@@ -8,6 +8,7 @@ export interface User {
   name: string;
   email?: string;
   createdAt: number;
+  isAdmin?: boolean;
 }
 
 /**

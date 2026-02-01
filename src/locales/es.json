@@ -1,0 +1,611 @@
+{
+    "translation": {
+        "common": {
+            "user": "Usuario",
+            "errorOccurred": "Ocurrió un error",
+            "saving": "Guardando...",
+            "saveChanges": "Guardar Cambios",
+            "backToHome": "Volver al Inicio",
+            "clearSearch": "Borrar Búsqueda",
+            "errors": {
+                "general": "Error general"
+            },
+            "loading": "Cargando...",
+            "loadingApp": "Cargando la aplicación...",
+            "save": "Guardar",
+            "cancel": "Cancelar",
+            "showLess": "Mostrar menos",
+            "delete": "Eliminar",
+            "edit": "Editar",
+            "close": "Cerrar",
+            "confirm": "Confirmar",
+            "back": "Atrás"
+        },
+        "errors": {
+            "auth": {
+                "userNotFound": "Usuario no encontrado",
+                "wrongPassword": "Contraseña incorrecta",
+                "emailInUse": "El correo ya está en uso",
+                "tooManyRequests": "Demasiadas solicitudes, intente más tarde",
+                "permissionDenied": "Permiso denegado"
+            },
+            "general": "Ocurrió un error. Por favor, inténtelo de nuevo.",
+            "required": "Este campo es obligatorio"
+        },
+        "importModal": {
+            "preview": {
+                "table": {
+                    "yes": "Sí",
+                    "no": "No",
+                    "select": "Seleccionar",
+                    "name": "Nombre",
+                    "category": "Categoría",
+                    "quantity": "Cant",
+                    "notes": "Notas",
+                    "required": "Obligatorio",
+                    "actions": "Acciones"
+                },
+                "title": "Vista Previa ({{count}} artículos)",
+                "selectAll": "Seleccionar Todo",
+                "deselectAll": "Deseleccionar Todo",
+                "back": "Volver a Importar",
+                "noItems": "No se encontraron artículos",
+                "errors": {
+                    "nameLength": "El nombre debe tener al menos 2 caracteres",
+                    "quantityRange": "La cantidad debe estar entre 1 y 100"
+                },
+                "summary": {
+                    "selected": "<strong>{{selected}}</strong> artículos seleccionados de <strong>{{valid}}</strong> válidos",
+                    "errors": "{{count}} artículos con errores no serán importados"
+                },
+                "importBtn": "Importar {{count}} Artículos",
+                "importingBtn": "Importando...",
+                "cancelBtn": "Cancelar"
+            },
+            "methods": {
+                "desc": "Seleccione método de importación",
+                "preset": "Lista Preestablecida",
+                "text": "Texto Libre",
+                "excel": "Excel",
+                "csv": "CSV"
+            },
+            "title": "Importar Artículos",
+            "preset": {
+                "title": "Listas Preestablecidas",
+                "desc": "Elija de listas preestablecidas o cree una nueva",
+                "openBtn": "Abrir Listas Preestablecidas",
+                "loadedSuccess": "Cargados {{count}} artículos de la lista"
+            },
+            "text": {
+                "label": "Pegar lista de artículos",
+                "placeholder": "Pan, 2\nEnsalada Verde, 1, Hojas frescas",
+                "help": "Formato: Nombre del Artículo, Cantidad (Opcional), Notas (Opcional)\nCada artículo en una línea separada. La cantidad predeterminada es 1.",
+                "parseBtn": "Procesar Texto",
+                "emptyError": "Por favor ingrese texto",
+                "parseError": "Error al procesar texto"
+            },
+            "file": {
+                "label": "Subir archivo {{type}}",
+                "help": "Formato: Columna 1 - Nombre, Columna 2 - Cantidad (Opcional), Columna 3 - Notas (Opcional)\nLa primera línea puede ser encabezados y será ignorada.",
+                "unsupportedType": "Tipo de archivo no soportado",
+                "parseError": "Error al procesar archivo"
+            },
+            "duplicates": {
+                "title": "Artículos Duplicados Encontrados",
+                "desc": "Se encontraron <strong>{{duplicates}}</strong> artículos que ya existen en el evento.<br/>Además, hay <strong>{{new}}</strong> artículos nuevos.<br/>¿Cómo desea proceder?",
+                "importAll": "Importar Todo ({{count}} artículos)",
+                "importNew": "Importar Solo Nuevos ({{count}} artículos)",
+                "cancel": "Cancelar"
+            }
+        },
+        "presetList": {
+            "title": "Gestionar Listas Preestablecidas",
+            "createNew": "Crear Nueva Lista",
+            "edit": "Editar",
+            "delete": "Eliminar",
+            "use": "Usar",
+            "empty": "No se encontraron listas",
+            "form": {
+                "name": "Nombre de la Lista",
+                "addItem": "Añadir Artículo",
+                "save": "Guardar Lista",
+                "saving": "Guardando...",
+                "cancel": "Cancelar"
+            },
+            "confirmDelete": "¿Eliminar lista \"{{name}}\"?"
+        },
+        "bulkEdit": {
+            "filters": {
+                "allOf": "Todo de la lista",
+                "assigned": "Asignado",
+                "unassigned": "No asignado",
+                "allEvents": "Todos los eventos",
+                "search": "Buscar",
+                "event": "Evento",
+                "category": "Categoría",
+                "all": "Todo",
+                "assignment": "Asignación",
+                "createdBy": "Creado Por",
+                "admin": "Admin",
+                "users": "Usuarios"
+            },
+            "messages": {
+                "itemUpdated": "Artículo actualizado con éxito",
+                "errorUpdating": "Error al actualizar el artículo",
+                "errorGeneral": "Ocurrió un error general",
+                "selectAction": "Seleccione una acción",
+                "noAssignedToCancel": "No hay asignaciones para cancelar en los artículos seleccionados",
+                "confirmCancelAssignments": "¿Estás seguro de que quieres cancelar {{count}} asignaciones?",
+                "error": "Error",
+                "enterItemName": "Por favor ingrese el nombre del artículo",
+                "selectEvent": "Seleccionar Evento",
+                "itemAdded": "Artículo añadido con éxito",
+                "errorAdding": "Error al añadir artículo",
+                "selectToSave": "Seleccione artículos para guardar",
+                "enterListNameError": "Error: Por favor ingrese el nombre de la lista",
+                "errorSavingList": "Error al guardar la lista"
+            },
+            "actions": {
+                "selected": "Seleccionado",
+                "cancelAssignments": "Cancelar Asignaciones",
+                "changeCategory": "Cambiar Categoría",
+                "changeRequired": "Cambiar Estado Obligatorio",
+                "delete": "Eliminar Artículos",
+                "saveAsList": "Guardar como Lista",
+                "execute": "Ejecutar",
+                "cancel": "Cancelar"
+            },
+            "saveAll": "Guardar Todo",
+            "cancelEdit": "Cancelar Edición",
+            "editAll": "Editar Todo",
+            "addItem": "Añadir Artículo",
+            "import": "Importar",
+            "table": {
+                "noItems": "No hay artículos",
+                "noItemsDesc": "No se encontraron artículos para mostrar",
+                "items": "Artículos",
+                "name": "Nombre",
+                "event": "Evento",
+                "quantity": "Cantidad",
+                "notes": "Notas",
+                "required": "Obligatorio",
+                "splittable": "Divisible",
+                "assignment": "Asignación"
+            },
+            "title": "Edición Masiva",
+            "save": "Guardar Cambios",
+            "saving": "Guardando...",
+            "cancel": "Cancelar",
+            "success": "Cambios guardados con éxito",
+            "error": "Error al guardar cambios",
+            "stats": {
+                "itemsDisplayed": "Artículos mostrados",
+                "selected": "Seleccionado",
+                "withChanges": "Con cambios",
+                "assigned": "Asignado"
+            }
+        },
+        "dashboard": {
+            "eventCard": {
+                "admin": "Gestionar",
+                "status": {
+                    "active": "Activo",
+                    "inactive": "Inactivo",
+                    "ended": "Terminado"
+                },
+                "stats": {
+                    "items": "{{count}} de {{total}} artículos asignados",
+                    "participants": "{{count}} participantes"
+                },
+                "actions": {
+                    "goToEvent": "Ir al evento",
+                    "share": "Compartir",
+                    "participantsView": "Vista Participantes",
+                    "bulkEdit": "Edición Masiva",
+                    "import": "Importar Artículos",
+                    "manageParticipants": "Gestionar Participantes",
+                    "editDetails": "Editar Detalles",
+                    "delete": "Eliminar Evento"
+                },
+                "messages": {
+                    "linkCopied": "¡Enlace copiado!"
+                }
+            },
+            "eventForm": {
+                "title": {
+                    "create": "Crear Nuevo Evento",
+                    "edit": "Editar Evento"
+                },
+                "fields": {
+                    "eventName": "Nombre del Evento",
+                    "location": "Ubicación",
+                    "description": "Descripción (Opcional)",
+                    "isActive": "Establecer como Activo",
+                    "allowUserItems": "Permitir a participantes añadir artículos",
+                    "userItemLimit": "Límite de artículos por usuario"
+                },
+                "submit": {
+                    "creating": "Creando...",
+                    "updating": "Actualizando...",
+                    "create": "Crear Evento",
+                    "update": "Actualizar Evento"
+                },
+                "cancel": "Cancelar",
+                "messages": {
+                    "userNotLoggedIn": "Error: Usuario no conectado.",
+                    "fillRequired": "Por favor complete los campos obligatorios.",
+                    "createSuccess": "¡Evento creado con éxito!",
+                    "updateSuccess": "¡Evento actualizado con éxito!",
+                    "createError": "Error al crear evento.",
+                    "updateError": "Error al actualizar evento."
+                }
+            },
+            "main": {
+                "adminSuffix": " - Admin",
+                "developedBy": "Desarrollado por Chagai Yechiel",
+                "filters": {
+                    "activeEvents": "Eventos Activos ({{count}})",
+                    "inactiveEvents": "Eventos Pasados ({{count}})"
+                },
+                "createButton": "Crear Nuevo Evento",
+                "loading": "Cargando datos...",
+                "empty": {
+                    "activeTitle": "No hay eventos activos",
+                    "inactiveTitle": "No hay eventos pasados",
+                    "activeDesc": "Haga clic en \"Crear Nuevo Evento\" para comenzar.",
+                    "inactiveDesc": "Los eventos deshabilitados o terminados aparecerán aquí."
+                },
+                "messages": {
+                    "logoutSuccess": "Sesión cerrada con éxito",
+                    "logoutError": "Error al cerrar sesión",
+                    "fetchError": "Error al cargar eventos.",
+                    "deleteConfirm": "¿Está seguro de eliminar el evento \"{{title}}\"? Esta acción es irreversible.",
+                    "deleteSuccess": "Evento eliminado con éxito",
+                    "deleteError": "Error al eliminar evento",
+                    "manageParticipantsComingSoon": "Gestión de participantes para {{title}} - ¡Próximamente!"
+                }
+            },
+            "general": "Error General"
+        },
+        "landing": {
+            "header": {
+                "login": "Entrar"
+            },
+            "hero": {
+                "badge": "Gestión de Eventos Inteligente",
+                "title": "Gestión de Comidas Comunitarias",
+                "titleHighlight": "Fácil",
+                "subtitle": "La plataforma que convierte la coordinación logística en una experiencia fluida, para que puedas concentrarte en la comida y la conexión humana.",
+                "cta": "Comenzar Gratis"
+            },
+            "useCases": {
+                "title": "Perfecto para Cualquier Reunión",
+                "items": [
+                    "Picnics familiares en el parque",
+                    "Viajes de amigos y camping",
+                    "Comidas comunitarias de Shabat y festividades",
+                    "Fiestas de oficina y eventos corporativos"
+                ]
+            },
+            "differentiator": {
+                "title": "Lo Más Simple para Participantes",
+                "text": {
+                    "part1": "Nuestra mayor ventaja es la simplicidad:",
+                    "highlight": "¡Los participantes no necesitan registrarse!",
+                    "part2": "Solo envíales un enlace, eligen qué traer y listo.\nSin contraseñas, sin descargas, sin dolor de cabeza."
+                }
+            },
+            "story": {
+                "title": "¿Por qué construimos esto?",
+                "p1": "\"A veces las mejores ideas no nacen en la oficina, sino alrededor de una mesa de Shabat. Como alguien que participa en comidas comunitarias, experimenté la magia de las comidas compartidas, pero también el dolor de cabeza logístico.\"",
+                "p2": "\"Gestionar 'quién trae qué' a través de Google Sheets era engorroso, no apto para móviles y propenso a errores. Alguien borraba una fila por accidente, otros luchaban con la edición en el teléfono y el organizador trabajaba demasiado.\"",
+                "p3": "\"Compartir Viernes nació para resolver exactamente esto. Construimos una solución dedicada que crea una experiencia fluida, cero errores y tranquilidad para los organizadores.\""
+            }
+        },
+        "login": {
+            "subtitle": {
+                "login": "Inicia sesión para gestionar eventos",
+                "register": "Crea una cuenta nueva y empieza a organizar"
+            },
+            "fields": {
+                "displayName": "Nombre para mostrar",
+                "email": "Correo electrónico",
+                "password": "Contraseña"
+            },
+            "terms": {
+                "agree": "Acepto los",
+                "terms": "Términos de Uso",
+                "and": "y",
+                "privacy": "Política de Privacidad"
+            },
+            "submit": {
+                "login": "Iniciar sesión",
+                "register": "Crear Cuenta"
+            },
+            "toggle": {
+                "toRegister": "¿No tienes cuenta? Crea una",
+                "toLogin": "¿Ya tienes cuenta? Inicia sesión"
+            },
+            "messages": {
+                "loginSuccess": "¡Inicio de sesión exitoso!",
+                "termsRequired": "Por favor acepta los términos y política de privacidad.",
+                "displayNameRequired": "El nombre para mostrar es obligatorio",
+                "registerSuccess": "¡Registrado con éxito! Bienvenido.",
+                "authErrors": {
+                    "invalidCredential": "Email o contraseña inválidos.",
+                    "emailInUse": "El correo ya está en uso.",
+                    "weakPassword": "Contraseña muy débil. Mínimo 6 caracteres.",
+                    "invalidEmail": "Dirección de correo inválida."
+                }
+            }
+        },
+        "header": {
+            "title": "Shishi-Shitufi",
+            "subtitle": "Gestión de Comidas Comunitarias",
+            "nav": {
+                "events": "Eventos",
+                "admin": "Panel Admin"
+            },
+            "guest": "Invitado",
+            "logout": "Cerrar sesión",
+            "adminLogin": "Acceso Admin"
+        },
+        "languages": {
+            "he": "Hebreo",
+            "en": "Inglés",
+            "es": "Español"
+        },
+        "account": {
+            "delete": {
+                "processing": "Eliminando cuenta y datos...",
+                "success": "Cuenta eliminada con éxito. ¡Gracias por usar nuestro servicio!",
+                "error": "Error al eliminar la cuenta.",
+                "confirmMessage": "¿Estás seguro de que quieres eliminar tu cuenta?\nEsta acción es **irreversible** y eliminará todos tus eventos, artículos y asignaciones.",
+                "confirmButton": "Sí, eliminar cuenta"
+            }
+        },
+        "categories": {
+            "starter": "Entrada",
+            "main": "Plato Principal",
+            "dessert": "Postre",
+            "drink": "Bebidas",
+            "other": "Otro",
+            "equipment": "Equipo General"
+        },
+        "eventPage": {
+            "assignment": {
+                "nameRequired": "El nombre es obligatorio",
+                "quantityPositive": "La cantidad debe ser positiva",
+                "updateSuccess": "Actualizado con éxito",
+                "newNamePlaceholder": "Nuevo Nombre",
+                "quantityToBring": "Cantidad a traer",
+                "confirmAssignment": "Confirmar Asignación",
+                "editTitle": "Editar Asignación",
+                "addTitle": "Asignar Artículo",
+                "suggestedQuantity": "Cantidad Sugerida",
+                "registerAs": "Registrarse como:",
+                "changeName": "Cambiar Nombre",
+                "newName": "Nuevo Nombre*",
+                "fullName": "Nombre Completo*",
+                "namePlaceholder": "Nombre mostrado a todos",
+                "quantityIBring": "Cantidad que traeré*",
+                "bringAll": "Traer Todo",
+                "remaining": "Restante",
+                "notesOptional": "Notas (Opcional)",
+                "notesPlaceholder": "ej., Sin gluten, Vegano...",
+                "confirm": "Confirmar Asignación",
+                "addMoreSuccess": "Añadido con éxito",
+                "addMoreTitle": "Añadir Más Artículos",
+                "quantityToAdd": "Cantidad a Añadir",
+                "add": "Añadir"
+            },
+            "adminPanelTooltip": "Panel de Admin",
+            "adminPanel": "Panel de Admin",
+            "stats": {
+                "required": {
+                    "text": "Obligatorio {{count}}/{{total}}",
+                    "tooltip": "Artículos Obligatorios"
+                },
+                "optional": {
+                    "text": "Opcional {{count}}/{{total}}",
+                    "tooltip": "Artículos Opcionales"
+                },
+                "assigned": "asignados"
+            },
+            "searchPlaceholder": "Buscar...",
+            "backToCategories": "Volver a Categorías",
+            "list": {
+                "searchResults": "Resultados de Búsqueda",
+                "noItems": "No hay artículos",
+                "noItemsInCategory": "No hay artículos en esta categoría",
+                "noMyAssignments": "Aún no te has registrado para nada",
+                "available": "Artículos Disponibles",
+                "assignedHeader": "Artículos Asignados",
+                "completed": "Artículos Completados",
+                "empty": "No se encontraron artículos."
+            },
+            "category": {
+                "addItemTooltip": "Añadir artículo a esta categoría",
+                "addItem": "Añadir Artículo"
+            },
+            "promo": {
+                "register": "Registrarse",
+                "title": "¿Quieres crear tu propio evento?",
+                "subtitle": "Toma un minuto registrarse y es completamente gratis.",
+                "button": "Regístrate Ahora"
+            },
+            "item": {
+                "quantityRequired": "Cantidad Requerida",
+                "createdBy": "Creado por",
+                "progress": "Progreso",
+                "iBring": "Yo traigo:",
+                "editQuantity": "Editar Cantidad",
+                "cancel": "Cancelar",
+                "addMore": "Añadir Más",
+                "iWillParticipate": "Participaré en esto",
+                "completed": "Artículo Completado",
+                "takenBy": "Tomado por",
+                "cancelAssignment": "Cancelar Asignación",
+                "editItem": "Editar Artículo",
+                "iWillBringIt": "Yo lo traeré"
+            },
+            "status": {
+                "ended": "Evento Finalizado",
+                "inactive": "Evento Inactivo",
+                "inactiveSubtitle": "No se pueden asignar nuevos artículos."
+            },
+            "welcome": {
+                "title": "¡Bienvenido!",
+                "subtitle": "Para participar, por favor ingrese su nombre.",
+                "namePlaceholder": "Su Nombre",
+                "join": "Unirse al Evento"
+            },
+            "error": {
+                "oops": "¡Ups!",
+                "eventNotFound": "El evento que busca no existe."
+            },
+            "details": {
+                "organizer": "Organizador",
+                "navigate": "Navegar a la ubicación",
+                "navigateTooltip": "Elegir aplicación de navegación",
+                "addToCalendar": "Añadir a Google Calendar"
+            },
+            "search": {
+                "placeholder": "Buscar artículo...",
+                "clear": "Borrar búsqueda"
+            },
+            "filter": {
+                "myAssignments": "Mis Asignaciones",
+                "backToCategories": "Volver a Categorías",
+                "searchResults": "Resultados de Búsqueda"
+            },
+            "actions": {
+                "addItem": "Añadir Artículo",
+                "bulkEdit": "Edición Masiva"
+            },
+            "noActiveEvent": "No hay evento activo en este momento",
+            "adminPrompt": "Ve al Panel de Administración para crear o activar un evento",
+            "comingSoon": "Nuevo evento próximamente",
+            "quickSearch": "Búsqueda Rápida",
+            "messages": {
+                "welcomeUser": "¡Bienvenido, {{name}}!",
+                "joinError": "Error al unirse al evento.",
+                "itemNotFound": "Artículo no encontrado",
+                "confirmDeleteEmptyItem": "¿Estás seguro de que quieres eliminar este artículo?",
+                "confirmDeleteItemWithParticipants": "Este artículo tiene {{count}} asignaciones. ¿Estás seguro de que quieres eliminarlo?",
+                "deleteItemConfirm": "Esta acción eliminará tanto el artículo como la asignación",
+                "itemDeleted": "Artículo y asignación eliminados",
+                "deleteItemError": "Error al eliminar el artículo",
+                "cancelAssignmentConfirm": "¿Estás seguro de que quieres cancelar la asignación?",
+                "cancelAssignmentConfirmWithName": "¿Estás seguro de que quieres cancelar la asignación de {{name}}?",
+                "assignmentCancelled": "Asignación cancelada",
+                "cancelAssignmentError": "Error al cancelar la asignación",
+                "missingName": "Para asignar, se requiere un nombre completo.",
+                "missingNewName": "Se requiere un nuevo nombre.",
+                "quantityZero": "La cantidad debe ser mayor a 0.",
+                "quantityTooHigh": "La cantidad solicitada excede la cantidad disponible (máx {{max}}).",
+                "assignmentUpdated": "¡Asignación actualizada con éxito!",
+                "assignmentCreated": "Asignado exitosamente al artículo: {{itemName}}",
+                "limitReached": "Has alcanzado el límite de {{limit}} artículos que puedes añadir."
+            },
+            "participantsList": {
+                "title": "Lista de Participantes",
+                "button": "Participantes",
+                "tooltip": "Ver participantes y asignaciones",
+                "empty": "Aún no hay asignaciones",
+                "deleteConfirm": "¿Cancelar asignación de {{name}} para {{item}}?",
+                "assignmentDeleted": "Asignación eliminada con éxito",
+                "total": "Total {{count}} asignaciones"
+            }
+        },
+        "footer": {
+            "terms": "Términos de Uso",
+            "privacy": "Política de Privacidad",
+            "feedback": "Comentarios",
+            "deleteAccount": "Eliminar Cuenta",
+            "developedBy": "Desarrollado por",
+            "iconsBy": "Iconos por"
+        },
+        "items": {
+            "tables": "Mesas",
+            "chairs": "Sillas",
+            "tablecloths": "Manteles",
+            "plates": "Platos",
+            "cups": "Vasos",
+            "cutlery": "Cubiertos",
+            "trays": "Bandejas",
+            "waterPitchers": "Jarras de agua",
+            "napkins": "Servilletas",
+            "challah": "Jalá",
+            "redWine": "Vino Tinto",
+            "whiteWine": "Vino Blanco",
+            "greenSalad": "Ensalada Verde",
+            "hummus": "Hummus",
+            "tahini": "Tahini",
+            "pitas": "Pitas",
+            "cheeses": "Quesos",
+            "fruit": "Frutas",
+            "cake": "Pastel",
+            "juice": "Jugo",
+            "water": "Agua"
+        },
+        "editItemModal": {
+            "title": "Editar Artículo",
+            "fields": {
+                "name": "Nombre del Artículo *",
+                "category": "Categoría *",
+                "quantity": "Cantidad Requerida",
+                "assignedInfo": "Cantidad asignada: {{assigned}} - no se puede reducir por debajo de esto",
+                "notes": "Notas (Opcional)",
+                "notesPlaceholder": "ej. Kosher, Sin gluten, Vegano..."
+            },
+            "submit": "Guardar Cambios",
+            "submitting": "Guardando...",
+            "cancel": "Cancelar",
+            "success": "¡Artículo actualizado con éxito!",
+            "errors": {
+                "nameRequired": "El nombre del artículo es obligatorio",
+                "nameLength": "El nombre del artículo debe tener al menos 2 caracteres",
+                "quantityMin": "La cantidad debe ser al menos 1",
+                "quantityBelowAssigned": "No se puede reducir la cantidad por debajo de {{assigned}} (cantidad asignada)",
+                "quantityMax": "La cantidad no puede exceder 100",
+                "fixErrors": "Por favor corrige los errores del formulario",
+                "generalError": "Error al actualizar el artículo"
+            }
+        },
+        "userItemForm": {
+            "title": "Agrega tu propio artículo",
+            "fields": {
+                "name": "Nombre del artículo *",
+                "namePlaceholder": "ej. Tarta de queso",
+                "category": "Categoría *",
+                "quantityTotal": "Cantidad requerida (Total)",
+                "myContribution": "Yo traigo",
+                "bringAll": "Traeré todo",
+                "remainingMsg": "Quedan {{count}} para otros",
+                "youBringAllMsg": "Tú traes todo",
+                "notes": "Notas (Opcional)",
+                "notesPlaceholder": "ej. Kosher, Sin gluten, Vegano...",
+                "fullName": "Nombre completo *",
+                "nameDisplayPlaceholder": "Nombre para mostrar",
+                "nameHelp": "El nombre se guardará en este dispositivo para este evento"
+            },
+            "submit": "Agregar y Asignarme",
+            "submitting": "Agregando...",
+            "cancel": "Cancelar",
+            "errors": {
+                "mustLogin": "Debes iniciar sesión para agregar un elemento",
+                "fixErrors": "Por favor corrige los errores del formulario",
+                "nameRequired": "El nombre del artículo es obligatorio",
+                "nameLength": "El nombre del artículo debe tener al menos 2 caracteres",
+                "quantityMin": "La cantidad debe ser al menos 1",
+                "quantityMax": "La cantidad no puede exceder 100",
+                "duplicateItem": "El artículo \"{{name}}\" ya existe. ¿Agregar de todos modos?",
+                "missingName": "Se requiere nombre para agregar un artículo",
+                "success": "¡Artículo agregado con éxito!",
+                "generalError": "Error al agregar el artículo",
+                "permissionDenied": "Permiso denegado. Verifique la configuración de Firebase"
+            }
+        }
+    }
+}

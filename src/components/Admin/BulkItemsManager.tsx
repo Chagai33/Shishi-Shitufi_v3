@@ -1,7 +1,7 @@
 // src/components/Admin/BulkItemsManager.tsx
 
 import { useState, useMemo, useEffect } from 'react';
-import { ArrowRight, Edit, Save, X, CheckSquare, Square, Search, AlertCircle, CheckCircle, Plus, Upload } from 'lucide-react';
+import { ArrowRight, Edit, Save, X, CheckSquare, Square, Search, AlertCircle, CheckCircle, Plus, Upload, Filter, ChevronDown, ChevronUp, List as ListIcon } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { MenuItem, MenuCategory, ShishiEvent, Assignment } from '../../types';
@@ -36,6 +36,148 @@ const FilterButton = ({ label, isActive, onClick }: { label: string, isActive: b
     {label}
   </button>
 );
+
+const MobileItemCard = ({
+  item,
+  onSelect,
+  onEdit,
+  isEditing,
+  onUpdateField,
+  onSave,
+  onCancel,
+  categoryOptions,
+  t
+}: {
+  item: EditableItem;
+  onSelect: () => void;
+  onEdit: () => void;
+  isEditing: boolean;
+  onUpdateField: (field: keyof MenuItem, value: any) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  categoryOptions: { value: string; label: string }[];
+  t: any;
+}) => {
+  return (
+    <div className={`p-4 border-b border-gray-100 last:border-0 ${item.isSelected ? 'bg-blue-50/30' : 'bg-white'}`}>
+      <div className="flex items-start gap-3">
+        <button
+          onClick={onSelect}
+          className="mt-1 flex-shrink-0 text-gray-400 hover:text-blue-600 transition-colors"
+        >
+          {item.isSelected ? (
+            <CheckSquare className="h-5 w-5 text-blue-600" />
+          ) : (
+            <Square className="h-5 w-5" />
+          )}
+        </button>
+
+        <div className="flex-1 space-y-2">
+          {/* Header: Name & Quantity */}
+          <div className="flex justify-between items-start">
+            {isEditing ? (
+              <div className="w-full space-y-2">
+                <input
+                  type="text"
+                  value={item.name}
+                  onChange={(e) => onUpdateField('name', e.target.value)}
+                  className="w-full px-2 py-1 text-sm border-b border-blue-300 focus:border-blue-500 outline-none bg-transparent"
+                  placeholder={t('bulkEdit.table.name')}
+                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">{t('bulkEdit.table.quantity')}:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={item.quantity}
+                    onChange={(e) => onUpdateField('quantity', parseInt(e.target.value) || 1)}
+                    className="w-16 px-2 py-1 text-sm border rounded bg-gray-50 text-center"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h4 className="font-medium text-gray-900">{item.name}</h4>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  {t('bulkEdit.table.quantity')}: <span className="font-semibold">{item.quantity}</span>
+                </div>
+              </div>
+            )}
+            {!isEditing && (
+              <button onClick={onEdit} className="p-1 text-gray-400 hover:text-blue-600">
+                <Edit className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Body: Category & Options */}
+          <div className="flex flex-wrap items-center gap-2">
+            {isEditing ? (
+              <select
+                value={item.category}
+                onChange={(e) => onUpdateField('category', e.target.value as MenuCategory)}
+                className="text-xs py-1 px-2 border rounded bg-white"
+              >
+                {categoryOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            ) : (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${item.category === 'starter' ? 'bg-orange-100 text-orange-800' :
+                item.category === 'main' ? 'bg-blue-100 text-blue-800' :
+                  item.category === 'dessert' ? 'bg-pink-100 text-pink-800' :
+                    'bg-gray-100 text-gray-800'
+                }`}>
+                {categoryOptions.find(opt => opt.value === item.category)?.label}
+              </span>
+            )}
+
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={item.isRequired}
+                onChange={(e) => isEditing && onUpdateField('isRequired', e.target.checked)}
+                disabled={!isEditing}
+                className="rounded border-gray-300 text-red-600 focus:ring-red-500 h-3 w-3"
+              />
+              <span className={`text-xs ${item.isRequired ? 'text-red-600 font-medium' : 'text-gray-400'}`}>
+                {t('bulkEdit.table.required')}
+              </span>
+            </label>
+          </div>
+
+          {/* Footer: Notes & Actions */}
+          {isEditing ? (
+            <div className="space-y-2 mt-2 pt-2 border-t border-dashed border-gray-100">
+              <input
+                type="text"
+                value={item.notes || ''}
+                onChange={(e) => onUpdateField('notes', e.target.value)}
+                className="w-full text-xs px-2 py-1 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 placeholder-yellow-800/50 focus:ring-1 focus:ring-yellow-400 outline-none"
+                placeholder={t('bulkEdit.table.notes')}
+              />
+              <div className="flex justify-end gap-2 pt-1">
+                <button onClick={onCancel} className="p-1.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200">
+                  <X className="h-4 w-4" />
+                </button>
+                <button onClick={onSave} className="p-1.5 rounded bg-blue-600 text-white hover:bg-blue-700">
+                  <Save className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            item.notes && (
+              <div className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 mt-1">
+                {item.notes}
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerProps) {
   const { t } = useTranslation();
@@ -119,6 +261,14 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
     isRequired: false
   });
 
+  const [showFilters, setShowFilters] = useState(false);
+  const activeFiltersCount = [
+    filterEvent !== 'all',
+    filterCategory !== 'all',
+    filterAssigned !== 'all',
+    filterAddedBy !== 'all'
+  ].filter(Boolean).length;
+
   useEffect(() => {
     const items: EditableItem[] = (allItems || []).map(item => ({
       ...item, isEditing: false, isSelected: false, hasChanges: false, originalData: { ...item }
@@ -176,9 +326,6 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
   };
   const selectedCount = (filteredItems || []).filter(item => item.isSelected).length;
   const changedCount = (editableItems || []).filter(item => item.hasChanges).length;
-  const assignedCount = (filteredItems || []).filter(item =>
-    (allAssignments || []).some(a => a.menuItemId === item.id)
-  ).length;
 
   const toggleItemSelection = (itemId: string) => { setEditableItems(prev => (prev || []).map(item => item.id === itemId ? { ...item, isSelected: !item.isSelected } : item)); };
 
@@ -584,30 +731,41 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
             <Edit className="h-4 w-4" />
             <span>{editAllMode ? t('bulkEdit.cancelEdit') : t('bulkEdit.editAll')}</span>
           </button>
-          <button
-            onClick={() => setShowAddItemForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t('bulkEdit.addItem')}</span>
-          </button>
-          {event && (
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setShowImportModal(true)}
-              className="bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 px-5 py-2.5 rounded-xl shadow-sm hover:shadow flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95"
+              onClick={() => setShowAddItemForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <Upload className="h-4 w-4" />
-              <span>{t('bulkEdit.import')}</span>
+              <Plus className="h-4 w-4" />
+              <span>{t('bulkEdit.addSingleItem')}</span>
             </button>
-          )}
+
+            <button
+              onClick={() => setShowPresetManager(true)}
+              className="bg-white hover:bg-indigo-50 text-indigo-600 border border-indigo-200 px-4 py-2.5 rounded-xl shadow-sm hover:shadow flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95"
+            >
+              <ListIcon className="h-4 w-4" />
+              <span>{t('bulkEdit.presetList')}</span>
+            </button>
+
+            {event && (
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 px-4 py-2.5 rounded-xl shadow-sm hover:shadow flex items-center space-x-2 rtl:space-x-reverse transition-all font-medium active:scale-95"
+              >
+                <Upload className="h-4 w-4" />
+                <span>{t('bulkEdit.import')}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-1/4 relative">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        {/* Search & Filter Toggle */}
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <div className="relative flex-1">
             <input
               type="text"
               placeholder={t('bulkEdit.filters.search')}
@@ -615,50 +773,74 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pr-10 pl-4 py-2.5 bg-gray-50 border-transparent focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all text-sm outline-none"
             />
+            <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all text-sm font-medium ${showFilters || activeFiltersCount > 0
+              ? 'bg-blue-50 border-blue-200 text-blue-700'
+              : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+          >
+            <Filter className="h-4 w-4" />
+            <span>{t('bulkEdit.filters.filter')}</span>
+            {activeFiltersCount > 0 && (
+              <span className="bg-blue-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
+            {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
 
-          <div className="flex-1 flex flex-wrap gap-y-4 gap-x-8">
-            {!event && (
-              <div className="flex flex-col space-y-2">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.event')}</label>
+        {/* Collapsible Filters Panel */}
+        {showFilters && (
+          <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 animate-in slide-in-from-top-2 fade-in duration-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {!event && (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                    {t('bulkEdit.filters.event')}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <FilterButton label={t('bulkEdit.filters.allEvents')} isActive={filterEvent === 'all'} onClick={() => setFilterEvent('all')} />
+                    {(realtimeEvents || []).map(e => (
+                      <FilterButton key={e.id} label={e.details.title} isActive={filterEvent === e.id} onClick={() => setFilterEvent(e.id)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.category')}</label>
                 <div className="flex flex-wrap gap-2">
-                  <FilterButton label={t('bulkEdit.filters.allEvents')} isActive={filterEvent === 'all'} onClick={() => setFilterEvent('all')} />
-                  {(realtimeEvents || []).map(e => (
-                    <FilterButton key={e.id} label={e.details.title} isActive={filterEvent === e.id} onClick={() => setFilterEvent(e.id)} />
+                  <FilterButton label={t('bulkEdit.filters.all')} isActive={filterCategory === 'all'} onClick={() => setFilterCategory('all')} />
+                  {categoryOptions.map(option => (
+                    <FilterButton key={option.value} label={option.label} isActive={filterCategory === option.value} onClick={() => setFilterCategory(option.value)} />
                   ))}
                 </div>
               </div>
-            )}
 
-            <div className="flex flex-col space-y-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.category')}</label>
-              <div className="flex flex-wrap gap-2">
-                <FilterButton label={t('bulkEdit.filters.all')} isActive={filterCategory === 'all'} onClick={() => setFilterCategory('all')} />
-                {categoryOptions.map(option => (
-                  <FilterButton key={option.value} label={option.label} isActive={filterCategory === option.value} onClick={() => setFilterCategory(option.value)} />
-                ))}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.assignment')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {assignedOptions.map(option => (
+                    <FilterButton key={option.value} label={option.label} isActive={filterAssigned === option.value} onClick={() => setFilterAssigned(option.value)} />
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-col space-y-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.assignment')}</label>
-              <div className="flex flex-wrap gap-2">
-                {assignedOptions.map(option => (
-                  <FilterButton key={option.value} label={option.label} isActive={filterAssigned === option.value} onClick={() => setFilterAssigned(option.value)} />
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col space-y-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.createdBy')}</label>
-              <div className="flex flex-wrap gap-2">
-                <FilterButton label={t('bulkEdit.filters.all')} isActive={filterAddedBy === 'all'} onClick={() => setFilterAddedBy('all')} />
-                <FilterButton label={t('bulkEdit.filters.admin')} isActive={filterAddedBy === 'admin'} onClick={() => setFilterAddedBy('admin')} />
-                <FilterButton label={t('bulkEdit.filters.users')} isActive={filterAddedBy === 'user'} onClick={() => setFilterAddedBy('user')} />
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t('bulkEdit.filters.createdBy')}</label>
+                <div className="flex flex-wrap gap-2">
+                  <FilterButton label={t('bulkEdit.filters.all')} isActive={filterAddedBy === 'all'} onClick={() => setFilterAddedBy('all')} />
+                  <FilterButton label={t('bulkEdit.filters.admin')} isActive={filterAddedBy === 'admin'} onClick={() => setFilterAddedBy('admin')} />
+                  <FilterButton label={t('bulkEdit.filters.users')} isActive={filterAddedBy === 'user'} onClick={() => setFilterAddedBy('user')} />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Stats Bar */}
@@ -745,12 +927,33 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                   </div>
                 </div>
 
-                {/* Items Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50/50 border-b border-gray-100">
+                {/* Items View - Table (Desktop) / Cards (Mobile) */}
+
+                {/* Mobile: Cards List */}
+                <div className="md:hidden divide-y divide-gray-100">
+                  {categoryItems.map((item) => (
+                    <MobileItemCard
+                      key={item.id}
+                      item={item}
+                      onSelect={() => toggleItemSelection(item.id)}
+                      onEdit={() => startEditing(item.id)}
+                      isEditing={item.isEditing}
+                      onUpdateField={(field, value) => updateItemField(item.id, field, value)}
+                      onSave={() => saveItem(item.id)}
+                      onCancel={() => cancelEditing(item.id)}
+                      categoryOptions={categoryOptions}
+                      t={t}
+                    />
+                  ))}
+                </div>
+
+                {/* Desktop: Table */}
+                <div className="hidden md:block overflow-x-auto">
+
+                  <table className="w-full relative">
+                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                       <tr>
-                        <th className="px-6 py-3 text-right w-12">
+                        <th className="px-6 py-3 text-right w-12 bg-gray-50">
                           <button
                             onClick={() => {
                               const allCategorySelected = categoryItems.every(item => item.isSelected);
@@ -770,29 +973,29 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                             )}
                           </button>
                         </th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.name')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">{t('bulkEdit.table.name')}</th>
                         {!event && (
-                          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.event')}</th>
+                          <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">{t('bulkEdit.table.event')}</th>
                         )}
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">{t('bulkEdit.table.quantity')}</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.notes')}</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-24">{t('bulkEdit.table.required')}</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-28">{t('bulkEdit.table.splittable')}</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('bulkEdit.table.assignment')}</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-400 uppercase tracking-wider w-20"></th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-24 bg-gray-50">{t('bulkEdit.table.quantity')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">{t('bulkEdit.table.notes')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-24 bg-gray-50">{t('bulkEdit.table.required')}</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-28 bg-gray-50">{t('bulkEdit.table.splittable')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">{t('bulkEdit.table.assignment')}</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-20 bg-gray-50"></th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-50">
                       {categoryItems.map((item) => {
                         const assignment = getItemAssignment(item.id);
                         return (
-                          <tr key={item.id} className={`group transition-colors ${item.hasChanges ? 'bg-orange-50/50 hover:bg-orange-50' : item.isSelected ? 'bg-blue-50/30 hover:bg-blue-50/50' : 'hover:bg-gray-50/50'}`}>
+                          <tr key={item.id} className={`group transition-colors ${item.hasChanges ? 'bg-orange-50/30' : item.isSelected ? 'bg-blue-50/30' : 'hover:bg-gray-50/50'}`}>
                             <td className="px-6 py-4">
                               <button onClick={() => toggleItemSelection(item.id)} className="flex items-center justify-center text-gray-400 hover:text-blue-600 transition-colors">
                                 {item.isSelected ? (
                                   <CheckSquare className="h-5 w-5 text-blue-600" />
                                 ) : (
-                                  <Square className="h-5 w-5" />
+                                  <Square className="h-5 w-5 text-gray-300 group-hover:text-gray-400" />
                                 )}
                               </button>
                             </td>
@@ -802,17 +1005,16 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                                   type="text"
                                   value={item.name}
                                   onChange={(e) => updateItemField(item.id, 'name', e.target.value)}
-                                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm text-gray-900 shadow-sm"
-                                  autoFocus
-                                  aria-label="שם פריט"
+                                  className="w-full px-3 py-1.5 text-sm bg-gray-50 border-transparent focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all outline-none"
+                                  placeholder={t('bulkEdit.table.name')}
                                 />
                               ) : (
-                                <span className="font-semibold text-gray-900">{item.name}</span>
+                                <span className="font-medium text-gray-900">{item.name}</span>
                               )}
                             </td>
                             {!event && (
-                              <td className="px-6 py-4">
-                                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{getEventName(item.eventId)}</span>
+                              <td className="px-6 py-4 text-sm text-gray-500">
+                                {getEventName(item.eventId)}
                               </td>
                             )}
                             <td className="px-6 py-4">
@@ -820,14 +1022,12 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                                 <input
                                   type="number"
                                   min="1"
-                                  max="100"
                                   value={item.quantity}
                                   onChange={(e) => updateItemField(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                                  className="w-20 px-2 py-1 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm text-center text-gray-900 shadow-sm"
-                                  aria-label="כמות"
+                                  className="w-full px-3 py-1.5 text-sm bg-gray-50 border-transparent focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all outline-none text-center"
                                 />
                               ) : (
-                                <span className="text-sm font-medium text-gray-700 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100 inline-block min-w-[3rem] text-center">{item.quantity}</span>
+                                <div className="text-center font-medium text-gray-700">{item.quantity}</div>
                               )}
                             </td>
                             <td className="px-6 py-4">
@@ -835,61 +1035,38 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
                                 <input
                                   type="text"
                                   value={item.notes || ''}
-                                  onChange={(e) => updateItemField(item.id, 'notes', e.target.value || undefined)}
-                                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm text-gray-900 shadow-sm"
-                                  placeholder="הוסף הערה..."
-                                  aria-label="הערות"
+                                  onChange={(e) => updateItemField(item.id, 'notes', e.target.value)}
+                                  className="w-full px-3 py-1.5 text-sm bg-gray-50 border-transparent focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all outline-none placeholder-gray-400"
+                                  placeholder={t('bulkEdit.table.addNote')}
                                 />
                               ) : (
-                                <span className="text-sm text-gray-500 italic truncate max-w-[200px] block">{item.notes || ''}</span>
+                                item.notes && (
+                                  <span className="inline-block px-2 py-1 text-xs text-amber-700 bg-amber-50 rounded border border-amber-100 max-w-[200px] truncate" title={item.notes}>
+                                    {item.notes}
+                                  </span>
+                                )
                               )}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 text-center">
                               {item.isEditing ? (
                                 <div className="flex justify-center">
-                                  <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={item.isRequired}
-                                      onChange={(e) => updateItemField(item.id, 'isRequired', e.target.checked)}
-                                      className="sr-only peer"
-                                      aria-label="האם חובה"
-                                    />
-                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-500"></div>
-                                  </label>
+                                  <input
+                                    type="checkbox"
+                                    checked={item.isRequired}
+                                    onChange={(e) => updateItemField(item.id, 'isRequired', e.target.checked)}
+                                    className="rounded border-gray-300 text-red-600 focus:ring-red-500 h-4 w-4"
+                                  />
                                 </div>
                               ) : (
-                                <div className="flex justify-center">
-                                  {item.isRequired && (
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-100">
-                                      חובה
-                                    </span>
-                                  )}
-                                </div>
+                                item.isRequired && <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{t('bulkEdit.table.required')}</span>
                               )}
                             </td>
-                            <td className="px-6 py-4">
-                              {item.isEditing ? (
-                                <div className="flex justify-center">
-                                  <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={item.isSplittable}
-                                      onChange={(e) => updateItemField(item.id, 'isSplittable', e.target.checked)}
-                                      className="sr-only peer"
-                                      aria-label="האם ניתן לחלוקה"
-                                    />
-                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
-                                  </label>
-                                </div>
+                            <td className="px-6 py-4 text-center">
+                              {/* Auto-calculated, just display */}
+                              {item.quantity > 1 ? (
+                                <span className="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{t('importModal.preview.table.yes')}</span>
                               ) : (
-                                <div className="flex justify-center">
-                                  {item.isSplittable && (
-                                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
-                                      כן
-                                    </span>
-                                  )}
-                                </div>
+                                <span className="text-xs text-gray-400">-</span>
                               )}
                             </td>
                             <td className="px-6 py-4">
@@ -959,158 +1136,170 @@ function BulkItemsManager({ onBack, event, allEvents = [] }: BulkItemsManagerPro
       </div>
 
       {/* Add Item Modal */}
-      {showAddItemForm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all overflow-hidden border border-gray-100">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="text-xl font-bold text-gray-900">הוספת פריט חדש</h2>
-              <button
-                onClick={() => setShowAddItemForm(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-white rounded-full"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-8">
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">שם הפריט <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={newItem.name}
-                    onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="לדוגמה: פשטידת גבינות"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 placeholder-gray-500"
-                    autoFocus
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">קטגוריה</label>
-                    <div className="relative">
-                      <select
-                        value={newItem.category}
-                        onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value as MenuCategory }))}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none bg-white text-gray-900"
-                      >
-                        {categoryOptions.map(option => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">כמות</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={newItem.quantity}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value) || 1;
-                        setNewItem(prev => ({
-                          ...prev,
-                          quantity: val
-                          // isSplittable auto-calculated
-                        }));
-                      }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">הערות</label>
-                  <input
-                    type="text"
-                    value={newItem.notes}
-                    onChange={(e) => setNewItem(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="הערות נוספות (אופציונלי)"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 placeholder-gray-500"
-                  />
-                </div>
-
-                <div className="flex gap-4 pt-2">
-                  <label className={`flex-1 flex items-center p-4 rounded-xl border cursor-pointer transition-all ${newItem.isRequired ? 'bg-red-50 border-red-200 ring-1 ring-red-200' : 'bg-gray-50 border-gray-200 hover:bg-white'}`}>
-                    <input
-                      type="checkbox"
-                      checked={newItem.isRequired}
-                      onChange={(e) => setNewItem(prev => ({ ...prev, isRequired: e.target.checked }))}
-                      className="w-5 h-5 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                    />
-                    <div className="mr-3">
-                      <span className={`block text-sm font-bold ${newItem.isRequired ? 'text-red-800' : 'text-gray-700'}`}>פריט חובה</span>
-                      <span className="text-xs text-gray-500">האם חובה להביא?</span>
-                    </div>
-                  </label>
-
-                  {newItem.quantity > 1 && (
-                    <div className="flex-1 flex items-center p-4 rounded-xl border border-blue-200 bg-blue-50 ring-1 ring-blue-200 transition-all">
-                      <div className="mr-3">
-                        <span className="block text-sm font-bold text-blue-900">ניתן לחלוקה</span>
-                        <span className="text-xs text-blue-700">יוגדר אוטומטית כי הכמות {'>'} 1</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex space-x-4 rtl:space-x-reverse mt-8">
-                <button
-                  onClick={handleAddItem}
-                  disabled={!newItem.name.trim() || isLoading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3.5 px-6 rounded-xl font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
-                >
-                  {isLoading ? 'מוסיף...' : 'הוסף פריט'}
-                </button>
+      {
+        showAddItemForm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all overflow-hidden border border-gray-100">
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
+                <h2 className="text-xl font-bold text-gray-900">הוספת פריט חדש</h2>
                 <button
                   onClick={() => setShowAddItemForm(false)}
-                  className="px-6 py-3.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-white rounded-full"
                 >
-                  ביטול
+                  <X className="h-5 w-5" />
                 </button>
+              </div>
+              <div className="p-8">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">שם הפריט <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={newItem.name}
+                      onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="לדוגמה: פשטידת גבינות"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 placeholder-gray-500"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">קטגוריה</label>
+                      <div className="relative">
+                        <select
+                          value={newItem.category}
+                          onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value as MenuCategory }))}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none bg-white text-gray-900"
+                        >
+                          {categoryOptions.map(option => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">כמות</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={newItem.quantity}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          setNewItem(prev => ({
+                            ...prev,
+                            quantity: val
+                            // isSplittable auto-calculated
+                          }));
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">הערות</label>
+                    <input
+                      type="text"
+                      value={newItem.notes}
+                      onChange={(e) => setNewItem(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="הערות נוספות (אופציונלי)"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 placeholder-gray-500"
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-2">
+                    <label className={`flex-1 flex items-center p-4 rounded-xl border cursor-pointer transition-all ${newItem.isRequired ? 'bg-red-50 border-red-200 ring-1 ring-red-200' : 'bg-gray-50 border-gray-200 hover:bg-white'}`}>
+                      <input
+                        type="checkbox"
+                        checked={newItem.isRequired}
+                        onChange={(e) => setNewItem(prev => ({ ...prev, isRequired: e.target.checked }))}
+                        className="w-5 h-5 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <div className="mr-3">
+                        <span className={`block text-sm font-bold ${newItem.isRequired ? 'text-red-800' : 'text-gray-700'}`}>פריט חובה</span>
+                        <span className="text-xs text-gray-500">האם חובה להביא?</span>
+                      </div>
+                    </label>
+
+                    {newItem.quantity > 1 && (
+                      <div className="flex-1 flex items-center p-4 rounded-xl border border-blue-200 bg-blue-50 ring-1 ring-blue-200 transition-all">
+                        <div className="mr-3">
+                          <span className="block text-sm font-bold text-blue-900">ניתן לחלוקה</span>
+                          <span className="text-xs text-blue-700">יוגדר אוטומטית כי הכמות {'>'} 1</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex space-x-4 rtl:space-x-reverse mt-8">
+                  <button
+                    onClick={handleAddItem}
+                    disabled={!newItem.name.trim() || isLoading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3.5 px-6 rounded-xl font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+                  >
+                    {isLoading ? 'מוסיף...' : 'הוסף פריט'}
+                  </button>
+                  <button
+                    onClick={() => setShowAddItemForm(false)}
+                    className="px-6 py-3.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    ביטול
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Save as Preset Modal */}
       {/* Preset Lists Manager Modal */}
-      {showPresetManager && (
-        <PresetListsManager
-          onClose={() => setShowPresetManager(false)}
-          onSelectList={() => {
-            // Do nothing when selecting list - this is only for saving purposes
-            setShowPresetManager(false);
-            // Cancel item selection after saving
-            setEditableItems(prev => prev.map(item => ({ ...item, isSelected: false })));
-            toast.success('הרשימה נשמרה בהצלחה!');
-          }}
-          selectedItemsForSave={filteredItems.filter(item => item.isSelected).map(item => ({
-            name: item.name,
-            category: item.category,
-            quantity: item.quantity,
-            notes: item.notes,
-            isRequired: item.isRequired
-          }))}
-        />
-      )}
+      {
+        showPresetManager && (
+          <PresetListsManager
+            onClose={() => setShowPresetManager(false)}
+            onSelectList={() => {
+              // Do nothing when selecting list - this is only for saving purposes
+              setShowPresetManager(false);
+              // Cancel item selection after saving
+              setEditableItems(prev => prev.map(item => ({ ...item, isSelected: false })));
+              toast.success('הרשימה נשמרה בהצלחה!');
+            }}
+            selectedItemsForSave={filteredItems.filter(item => item.isSelected).map(item => ({
+              name: item.name,
+              category: item.category,
+              quantity: item.quantity,
+              notes: item.notes,
+              isRequired: item.isRequired
+            }))}
+          />
+        )
+      }
 
       {/* Import Items Modal */}
-      {showImportModal && event && (
-        <ImportItemsModal
-          event={event}
-          onClose={() => setShowImportModal(false)}
-        />
-      )}
-    </div>
+      {
+        showImportModal && event && (
+          <ImportItemsModal
+            event={event!}
+            onClose={() => setShowImportModal(false)}
+            onAddSingleItem={() => {
+              console.log('BulkItemsManager: onAddSingleItem triggered. Closing import modal and opening add item form.');
+              setShowImportModal(false);
+              console.log('BulkItemsManager: Setting showAddItemForm to true');
+              setShowAddItemForm(true);
+            }}
+          />
+        )
+      }
+    </div >
   );
 }
 

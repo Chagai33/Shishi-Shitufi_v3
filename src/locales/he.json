@@ -65,9 +65,17 @@
             "methods": {
                 "desc": "בחר שיטת ייבוא",
                 "preset": "רשימה התחלתית",
-                "text": "טקסט חופשי",
-                "excel": "Excel",
-                "csv": "CSV"
+                "file": "ייבוא מקובץ (Excel/CSV)",
+                "smart": "ייבוא חכם (AI)"
+            },
+            "smart": {
+                "title": "ייבוא חכם (AI Smart Import)",
+                "subtitle": "ייבא מתמונה / קול / טקסט מועתק",
+                "inputLabel": "הזן רשימת פריטים (טקסט, הקלטה או תמונה)",
+                "inputPlaceholder": "דוגמה: 2 חלב, לחם וגבינה בולגרית...",
+                "analyzeBtn": "פענח עם AI",
+                "analyzing": "הבינה המלאכותית מנתחת את הרשימה שלך...",
+                "autoDetect": "המערכת תזהה אוטומטית כמויות ופריטים (גם מכתב יד)."
             },
             "title": "ייבוא פריטים",
             "preset": {
@@ -127,7 +135,8 @@
                 "assignment": "שיבוץ",
                 "createdBy": "נוצר ע\"י",
                 "admin": "מנהל",
-                "users": "משתמשים"
+                "users": "משתמשים",
+                "filter": "סינון"
             },
             "messages": {
                 "itemUpdated": "הפריט עודכן בהצלחה",
@@ -159,6 +168,8 @@
             "cancelEdit": "בטל עריכה",
             "editAll": "ערוך הכל",
             "addItem": "הוסף פריט",
+            "addSingleItem": "פריט בודד",
+            "presetList": "רשימה התחלתית",
             "import": "ייבוא",
             "table": {
                 "noItems": "אין פריטים",
@@ -168,6 +179,7 @@
                 "event": "אירוע",
                 "quantity": "כמות",
                 "notes": "הערות",
+                "addNote": "הוסף הערה",
                 "required": "חובה",
                 "splittable": "ניתן לפיצול",
                 "assignment": "שיבוץ"
@@ -198,13 +210,14 @@
                     "participants": "{{count}} משתתפים"
                 },
                 "actions": {
-                    "goToEvent": "לעמוד האירוע",
+                    "goToEvent": "לאירוע",
                     "share": "שתף",
                     "participantsView": "תצוגת משתתפים",
                     "bulkEdit": "עריכה מרוכזת",
-                    "import": "ייבא פריטים",
+                    "import": "ייבוא חכם",
                     "manageParticipants": "נהל משתתפים",
                     "editDetails": "ערוך פרטי אירוע",
+                    "manage": "ניהול",
                     "delete": "מחק אירוע"
                 },
                 "messages": {
@@ -245,13 +258,13 @@
                 "developedBy": "פותח ע\"י חגי יחיאל",
                 "filters": {
                     "activeEvents": "אירועים פעילים ({{count}})",
-                    "inactiveEvents": "אירועים ישנים ({{count}})"
+                    "inactiveEvents": "אירועים שהסתיימו ({{count}})"
                 },
                 "createButton": "צור אירוע חדש",
                 "loading": "טוען נתונים...",
                 "empty": {
                     "activeTitle": "אין אירועים פעילים",
-                    "inactiveTitle": "אין אירועים ישנים",
+                    "inactiveTitle": "אין אירועים שהסתיימו",
                     "activeDesc": "לחץ על \"צור אירוע חדש\" כדי להתחיל.",
                     "inactiveDesc": "אירועים שהושבתו או הסתיימו יופיעו כאן."
                 },

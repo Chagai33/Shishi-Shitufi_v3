@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useStore } from './store/useStore';
 
@@ -12,33 +12,21 @@ import NotFoundPage from './pages/NotFoundPage';
 import LoadingSpinner from './components/Common/LoadingSpinner';
 
 import { Footer } from './components/Layout/Footer';
+import { Header } from './components/Layout/Header'; // <-- Import Header
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import { ConfirmationModal } from './components/Admin/ConfirmationModal'; // <-- Modal import
+import { ConfirmationModal } from './components/Admin/ConfirmationModal';
 import { useState } from 'react';
-import { Toaster, toast } from 'react-hot-toast'; // <--- Change here
+import { Toaster, toast } from 'react-hot-toast';
 import { FirebaseService } from './services/firebaseService';
-
-
-
-
-
-/*************  ✨ Windsurf Command ⭐  *************/
-/**
- * הקומפוננטה הראשית של האפליקציה, האחראית על הראוטינג ועל הצגה של המודאל למחיקת חשבון.
- * 
- * הקומפוננטה מקבלת את המצב הנוכחי של האותנטיקציה ואת המצב הנוכחי של המודאל למחיקת חשבון מה-Store.
- * היא מציגה את הראוטינג לעמודים השונים באפליקציה, ומציגה את המודאל למחיקת חשבון אם הוא פתוח.
- * היא גם מטפלת בלוגיקה של מחיקת החשבון והנתונים המשויכים אליו.
- */
-/*******  082bce00-3db0-46d3-ab25-193bdca2e3fe  *******/
 
 import { useTranslation } from 'react-i18next';
 
 function App() {
-  const { t } = useTranslation(); // <-- Hook
+  const { t } = useTranslation();
   const { isLoading: isAuthLoading } = useAuth();
   const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore();
+  const location = useLocation(); // <-- Get location
 
   // Account deletion logic
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -63,9 +51,17 @@ function App() {
 
   const isRegisteredUser = user && user.email;
 
+  // Decide when to show global header
+  // Hide on Landing Page ('/') and Login Page ('/login')
+  // Show on all others (Dashboard, Event, Terms, Privacy)
+  const shouldShowHeader = !['/', '/login'].includes(location.pathname);
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+
+      {shouldShowHeader && <Header />}
+
       <main className="flex-grow">
         <Routes>
           <Route

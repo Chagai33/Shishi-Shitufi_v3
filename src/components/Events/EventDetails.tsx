@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowRight, Calendar, Clock, MapPin, Users, ChefHat, Plus, Phone, Mail, RefreshCw, Settings } from 'lucide-react';
+import { ArrowRight, Calendar, Clock, MapPin, Users, ChefHat, Plus, Phone, Mail, RefreshCw, Settings, Wand2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { MenuItemCard } from './MenuItemCard';
@@ -25,6 +25,7 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
   const [editingAssignment, setEditingAssignment] = useState<{ item: MenuItem; assignment: Assignment } | null>(null);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showBulkManager, setShowBulkManager] = useState(false);
+  const [showUserItemForm, setShowUserItemForm] = useState(false); // 2. Adding State for the new form
   const [showUserItemForm, setShowUserItemForm] = useState(false); // 2. Adding State for the new form
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -107,8 +108,11 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
     }
     const assignment = await findUserAssignment(item);
     if (assignment) setEditingAssignment({ item, assignment });
+    if (assignment) setEditingAssignment({ item, assignment });
     else toast.error('לא נמצא שיבוץ לעריכה');
   };
+
+
 
   const handleForceRefresh = async () => {
     setIsRefreshing(true);
@@ -196,6 +200,7 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
                 <span>הוסף פריט ({userCreatedItemsCount}/{MAX_USER_ITEMS})</span>
               </button>
             )}
+
             {isAdmin && (
               <button onClick={() => setShowBulkManager(true)} className="flex items-center space-x-2 rtl:space-x-reverse px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"><Settings className="h-4 w-4" /><span>ניהול מתקדם</span></button>
             )}
@@ -234,6 +239,15 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
           onClose={() => setShowUserItemForm(false)}
         />
       )}
+      <button
+        onClick={onBack}
+        className="flex items-center space-x-2 rtl:space-x-reverse text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+      >
+        <ArrowRight className="h-4 w-4" />
+        <span>חזור לאירועים</span>
+      </button>
+
+
     </div>
   );
 }

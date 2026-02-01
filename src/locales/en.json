@@ -65,9 +65,17 @@
             "methods": {
                 "desc": "Select import method",
                 "preset": "Preset List",
-                "text": "Free Text",
-                "excel": "Excel",
-                "csv": "CSV"
+                "file": "Import from File (Excel/CSV)",
+                "smart": "Smart Import (AI)"
+            },
+            "smart": {
+                "title": "Smart Import (AI)",
+                "subtitle": "Import from Image / Voice / Text",
+                "inputLabel": "Enter items list (Text, Voice or Image)",
+                "inputPlaceholder": "Example: 2 Milk, Bread and Cheese...",
+                "analyzeBtn": "Analyze with AI",
+                "analyzing": "AI is analyzing your list...",
+                "autoDetect": "System will automatically detect items and quantities (including handwriting)."
             },
             "title": "Import Items",
             "preset": {
@@ -127,7 +135,8 @@
                 "assignment": "Assignment",
                 "createdBy": "Created By",
                 "admin": "Admin",
-                "users": "Users"
+                "users": "Users",
+                "filter": "Filter"
             },
             "messages": {
                 "itemUpdated": "Item updated successfully",
@@ -159,6 +168,8 @@
             "cancelEdit": "Cancel Edit",
             "editAll": "Edit All",
             "addItem": "Add Item",
+            "addSingleItem": "Single Item",
+            "presetList": "Starter List",
             "import": "Import",
             "table": {
                 "noItems": "No items",
@@ -168,6 +179,7 @@
                 "event": "Event",
                 "quantity": "Quantity",
                 "notes": "Notes",
+                "addNote": "Add Note",
                 "required": "Required",
                 "splittable": "Splittable",
                 "assignment": "Assignment"
@@ -205,6 +217,7 @@
                     "import": "Import Items",
                     "manageParticipants": "Manage Participants",
                     "editDetails": "Edit Details",
+                    "manage": "Manage",
                     "delete": "Delete Event"
                 },
                 "messages": {

@@ -9,14 +9,13 @@ import { auth } from '../lib/firebase';
 import { signInAnonymously, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
 import { MenuItem as MenuItemType, Assignment as AssignmentType } from '../types';
-import { CalendarPlus, Clock, ChefHat, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Shield, Minus, Settings } from 'lucide-react';
+import { CalendarPlus, Clock, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Minus, ChefHat } from 'lucide-react';
 import { isEventFinished } from '../utils/dateUtils';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import NavigationMenu from '../components/Common/NavigationMenu';
 import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
 import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
-import LanguageSwitcher from '../components/Common/LanguageSwitcher';
 import { ParticipantsListModal } from '../components/Events/ParticipantsListModal';
 
 /* const categoryNames: { [key: string]: string } = {
@@ -840,7 +839,6 @@ const EventPage: React.FC = () => {
         );
     }
 
-    const participantName = participants.find(p => p.id === localUser?.uid)?.name || 'אורח';
     const isEventActive = currentEvent.details.isActive && !isEventFinished(currentEvent.details.date, currentEvent.details.time);
 
 
@@ -887,46 +885,7 @@ const EventPage: React.FC = () => {
                 {t('common.skipToContent') || 'דלג לתוכן הראשי'}
             </a>
 
-            <header className="bg-white shadow-sm p-3 sticky top-0 z-40">
-                <nav className="max-w-4xl mx-auto flex justify-between items-center" aria-label={t('common.navigation') || 'ניווט ראשי'}>
 
-                    <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <div>
-                            <div className="font-bold text-lg text-accent">{t('header.title')}</div>
-                            <p className="text-xs text-neutral-500">{t('header.subtitle')}</p>
-                        </div>
-                    </Link>
-
-                    <div className="text-left flex items-center gap-3">
-                        <LanguageSwitcher />
-                        {showAdminButton && (
-                            <Link
-                                to="/"
-                                className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900 transition-colors text-sm font-medium"
-                                title={t('eventPage.adminPanelTooltip')}
-                                aria-label={t('eventPage.adminPanel')}
-                            >
-                                <Settings size={20} className="block sm:hidden" aria-hidden="true" />
-                                <span className="hidden sm:block">{t('eventPage.adminPanel')}</span>
-                            </Link>
-                        )}
-
-                        <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse">
-                            {localUser && !localUser.isAnonymous ? (
-                                <Link to="/dashboard" className="text-sm font-medium text-accent hover:underline">
-                                    {participantName}
-                                </Link>
-                            ) : (
-                                <a href="/login" className="text-sm font-medium text-accent hover:underline">
-                                    {participantName}
-                                </a>
-                            )}
-                            <UserIcon size={16} className="text-neutral-500" aria-hidden="true" />
-                        </div>
-
-                    </div>
-                </nav>
-            </header>
 
             <main id="main-content" className="max-w-4xl mx-auto py-4 px-4">
                 <div className="bg-white rounded-xl shadow-md p-4 mb-4">
@@ -1229,7 +1188,7 @@ const EventPage: React.FC = () => {
                     assignments={assignments}
                     menuItems={menuItems}
                     onClose={() => setShowParticipantsList(false)}
-                    onDeleteAssignment={async (assignmentId, menuItemId, userName, itemName) => {
+                    onDeleteAssignment={async (assignmentId, menuItemId) => {
                         if (!eventId) return;
                         await FirebaseService.cancelAssignment(eventId, assignmentId, menuItemId);
                     }}

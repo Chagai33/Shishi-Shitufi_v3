@@ -245,7 +245,11 @@ export class FirebaseService {
 
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (!currentEventData) return; // Event not found
+        if (currentEventData === null) {
+          // Firebase runTransaction can be called with null initially.
+          // Returning currentEventData (null) lets it retry once data is fetched.
+          return currentEventData;
+        }
 
         // --- Validation & Limit Check ---
         const details = currentEventData.details;
@@ -325,23 +329,24 @@ export class FirebaseService {
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
         if (currentEventData === null) {
-          // If the event doesn't exist, the transaction will fail and the error will be caught in catch.
-          // No need to throw an error from here.
-          return;
+          return currentEventData;
         }
 
         // --- New validation logic ---
         const details = currentEventData.details;
         const userItemCount = currentEventData.userItemCounts?.[assignToUserId] || 0;
 
+        const isOrganizer = assignToUserId === currentEventData.organizerId;
+        const shouldBypassLimit = isOrganizer;
+
         // Check #1: Can the organizer add items
         // (Note: This logic is also enforced in Security Rules)
-        if (details.allowUserItems === false) { // Explicit check for false
+        if (details.allowUserItems === false && !isOrganizer) {
           throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
         }
 
         // Check #2: Has the user exceeded the limit
-        if (userItemCount >= (details.userItemLimit ?? 3)) {
+        if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
           throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
         }
 
@@ -457,8 +462,10 @@ export class FirebaseService {
 
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (currentEventData === null || !currentEventData.menuItems?.[itemId]) {
-          // If event or item don't exist, nothing to do.
+        if (currentEventData === null) return currentEventData;
+
+        if (!currentEventData.menuItems?.[itemId]) {
+          // If item doesn't exist, nothing to do.
           return;
         }
 
@@ -571,8 +578,8 @@ export class FirebaseService {
 
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (!currentEventData) {
-          return; // Event doesn't exist
+        if (currentEventData === null) {
+          return currentEventData;
         }
 
         // --- 1. Basic Setup & Validation ---

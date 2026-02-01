@@ -326,8 +326,17 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItem
           if (itemId) {
             newItemsForStore.push({ ...menuItemData, id: itemId });
             successCount++;
-          } else { errorCount++; }
-        } catch (error) { console.error(`Error importing item ${item.name}:`, error); errorCount++; }
+          } else {
+            errorCount++;
+          }
+        } catch (error: any) {
+          console.error(`Error importing item ${item.name}:`, error);
+          errorCount++;
+          // Show specific error for the first failure to give context
+          if (errorCount === 1) {
+            toast.error(`${item.name}: ${error.message || t('dashboard.general')}`);
+          }
+        }
       }
 
       if (newItemsForStore.length > 0) {

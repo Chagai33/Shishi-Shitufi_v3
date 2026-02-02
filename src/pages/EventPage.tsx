@@ -9,7 +9,7 @@ import { auth } from '../lib/firebase';
 import { signInAnonymously, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
 import { MenuItem as MenuItemType, Assignment as AssignmentType } from '../types';
-import { CalendarPlus, Clock, User as UserIcon, AlertCircle, Edit, X, Search, ArrowRight, Trash2, MessageSquare, Plus, Minus, ChefHat } from 'lucide-react';
+import { CalendarPlus, Clock, User as UserIcon, AlertCircle, X, Search, ArrowRight, ChefHat, Plus } from 'lucide-react';
 import { isEventFinished } from '../utils/dateUtils';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 import NavigationMenu from '../components/Common/NavigationMenu';
@@ -17,536 +17,18 @@ import { UserMenuItemForm } from '../components/Events/UserMenuItemForm';
 import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
 import { ParticipantsListModal } from '../components/Events/ParticipantsListModal';
+import { getEventCategories } from '../constants/templates';
+import { resolveCategoryDisplayName } from '../utils/eventUtils';
 
-/* const categoryNames: { [key: string]: string } = {
-    starter: 'מנה ראשונה',
-    main: 'מנה עיקרית',
-    dessert: 'קינוחים',
-    drink: 'משקאות',
-    other: 'אחר'
-}; */
+
 
 
 // --- Component: CategorySelector removed, using imported component ---
 
 
-// --- Component: MenuItemCard ---
-const MenuItemCard: React.FC<{
-    item: MenuItemType;
-    assignment: AssignmentType | undefined;
-    assignments?: AssignmentType[]; // Restored optional assignments array
-    onAssign: () => void;
-    onEdit: () => void;
-    onCancel: (a?: AssignmentType) => void;
-    onDeleteItem?: () => void; // New prop for deleting the entire item
-    onEditAssignment?: (a: AssignmentType) => void; // New prop for editing specific assignment
-    onEditItem?: () => void; // New prop for editing the item itself (for creators)
-    isMyAssignment: boolean;
-    isEventActive: boolean;
-    currentUserId?: string;
-    isOrganizer?: boolean; // New prop for organizer status
-}> = ({ item, assignment, assignments = [], onAssign, onEdit, onEditAssignment, onCancel, onDeleteItem, onEditItem, isMyAssignment, isEventActive, currentUserId, isOrganizer }) => {
-    const { t } = useTranslation();
-    const assignedByOther = assignment && !isMyAssignment;
-    const isSplittable = item.isSplittable || item.quantity > 1; // Enforce splittable if quantity > 1
-    const totalQuantity = item.quantity;
+import MenuItemCard from '../components/Events/MenuItemCard';
 
-    // Calculate filled quantity for splittable items
-    const filledQuantity = isSplittable
-        ? assignments.reduce((acc, curr) => acc + (curr.quantity || 0), 0)
-        : (assignment ? item.quantity : 0);
-
-    const isFull = filledQuantity >= totalQuantity;
-    const progressPercent = Math.min(100, (filledQuantity / totalQuantity) * 100);
-
-    // My assignments for this item (for splittable view)
-    const myAssignments = currentUserId
-        ? assignments.filter(a => a.userId === currentUserId)
-        : (isMyAssignment && assignment ? [assignment] : []);
-
-    const hasMyAssignment = myAssignments.length > 0;
-
-    // Visual style based on status
-    const cardStyles = isMyAssignment || hasMyAssignment
-        ? 'bg-blue-50 border-blue-200 shadow-sm'
-        : (assignedByOther || (isFull && !hasMyAssignment))
-            ? 'bg-gray-50 border-gray-200 opacity-90'
-            : 'bg-white border-gray-200 hover:border-orange-300 shadow-sm';
-
-    return (
-        <div className={`border-2 flex flex-col rounded-xl transition-all ${cardStyles}`}>
-            {/* Upper Part: Item Details */}
-            <div className="p-4 flex-grow">
-                <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-gray-800 text-lg leading-tight">{item.name}</h4>
-                            {/* Delete Item Button (Organizer Only) */}
-                            {/* Logic: Show ONLY if I am the organizer (admin). Creators cannot force-delete via header. */}
-                            {isOrganizer && isEventActive && onDeleteItem && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDeleteItem();
-                                    }}
-                                    className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50"
-                                    title={t('common.delete')}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            )}
-                        </div>
-                        {/* Edit button for creators */}
-                        {(isOrganizer || (currentUserId && item.creatorId === currentUserId)) && isEventActive && onEditItem && (
-                            <button
-                                onClick={onEditItem}
-                                className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1 mt-1"
-                                title={t('eventPage.item.editItem')}
-                            >
-                                <Edit size={12} />
-                                {t('eventPage.item.editItem')}
-                            </button>
-                        )}
-                    </div>
-                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
-                        {t(`categories.${item.category}`)}
-                    </span>
-                </div>
-
-                <div className="text-sm text-gray-600 space-y-1">
-                    <p>{t('eventPage.item.quantityRequired')}: <span className="font-semibold">{item.quantity}</span></p>
-                    {item.creatorName && (
-                        <p className="text-xs text-gray-400">{t('eventPage.item.createdBy')}: {item.creatorName}</p>
-                    )}
-                    {item.notes && (
-                        <p className="text-xs bg-yellow-50 text-yellow-800 p-2 rounded mt-2 border border-yellow-100">
-                            📝 {item.notes}
-                        </p>
-                    )}
-                </div>
-
-                {/* Progress Bar for Splittable Items */}
-                {isSplittable && (
-                    <div className="mt-4">
-                        <div className="flex justify-between text-xs mb-1 text-gray-700 font-medium">
-                            <span>{t('eventPage.item.progress')}: {filledQuantity}/{totalQuantity}</span>
-                            <span>{Math.round(progressPercent)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                                className={`h-2 transition-all duration-300 ${isFull ? 'bg-green-500' : 'bg-blue-500'}`}
-                                style={{ width: `${progressPercent}%` }}
-                            ></div>
-                        </div>
-                        {/* List of OTHER contributors */}
-                        {assignments.length > 0 && (
-                            <div className="mt-3 text-xs text-gray-600">
-                                <ul className="space-y-1">
-                                    {assignments.map(a => (
-                                        <li key={a.id} className="flex items-center justify-between gap-1 group/row">
-                                            <div className="flex items-center gap-1">
-                                                <UserIcon size={10} />
-                                                <span className="font-medium">{a.userName}</span>: {a.quantity}
-                                            </div>
-                                            {/* Organizer can delete ANY assignment */}
-                                            {isOrganizer && isEventActive && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onCancel(a);
-                                                    }}
-                                                    className="text-red-400 hover:text-red-600 p-0.5 transition-opacity"
-                                                    title={t('eventPage.item.cancel')}
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* Lower Part: Action / Status */}
-            <div className="border-t border-gray-100 p-3 bg-white/50 rounded-b-xl">
-                {isSplittable ? (
-                    // --- SPLITTABLE LOGIC ---
-                    <div className="space-y-3">
-                        {hasMyAssignment && (
-                            <div className="bg-white p-2 rounded-lg border border-blue-200 shadow-sm">
-                                <p className="text-xs font-bold text-blue-800 mb-2">{t('eventPage.item.iBring')}</p>
-                                <ul className="space-y-2">
-                                    {myAssignments.map(myAss => (
-                                        <li key={myAss.id} className="flex justify-between items-center text-sm group">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-blue-700">{myAss.quantity} יח'</span>
-                                                {isEventActive && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onEditAssignment && onEditAssignment(myAss);
-                                                        }}
-                                                        className="text-gray-400 hover:text-blue-600 p-1 rounded-full hover:bg-blue-50 transition-colors"
-                                                        title={t('eventPage.item.editQuantity')}
-                                                    >
-                                                        <Edit size={12} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                            {isEventActive && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onCancel(myAss);
-                                                    }}
-                                                    className="text-red-500 hover:text-red-700 p-1.5 rounded hover:bg-red-50 transition-colors"
-                                                    title={t('eventPage.item.cancel')}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {isEventActive && !isFull && (
-                            <button
-                                onClick={onAssign}
-                                className="w-full bg-orange-600 text-white py-2 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
-                            >
-                                <Plus size={16} />
-                                {hasMyAssignment ? t('eventPage.item.addMore') : t('eventPage.item.iWillParticipate')}
-                            </button>
-                        )}
-
-                        {isFull && (
-                            <p className="text-sm text-center text-green-700 font-medium">{t('eventPage.item.completed')} ✔️</p>
-                        )}
-                    </div>
-                ) : (
-                    // --- NON-SPLITTABLE LOGIC (Original Clean Logic) ---
-                    assignment ? (
-                        <div className="space-y-3">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className={`font-semibold ${isMyAssignment ? 'text-blue-700' : 'text-green-700'}`}>
-                                    {isMyAssignment ? t('eventPage.item.iBring') : `${t('eventPage.item.takenBy')} ${assignment.userName}:`}
-                                </span>
-                                <span className="font-bold text-lg">{assignment.quantity}</span>
-                            </div>
-
-                            {assignment.notes && (
-                                <p className="text-xs text-gray-500 italic">"{assignment.notes}"</p>
-                            )}
-
-                            {isEventActive && (
-                                <div className="flex gap-2 pt-1">
-                                    {isMyAssignment && (
-                                        <button
-                                            onClick={onEdit}
-                                            className="flex-1 text-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-1.5 rounded flex items-center justify-center transition-colors"
-                                        >
-                                            <Edit size={12} className="ml-1" /> {t('common.edit')}
-                                        </button>
-                                    )}
-                                    {/* Show delete/cancel if it's my assignment OR if I am the organizer */}
-                                    {(isMyAssignment || isOrganizer) && (
-                                        <button
-                                            onClick={() => onCancel(assignment)}
-                                            className="flex-1 text-xs bg-white border border-red-200 text-red-600 hover:bg-red-50 py-1.5 rounded flex items-center justify-center transition-colors"
-                                        >
-                                            <Trash2 size={12} className="ml-1" /> {t('eventPage.item.cancelAssignment')}
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        isEventActive ? (
-                            <button
-                                onClick={onAssign}
-                                className="w-full bg-orange-600 text-white py-2 text-sm rounded-lg hover:bg-orange-700 font-semibold transition-colors shadow-sm flex items-center justify-center gap-2"
-                            >
-                                <Plus size={16} />
-                                {t('eventPage.item.iWillBringIt')}
-                            </button>
-                        ) : (
-                            <p className="text-sm text-center text-gray-400">{t('eventPage.status.ended')}</p>
-                        )
-                    )
-                )}
-            </div>
-        </div>
-    );
-};
-
-// --- Component: AssignmentModal ---
-const AssignmentModal: React.FC<{
-    item: MenuItemType;
-    eventId: string;
-    user: FirebaseUser;
-    onClose: () => void;
-    isEdit?: boolean;
-    isAddMore?: boolean;
-    existingAssignment?: AssignmentType;
-}> = ({ item, eventId, user, onClose, isEdit = false, isAddMore = false, existingAssignment }) => {
-    const { t } = useTranslation();
-    const [quantity, setQuantity] = useState(existingAssignment?.quantity || item.quantity);
-    const [notes, setNotes] = useState(existingAssignment?.notes || '');
-    const [isLoading, setIsLoading] = useState(false);
-    const [participantName, setParticipantName] = useState('');
-    const [showNameInput, setShowNameInput] = useState(false);
-    const [currentUserName, setCurrentUserName] = useState('');
-    const [useNewName, setUseNewName] = useState(false);
-    const [tempUserName, setTempUserName] = useState('');
-    const [isEditingName, setIsEditingName] = useState(false);
-
-    const assignments = useStore(selectAssignments);
-    const maxQuantity = useMemo(() => {
-        const effectivelySplittable = item.isSplittable || item.quantity > 1;
-        if (!effectivelySplittable) return 1;
-
-        const itemAssignments = assignments.filter(a => a.menuItemId === item.id && a.eventId === eventId);
-        const currentTotal = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
-
-        let available = item.quantity - currentTotal;
-
-        if (isEdit && existingAssignment && !isAddMore) {
-            available += existingAssignment.quantity;
-        }
-
-        return Math.max(0, available);
-    }, [item, assignments, eventId, isEdit, existingAssignment, isAddMore]);
-
-    useEffect(() => {
-        // Fix: Treat as splittable if quantity > 1, even if isSplittable is undefined/false
-        const effectivelySplittable = item.quantity > 1 || item.isSplittable;
-
-        if (!effectivelySplittable) {
-            setQuantity(1);
-        } else if (isAddMore) {
-            // For Add More, start at 1 (representing +1)
-            setQuantity(Math.min(1, maxQuantity));
-        } else if (!existingAssignment) {
-            setQuantity(Math.min(1, maxQuantity));
-        }
-        // For Edit, we prefer existingAssignment.quantity (already set in useState initializer), 
-        // but if maxQuantity dropped below it (race condition), we might need to clamp? 
-        // For now, respect user's original input or current state.
-    }, [item.isSplittable, item.quantity, maxQuantity, existingAssignment, isAddMore]);
-
-    useEffect(() => {
-        const currentEvent = useStore.getState().currentEvent;
-        const existingParticipant = currentEvent?.participants?.[user.uid];
-
-        if (existingParticipant) {
-            setCurrentUserName(existingParticipant.name);
-            setTempUserName(existingParticipant.name);
-            setShowNameInput(false);
-        } else if (user.isAnonymous) {
-            setShowNameInput(true);
-            setIsEditingName(true); // Force name input for anonymous users
-        } else {
-            setCurrentUserName(user.displayName || t('common.user'));
-            setTempUserName(user.displayName || t('common.user'));
-            setShowNameInput(false);
-        }
-    }, [user.uid, user.isAnonymous, t]);
-
-    const handleSubmit = async () => {
-        let finalUserName = tempUserName.trim();
-
-        if (isEditingName && !finalUserName) {
-            toast.error(t('eventPage.assignment.nameRequired'));
-            return;
-        }
-        if (quantity <= 0) { toast.error(t('eventPage.assignment.quantityPositive')); return; }
-        if ((item.isSplittable || item.quantity > 1) && quantity > maxQuantity) {
-            toast.error(t('eventPage.assignment.quantityExceedsAvailable', { maxQuantity }));
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            if (isEditingName || showNameInput) {
-                await FirebaseService.joinEvent(eventId, user.uid, finalUserName);
-            }
-
-            if (isEdit && existingAssignment) {
-                let finalQuantity = quantity;
-                let finalNotes = notes.trim();
-
-                if (isAddMore) {
-                    finalQuantity = existingAssignment.quantity + quantity;
-                    // Optional: concatenate notes? For now keep existing or replace if edited.
-                    // Logic: If user typed new notes, maybe append or replace?
-                    // Let's assume user sees "Notes" field and edits it for the *merge*.
-                }
-
-                await FirebaseService.updateAssignment(eventId, existingAssignment.id, { quantity: finalQuantity, notes: finalNotes, userName: finalUserName });
-                toast.success(isAddMore ? t('eventPage.assignment.addMoreSuccess') : t('eventPage.assignment.updateSuccess'));
-            } else {
-                await FirebaseService.createAssignment(eventId, {
-                    menuItemId: item.id, userId: user.uid, userName: finalUserName,
-                    quantity, notes: notes.trim(), status: 'confirmed', assignedAt: Date.now(), eventId
-                });
-                toast.success(t('eventPage.assignment.assignSuccess', { itemName: item.name }));
-            }
-            onClose();
-        } catch (error: any) { toast.error(error.message || t('common.errorOccurred')); }
-        finally { setIsLoading(false); }
-    };
-
-    const handleIncrement = () => setQuantity(q => {
-        const max = (item.isSplittable || item.quantity > 1) ? maxQuantity : item.quantity;
-        return Math.min(q + 1, max);
-    });
-    const handleDecrement = () => setQuantity(q => Math.max(1, q - 1));
-
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-                <div className="flex items-center justify-between p-6 border-b"><h2 className="text-lg font-semibold text-neutral-900">{isAddMore ? t('eventPage.assignment.addMoreTitle') : isEdit ? t('eventPage.assignment.editTitle') : t('eventPage.assignment.addTitle')}</h2><button onClick={onClose} className="text-neutral-500 hover:text-neutral-700"><X size={24} /></button></div>
-                <div className="p-6">
-                    <div className="bg-accent/10 p-4 rounded-lg mb-6 text-center"><p className="font-bold text-accent">{item.name}</p><p className="text-sm text-accent/80">{t('eventPage.assignment.suggestedQuantity')}: {item.quantity}</p></div>
-                    <div className="space-y-4">
-                        {currentUserName && !showNameInput && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        {t('eventPage.assignment.registerAs')} <span className="text-blue-600 font-bold">{tempUserName}</span>
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEditingName(!isEditingName)}
-                                        className="text-xs text-orange-600 hover:text-orange-700 underline flex items-center"
-                                    >
-                                        <Edit size={12} className="ml-1" />
-                                        {t('eventPage.assignment.changeName')}
-                                    </button>
-                                </div>
-
-                                {isEditingName && (
-                                    <div className="mb-3 animate-fadeIn">
-                                        <label className="block text-xs font-medium text-gray-600 mb-1">{user.uid.startsWith('guest_') ? t('eventPage.assignment.fullName') : t('eventPage.assignment.newName')}</label>
-                                        <input
-                                            type="text"
-                                            value={tempUserName}
-                                            onChange={(e) => setTempUserName(e.target.value)}
-                                            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                            placeholder={t('eventPage.assignment.namePlaceholder')}
-                                            autoFocus
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {(showNameInput || useNewName) && (
-                            <div>
-                                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                                    {useNewName ? t('eventPage.assignment.newName') : t('eventPage.assignment.fullName')}
-                                </label>
-                                <div className="relative">
-                                    <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                                    <input
-                                        type="text"
-                                        value={participantName}
-                                        onChange={e => setParticipantName(e.target.value)}
-                                        placeholder={useNewName ? t('eventPage.assignment.newNamePlaceholder') : t('eventPage.assignment.namePlaceholder')}
-                                        className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
-                                    />
-                                </div>
-                                {useNewName && (
-                                    <div className="flex space-x-2 rtl:space-x-reverse mt-2">
-                                        <button
-                                            onClick={() => {
-                                                setUseNewName(false);
-                                                setParticipantName('');
-                                            }}
-                                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded"
-                                        >
-                                            {t('common.cancel')}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Stepper UI for Quantity */}
-                        <div>
-                            <div className="flex justify-between mb-2 items-center">
-                                <label className="block text-sm font-medium text-neutral-700">
-                                    {isAddMore ? t('eventPage.assignment.quantityToAdd') : t('eventPage.assignment.quantityToBring')}
-                                </label>
-                                <div className="flex gap-2 items-center">
-                                    {(item.isSplittable || item.quantity > 1) && quantity < maxQuantity && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setQuantity(maxQuantity)}
-                                            className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
-                                        >
-                                            {t('eventPage.assignment.bringAll')}
-                                        </button>
-                                    )}
-                                    {(item.isSplittable || item.quantity > 1) && (
-                                        <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
-                                            {t('eventPage.assignment.remaining')}: {maxQuantity}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex items-center border border-neutral-300 rounded-lg overflow-hidden h-12">
-                                <button
-                                    type="button"
-                                    onClick={handleDecrement}
-                                    disabled={quantity <= 1}
-                                    className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-l border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    <Minus size={20} />
-                                </button>
-
-                                <div className="flex-1 flex items-center justify-center h-full bg-white font-bold text-xl text-neutral-800">
-                                    {quantity}
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={handleIncrement}
-                                    disabled={quantity >= ((item.isSplittable || item.quantity > 1) ? maxQuantity : item.quantity)}
-                                    className="w-16 h-full flex items-center justify-center bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-accent transition-colors border-r border-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    <Plus size={20} />
-                                </button>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-neutral-700 mb-2">{t('eventPage.assignment.notesOptional')}</label>
-                            <div className="relative">
-                                <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
-                                <textarea
-                                    value={notes}
-                                    onChange={e => setNotes(e.target.value)}
-                                    className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
-                                    rows={3}
-                                    placeholder={t('eventPage.assignment.notesPlaceholder')}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-neutral-50 px-6 py-4 flex justify-end space-x-3 rtl:space-x-reverse rounded-b-xl">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300 font-medium">{t('common.cancel')}</button>
-                    <button onClick={handleSubmit} disabled={isLoading} className="px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent/90 disabled:bg-neutral-300">{isLoading ? t('common.saving') : isAddMore ? t('eventPage.assignment.add') : isEdit ? t('common.saveChanges') : t('eventPage.assignment.confirmAssignment')}</button>
-                </div>
-            </div >
-        </div >
-    );
-};
+import AssignmentModal from '../components/Events/AssignmentModal';
 
 const NameModal: React.FC<{ isLoading: boolean, onSave: (name: string) => void, onClose: () => void }> = ({ isLoading, onSave, onClose }) => {
     const { t } = useTranslation();
@@ -646,6 +128,11 @@ const EventPage: React.FC = () => {
     const [view, setView] = useState<'categories' | 'items'>('categories');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [lastManualCategory, setLastManualCategory] = useState<string>('main');
+
+    const eventCategories = useMemo(() => getEventCategories(currentEvent || undefined), [currentEvent]);
+    const getCategoryName = useCallback((id: string) => {
+        return resolveCategoryDisplayName(id, currentEvent || undefined, eventCategories, t);
+    }, [eventCategories, t, currentEvent]);
 
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, (user) => {
@@ -836,7 +323,11 @@ const EventPage: React.FC = () => {
         } else if (selectedCategory === 'assigned') {
             baseItems = baseItems.filter(item => assignments.some(a => a.menuItemId === item.id));
         } else if (selectedCategory === 'unassigned') {
-            baseItems = baseItems.filter(item => !assignments.some(a => a.menuItemId === item.id));
+            baseItems = baseItems.filter(item => {
+                const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+                const totalAssigned = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+                return totalAssigned < item.quantity;
+            });
         } else if (selectedCategory) {
             baseItems = baseItems.filter(item => item.category === selectedCategory);
         }
@@ -1069,6 +560,7 @@ const EventPage: React.FC = () => {
                             userCreatedItemsCount={userCreatedItemsCount}
                             MAX_USER_ITEMS={MAX_USER_ITEMS}
                             showLimit={!showAdminButton}
+                            categories={getEventCategories(currentEvent || undefined)}
                         />
                         <div className="max-w-4xl mx-auto px-4 mt-8">
                             {/* Button removed as it is now inside CategorySelector */}
@@ -1091,7 +583,7 @@ const EventPage: React.FC = () => {
                                         ? t('eventPage.list.searchResults')
                                         : (selectedCategory === 'my-assignments' || selectedCategory === 'assigned' || selectedCategory === 'unassigned')
                                             ? t(`eventPage.filter.${selectedCategory}`)
-                                            : t(`categories.${selectedCategory!}`)}
+                                            : getCategoryName(selectedCategory!)}
                                 </h2>
 
                             </div>
@@ -1155,6 +647,8 @@ const EventPage: React.FC = () => {
                                                                 isEventActive={isEventActive}
                                                                 isOrganizer={!!showAdminButton}
                                                                 currentUserId={localUser?.uid}
+                                                                itemRowType={item.rowType ? (item.rowType as 'needs' | 'offers') : 'needs'}
+                                                                categoryDisplayName={getCategoryName(item.category)}
                                                             />
                                                         })}
                                                     </div>
@@ -1175,13 +669,15 @@ const EventPage: React.FC = () => {
                                                                 onAssign={() => handleAssignClick(item)}
                                                                 onEdit={() => handleEditClick(item, assignment!)}
                                                                 onEditItem={() => handleEditItemClick(item)}
-                                                                onEditAssignment={(a) => handleEditClick(item, a)} // Fix: Pass this prop here too
+                                                                onEditAssignment={(a) => handleEditClick(item, a)}
                                                                 onCancel={(a) => handleCancelClick(a || assignment!)}
                                                                 onDeleteItem={() => handleDeleteItem(item)}
                                                                 isMyAssignment={localUser?.uid === assignment?.userId}
                                                                 isEventActive={isEventActive}
                                                                 isOrganizer={!!showAdminButton}
                                                                 currentUserId={localUser?.uid}
+                                                                itemRowType={item.rowType ? (item.rowType as 'needs' | 'offers') : 'needs'} // rowType is now valid
+                                                                categoryDisplayName={getCategoryName(item.category)}
                                                             />
                                                         })}
                                                     </div>

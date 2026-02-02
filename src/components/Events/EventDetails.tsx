@@ -12,6 +12,7 @@ import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, MenuItem, Assignment } from '../../types';
 import { formatDate, formatTime, isEventPast, isEventFinished } from '../../utils/dateUtils';
 import toast from 'react-hot-toast';
+import { getEventCategories } from '../../constants/templates';
 
 interface EventDetailsProps {
   event: ShishiEvent;
@@ -58,30 +59,36 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  const categorizedItems = useMemo(() => {
-    const categories = {
-      starter: eventMenuItems.filter(item => item.category === 'starter'),
-      main: eventMenuItems.filter(item => item.category === 'main'),
-      dessert: eventMenuItems.filter(item => item.category === 'dessert'),
-      drink: eventMenuItems.filter(item => item.category === 'drink'),
-      equipment: eventMenuItems.filter(item => item.category === 'equipment'),
-      other: eventMenuItems.filter(item => item.category === 'other')
-    };
-    return categories;
-  }, [eventMenuItems]);
+  const eventCategories = useMemo(() => getEventCategories(event), [event]);
 
-  const categoryNames = {
-    starter: 'מנות ראשונות',
-    main: 'מנות עיקריות',
-    dessert: 'קינוחים',
-    drink: 'שתייה',
-    equipment: 'ציוד כללי',
-    other: 'אחר'
-  };
+  const categorizedItems = useMemo(() => {
+    // Initialize accumulator with all dynamic keys
+    const acc: Record<string, MenuItem[]> = {};
+    eventCategories.forEach(cat => {
+      acc[cat.id] = [];
+    });
+
+    // Add "other" fallback if not present
+    if (!acc['other']) acc['other'] = [];
+
+    // Distribute items
+    eventMenuItems.forEach(item => {
+      if (acc[item.category]) {
+        acc[item.category].push(item);
+      } else {
+        // Fallback for items with obsolete categories
+        acc['other'].push(item);
+      }
+    });
+
+    return acc;
+  }, [eventMenuItems, eventCategories]);
+
+
 
   const filteredItems = activeCategory === 'all'
     ? eventMenuItems
-    : categorizedItems[activeCategory as keyof typeof categorizedItems] || [];
+    : categorizedItems[activeCategory] || [];
 
   const isPast = isEventPast(event.date, event.time);
   const isFinished = isEventFinished(event.date, event.time);
@@ -176,7 +183,30 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
       <div className="bg-white rounded-xl shadow-md p-4 mb-6">
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setActiveCategory('all')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeCategory === 'all' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>הכל ({eventMenuItems.length})</button>
-          {Object.entries(categorizedItems).map(([category, items]) => (items.length > 0 && (<button key={category} onClick={() => setActiveCategory(category)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeCategory === category ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{categoryNames[category as keyof typeof categoryNames]} ({items.length})</button>)))}
+          {eventCategories.map((cat) => {
+            const items = categorizedItems[cat.id] || [];
+            // STRICT FIX: Do not render button if category is empty
+            if (items.length === 0) return null;
+
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeCategory === cat.id ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                {cat.name} ({items.length})
+              </button>
+            );
+          })}
+          {/* Render "Other" if it has items and wasn't in the main config */}
+          {categorizedItems['other']?.length > 0 && !eventCategories.some(c => c.id === 'other') && (
+            <button
+              onClick={() => setActiveCategory('other')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeCategory === 'other' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            >
+              אחר ({categorizedItems['other'].length})
+            </button>
+          )}
         </div>
       </div>
 
@@ -211,26 +241,64 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
           <div className="text-center py-8"><div className="bg-gray-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4"><ChefHat className="h-8 w-8 text-gray-400" /></div><h3 className="text-lg font-medium text-gray-900 mb-2">אין פריטים בקטגוריה זו</h3><p className="text-gray-500">עדיין לא נוספו פריטים לקטגוריה הנבחרת</p></div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredItems.map((item) => (
-              <MenuItemCard
-                key={item.id}
-                item={item}
-                assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
-                assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
-                isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
-                isEventActive={!!(canAssign && dataLoaded)}
-                onAssign={() => handleAssignItem(item)}
-                onEdit={() => handleEditAssignment(item)}
-                onCancel={() => { }} // No cancel action in details view context or handle via parent reload
-              />
-            ))}
+            {filteredItems.map((item) => {
+              const itemCategory = eventCategories.find(c => c.id === item.category);
+              const isRideName = (name?: string) => /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(name || '');
+              const itemRowType = itemCategory?.rowType || (item.category === 'rides' || isRideName(itemCategory?.name) || isRideName(item.name) ? 'offers' : undefined);
+
+              return (
+                <MenuItemCard
+                  key={item.id}
+                  item={item}
+                  assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
+                  assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
+                  isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
+                  isEventActive={!!(canAssign && dataLoaded)}
+                  onAssign={() => handleAssignItem(item)}
+                  onEdit={() => handleEditAssignment(item)}
+                  onCancel={() => { }} // No cancel action in details view context or handle via parent reload
+                  itemRowType={itemRowType}
+                />
+              );
+            })}
           </div>
         )}
       </div>
 
       {showUserInfo && (<UserInfoModal onClose={() => setShowUserInfo(false)} onComplete={() => { setShowUserInfo(false); }} />)}
-      {selectedMenuItem && (<AssignmentModal menuItem={selectedMenuItem} event={event} onClose={() => setSelectedMenuItem(null)} />)}
-      {editingAssignment && (<EditAssignmentModal menuItem={editingAssignment.item} event={event} assignment={editingAssignment.assignment} onClose={() => setEditingAssignment(null)} />)}
+      {selectedMenuItem && user && (
+        <AssignmentModal
+          item={selectedMenuItem}
+          organizerId={event.organizerId}
+          eventId={event.id}
+          user={user as any} // Cast because AssignmentModal expects FirebaseUser but we might have custom User. Actually check imports.
+          onClose={() => setSelectedMenuItem(null)}
+          itemRowType={
+            (() => {
+              const cat = eventCategories.find(c => c.id === selectedMenuItem.category);
+              const isRideName = /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(cat?.name || '');
+              const isRideItem = /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(selectedMenuItem.name || '');
+              return cat?.rowType || (selectedMenuItem.category === 'rides' || isRideName || isRideItem ? 'offers' : undefined);
+            })()
+          }
+        />
+      )}
+      {editingAssignment && (
+        <EditAssignmentModal
+          menuItem={editingAssignment.item}
+          event={event}
+          assignment={editingAssignment.assignment}
+          onClose={() => setEditingAssignment(null)}
+          itemRowType={
+            (() => {
+              const cat = eventCategories.find(c => c.id === editingAssignment.item.category);
+              const isRideName = /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(cat?.name || '');
+              const isRideItem = /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(editingAssignment.item.name || '');
+              return cat?.rowType || (editingAssignment.item.category === 'rides' || isRideName || isRideItem ? 'offers' : undefined);
+            })()
+          }
+        />
+      )}
 
       {/* 5. Adding the modal for the new form */}
       {showUserItemForm && (

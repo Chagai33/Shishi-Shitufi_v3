@@ -1,16 +1,21 @@
 // src/components/Admin/EventForm.tsx
 import React, { useState, useEffect, useRef, useId } from 'react';
-import { X, Calendar, Clock, MapPin, User, FileText, AlertCircle } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, User, FileText, AlertCircle, LayoutTemplate, Trash2, Save, ChevronDown, ChevronUp } from 'lucide-react';
+import { TEMPLATES, EVENT_PRESETS } from '../../constants/templates';
 import { useAuth } from '../../hooks/useAuth';
 import { FirebaseService } from '../../services/firebaseService';
-import { ShishiEvent, EventDetails } from '../../types';
+import { ShishiEvent, EventDetails, EventType } from '../../types';
 import { getNextFriday } from '../../utils/dateUtils';
 import toast from 'react-hot-toast';
 import FocusTrap from 'focus-trap-react';
+import { CategoryEditor } from './CategoryEditor'; // NEW Import
+import { ImportItemsModal } from './ImportItemsModal'; // NEW Import
+
 
 interface EventFormProps {
   event?: ShishiEvent;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 interface FormErrors {
@@ -22,7 +27,7 @@ interface FormErrors {
   endDate?: string;
 }
 
-export function EventForm({ event, onClose }: EventFormProps) {
+export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
   const { user: authUser } = useAuth();
   const isAdmin = authUser?.uid;
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +83,83 @@ export function EventForm({ event, onClose }: EventFormProps) {
     endTime: event?.details.endTime || '',
     allowUserItems: event?.details.allowUserItems ?? true, // Default: enabled
     userItemLimit: event?.details.userItemLimit || 3, // Default: 3
+    categories: event?.details.categories || TEMPLATES['DEFAULT'].categories,
   });
+
+  // Custom Templates State
+  const [customTemplates, setCustomTemplates] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (authUser?.uid) {
+      loadCustomTemplates();
+    }
+  }, [authUser?.uid]);
+
+  const loadCustomTemplates = async () => {
+    if (!authUser?.uid) return;
+    try {
+      const templates = await FirebaseService.getUserTemplates(authUser.uid);
+      setCustomTemplates(templates);
+    } catch (error) {
+      console.error('Failed to load templates', error);
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent selection
+    if (!window.confirm('האם אתה בטוח שברצונך למחוק תבנית זו?')) return;
+
+    try {
+      if (authUser?.uid) {
+        await FirebaseService.deleteCustomTemplate(authUser.uid, templateId);
+        toast.success('התבנית נמחקה');
+        loadCustomTemplates();
+      }
+    } catch (error) {
+      toast.error('שגיאה במחיקת התבנית');
+    }
+  };
+
+  const [migrationData, setMigrationData] = useState<string | null>(null);
+  const [showImportForMigration, setShowImportForMigration] = useState(false);
+  const [migrationStartTime, setMigrationStartTime] = useState<number>(0);
+
+  // Template Selector UI State
+  const [isExpanded, setIsExpanded] = useState(false);
+
+
+
+  const handleTemplateChange = (templateKey: string, isCustom = false) => {
+    let template;
+
+    if (isCustom) {
+      template = customTemplates.find(t => t.id === templateKey);
+    } else {
+      // @ts-ignore
+      template = EVENT_PRESETS[templateKey as EventType] || TEMPLATES[templateKey];
+    }
+
+    if (!template) return;
+
+    if (event && event.menuItems && Object.keys(event.menuItems).length > 0) {
+      // Confirm template switch for existing events with items
+      if (window.confirm('שינוי סוג האירוע ישנה את מבנה הקטגוריות. האם תרצה להשתמש ב"הגירה חכמה" (Smart Migration) כדי לסדר את הפריטים מחדש?\n\nאישור: מחיקת פריטים ופתיחת ייבוא חכם.\nביטול: שמירה על הפריטים (יעברו לקטגוריה "כללי").')) {
+        // Smart Migration Flow
+        const itemsList = Object.values(event.menuItems).map(item => `${item.name} ${item.quantity}`).join('\n');
+
+        setMigrationData(itemsList);
+        setMigrationStartTime(Date.now());
+        setShowImportForMigration(true); // Flag to open import modal after save (conceptually, or we handle it via onSuccess wrapper)
+
+        // In this specific flow, we are actually modifying the form state first.
+        // The actual "Action" needs to happen when the user clicks SAVE. 
+        // But the user expects the "Smart Migration" to be a distinct flow.
+        // Let's defer the action to handleSubmit by carrying the `migrationData` state.
+      }
+    }
+
+    setFormData(prev => ({ ...prev, categories: template.categories }));
+  };
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -143,29 +224,50 @@ export function EventForm({ event, onClose }: EventFormProps) {
     setIsSubmitting(true);
 
     try {
+      // 1. If Migration Logic is active: Delete ALL existing items first
+      // CORRECTION: With "Atomic Save", we DO NOT delete here. 
+      // We wait for the ImportItemsModal to call replaceAllMenuItems.
+      // So this block is removed or commented out.
+      /* 
+      if (migrationData && event) {
+        await FirebaseService.deleteAllEventItems(event.id);
+      } 
+      */
+
       const eventDetails: EventDetails = {
         title: formData.title.trim(),
         date: formData.date,
         time: formData.time,
         location: formData.location.trim(),
-        description: formData.description.trim() || undefined,
         isActive: formData.isActive,
-        endDate: formData.endDate || undefined,
-        endTime: formData.endTime || undefined,
         allowUserItems: formData.allowUserItems,
         userItemLimit: formData.allowUserItems ? formData.userItemLimit : 0,
+        categories: formData.categories,
+        ...(formData.description.trim() ? { description: formData.description.trim() } : {}),
+        ...(formData.endDate ? { endDate: formData.endDate } : {}),
+        ...(formData.endTime ? { endTime: formData.endTime } : {}),
       };
 
       if (event) {
         // Update existing event
         await FirebaseService.updateEventDetails(event.id, eventDetails);
-        toast.success('האירוע עודכן בהצלחה!');
-        onClose();
+        toast.success(migrationData ? 'התבנית שונתה! פותח חלון ייבוא...' : 'האירוע עודכן בהצלחה!');
+
+        if (migrationData) {
+          // DO NOT close form. Open Import Modal instead.
+          // But validation: we need to trigger this AFTER the render update.
+          // Since we use 'showImportForMigration' state, it should handled in JSX.
+          onSuccess?.(); // Optional: refresh parent
+        } else {
+          onSuccess?.();
+          onClose();
+        }
       } else {
         // Create new event
         const eventId = await FirebaseService.createEvent(authUser.uid, eventDetails);
         if (eventId) {
           toast.success('האירוע נוצר בהצלחה!');
+          onSuccess?.();
           onClose();
         } else {
           throw new Error('Failed to create event');
@@ -242,6 +344,152 @@ export function EventForm({ event, onClose }: EventFormProps) {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-6">
+
+              {/* Import Modal Integration for Smart Migration */}
+              {showImportForMigration && event && migrationData && (
+                <ImportItemsModal
+                  event={event} // Passed full event
+                  onClose={() => {
+                    setShowImportForMigration(false);
+                    onClose(); // Close the main form too when they are done
+                  }}
+                  categoriesOverride={formData.categories} // Use the NEW categories
+                  initialText={migrationData}
+                  autoRunAI={true} // Auto trigger AI
+                  migrationStartTime={migrationStartTime} // For concurrency handling
+                />
+              )}
+
+              {/* Template Selector */}
+              <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-blue-900 flex items-center">
+                    <LayoutTemplate className="w-4 h-4 ml-2" />
+                    סוג אירוע
+                  </label>
+
+                  {/* Save Template Button - Top Left */}
+                  {authUser && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const name = window.prompt('הכנס שם לתבנית החדשה:');
+                        if (!name || !name.trim()) return;
+
+                        try {
+                          // @ts-ignore
+                          await FirebaseService.saveCustomTemplate(authUser.uid, name.trim(), formData.categories);
+                          toast.success('התבנית נשמרה!');
+                          loadCustomTemplates(); // Immediate refresh
+                        } catch (error: any) {
+                          toast.error(error.message || 'שגיאה בשמירה');
+                        }
+                      }}
+                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 transition-colors"
+                      title="שמור תבנית אישית"
+                    >
+                      <Save className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 transition-all duration-300">
+                  {/* Logic: Show top 3 (Friday, BBQ, Picnic) + Expand Button */}
+                  {(() => {
+                    const allPresets = (Object.entries(EVENT_PRESETS) as [EventType, typeof EVENT_PRESETS[EventType]][]);
+                    // Top 3 common ones
+                    const topPresets = allPresets.filter(([key]) =>
+                      [EventType.FRIDAY_DINNER, EventType.BBQ, EventType.PICNIC].includes(key)
+                    );
+
+                    // If expanded, show everything. If not, show Top 3.
+                    const visibleSystemTemplates = isExpanded ? allPresets : topPresets;
+
+                    // If we are selecting a template that is HIDDEN, we should probably auto-expand or show it.
+                    // But for simplicity, let's keep the user control.
+
+                    return (
+                      <>
+                        {visibleSystemTemplates.map(([key, template]) => (
+                          <button
+                            type="button"
+                            key={key}
+                            onClick={() => handleTemplateChange(key)}
+                            className={`p-3 rounded-lg border text-right transition-all hover:shadow-md flex flex-col items-center gap-2
+                                ${JSON.stringify(formData.categories) === JSON.stringify(template.categories)
+                                ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
+                                : 'border-gray-200 hover:border-indigo-300'
+                              }`}
+                          >
+                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-xl border border-gray-100">
+                              {key === EventType.FRIDAY_DINNER ? '🍷' :
+                                key === EventType.BBQ ? '🥩' :
+                                  key === EventType.PICNIC ? '🧺' :
+                                    key === EventType.SCHOOL_PARTY ? '🎒' :
+                                      key === EventType.PARTY ? '🎉' :
+                                        key === EventType.DAIRY ? '🧀' :
+                                          key === EventType.OTHER ? '🚫' : '✨'}
+                            </div>
+                            <span className="text-sm font-medium text-gray-700 text-center">{template.name}</span>
+                          </button>
+                        ))}
+
+                        {/* Custom Templates (Only show if expanded OR if selected is custom) */}
+                        {isExpanded && customTemplates.map((template) => (
+                          <div
+                            key={template.id}
+                            onClick={() => handleTemplateChange(template.id, true)}
+                            className={`cursor-pointer relative p-3 rounded-lg border text-right transition-all hover:shadow-md flex flex-col items-center gap-2 group
+                              ${JSON.stringify(formData.categories) === JSON.stringify(template.categories)
+                                ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
+                                : 'border-gray-200 hover:border-indigo-300'
+                              }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteTemplate(template.id, e)}
+                              className="absolute top-1 left-1 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                              title="מחק תבנית"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shadow-sm text-xl border border-indigo-200">
+                              ✨
+                            </div>
+                            <span className="text-sm font-medium text-gray-700 truncate w-full text-center">{template.name}</span>
+                          </div>
+                        ))}
+
+                        {/* Expand/Collapse Button */}
+                        <button
+                          type="button"
+                          onClick={() => setIsExpanded(!isExpanded)}
+                          className="p-3 rounded-lg border border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-all flex flex-col items-center justify-center gap-2"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
+                            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                          </div>
+                          <span className="text-xs font-medium">
+                            {isExpanded ? 'פחות אפשרויות' : 'עוד אפשרויות...'}
+                          </span>
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
+                <p className="text-xs text-blue-600 mt-2">
+                  בחירת תבנית תגדיר מראש את הקטגוריות לאירוע.
+                </p>
+              </div>
+
+              {/* Custom Categories Editor - NEW */}
+              <div className="mb-6 border-b border-gray-200 pb-6">
+                <CategoryEditor
+                  categories={formData.categories}
+                  onChange={(newCats) => setFormData(prev => ({ ...prev, categories: newCats }))}
+                />
+              </div>
+
               {/* Title */}
               <div className="mb-6">
                 <label htmlFor={titleId} className="block text-sm font-medium text-gray-700 mb-2">

@@ -5,7 +5,7 @@ import FocusTrap from 'focus-trap-react';
 import { X, Upload, Table, AlertCircle, CheckCircle, Trash2, List, Wand2, Mic, MicOff, Loader2, Clipboard as ClipboardIcon, Plus } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
-import { ShishiEvent, MenuItem, MenuCategory } from '../../types';
+import { ShishiEvent, MenuItem, MenuCategory, CategoryConfig } from '../../types';
 import { PresetListsManager } from './PresetListsManager';
 import { useAuth } from '../../hooks/useAuth';
 import * as XLSX from 'xlsx';
@@ -21,6 +21,10 @@ interface ImportItemsModalProps {
   event: ShishiEvent;
   onClose: () => void;
   onAddSingleItem?: () => void;
+  initialText?: string;
+  autoRunAI?: boolean;
+  categoriesOverride?: CategoryConfig[]; // To support new categories before they are saved to the event object
+  migrationStartTime?: number; // If present, indicates "Smart Migration" mode (Atomic Update)
 }
 
 interface ImportItem {
@@ -35,11 +39,11 @@ interface ImportItem {
 
 type ImportMethod = 'file' | 'preset' | 'smart';
 
-export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItemsModalProps) {
+export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText, autoRunAI, categoriesOverride, migrationStartTime }: ImportItemsModalProps) {
   const { t } = useTranslation();
   const { addMenuItem } = useStore();
   const { user: authUser } = useAuth();
-  const [activeMethod, setActiveMethod] = useState<ImportMethod>('smart');
+  const [activeMethod, setActiveMethod] = useState<ImportMethod>(initialText ? 'smart' : 'smart');
 
   const [importItems, setImportItems] = useState<ImportItem[]>([]);
   const [isImporting, setIsImporting] = useState(false);
@@ -50,19 +54,37 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItem
   const [itemsToImport, setItemsToImport] = useState<{ newItems: ImportItem[], duplicateItems: ImportItem[] }>({ newItems: [], duplicateItems: [] });
 
   // Smart Import State
-  const { isListening, transcript, start, stop, reset, error: voiceError } = useVoiceInput();
-  const [smartInputText, setSmartInputText] = useState('');
+  const { isListening, transcript, start, stop, reset } = useVoiceInput();
+  const [smartInputText, setSmartInputText] = useState(initialText || '');
   const [smartImage, setSmartImage] = useState<File | null>(null);
   const [smartImagePreview, setSmartImagePreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-  const categoryOptions: { value: MenuCategory; label: string }[] = [
-    { value: 'starter', label: t('categories.starter') },
-    { value: 'main', label: t('categories.main') },
-    { value: 'dessert', label: t('categories.dessert') },
-    { value: 'drink', label: t('categories.drink') },
-    { value: 'other', label: t('categories.other') }
-  ];
+  // Auto-run AI if requested
+  const hasAutoRunRef = useRef(false);
+  useEffect(() => {
+    if (autoRunAI && initialText && !hasAutoRunRef.current) {
+      hasAutoRunRef.current = true;
+      handleSmartAnalyze();
+    }
+  }, [autoRunAI, initialText]);
+
+  const categoryOptions = React.useMemo(() => {
+    // Priority: Override > Event Categories > Default
+    const sourceCategories = categoriesOverride || event.details.categories;
+
+    const cats = sourceCategories && sourceCategories.length > 0
+      ? sourceCategories.sort((a, b) => a.order - b.order)
+      : [
+        { id: 'starter', name: t('categories.starter') },
+        { id: 'main', name: t('categories.main') },
+        { id: 'dessert', name: t('categories.dessert') },
+        { id: 'drink', name: t('categories.drink') },
+        { id: 'other', name: t('categories.other') }
+      ];
+
+    return cats.map(c => ({ value: c.id, label: c.name }));
+  }, [event.details.categories, categoriesOverride, t]);
 
   // Handle active listening transcript
   useEffect(() => {
@@ -108,25 +130,33 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItem
         imageBase64 = await compressImage(smartImage);
       }
 
+      // Build allowed categories list for AI
+      const allowedCats = categoryOptions.map(opt => ({ id: opt.value, name: opt.label }));
+
       const parseShoppingList = httpsCallable(functions, 'parseShoppingList');
       const result = await parseShoppingList({
         text: smartInputText,
         image: imageBase64,
-        mimeType: smartImage?.type
+        mimeType: smartImage?.type,
+        allowedCategories: allowedCats
       });
-      const data = result.data as { items: { name: string; quantity: number }[] };
+      const data = result.data as { items: { name: string; quantity: number, category?: string }[] };
 
       if (!data.items || !Array.isArray(data.items)) {
         throw new Error('התקבל מבנה נתונים לא תקין מהשרת');
       }
 
-      const items: ImportItem[] = data.items.map(item => ({
-        name: item.name,
-        category: 'other', // Default for AI, will be editable
-        quantity: item.quantity,
-        isRequired: false,
-        selected: true
-      }));
+      const items: ImportItem[] = data.items.map(item => {
+        // Validate returned category
+        const isValidCategory = allowedCats.some(c => c.id === item.category);
+        return {
+          name: item.name,
+          category: (isValidCategory ? item.category : 'other') as MenuCategory,
+          quantity: item.quantity,
+          isRequired: false,
+          selected: true
+        };
+      });
 
       setImportItems(items);
       setShowPreview(true);
@@ -306,6 +336,37 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItem
     setIsImporting(true);
     let successCount = 0;
     let errorCount = 0;
+
+    // ATOMIC MIGRATION MODE
+    if (migrationStartTime) {
+      try {
+        const itemsForDb: Omit<MenuItem, 'id'>[] = itemsToProcess.map(item => ({
+          eventId: event.id,
+          name: item.name,
+          category: item.category,
+          quantity: item.quantity,
+          notes: item.notes || '',
+          isRequired: item.isRequired,
+          creatorId: authUser?.uid || 'admin',
+          creatorName: authUser?.displayName || 'Admin',
+          createdAt: Date.now(),
+          isSplittable: item.quantity > 1
+        }));
+
+        await FirebaseService.replaceAllMenuItems(event.id, itemsForDb, authUser?.uid || 'admin', migrationStartTime);
+
+        toast.success('מיגרציה הושלמה! פריטים חדשים שנוספו במקביל נשמרו בקטגוריית "כללי"');
+        onClose();
+        return;
+      } catch (error: any) {
+        console.error("Migration Failed:", error);
+        toast.error("שגיאה בביצוע המיגרציה.");
+        setIsImporting(false);
+        return;
+      }
+    }
+
+    // STANDARD IMPORT MODE (Loop)
     const newItemsForStore: MenuItem[] = [];
     try {
       for (const item of itemsToProcess) {
@@ -380,6 +441,56 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItem
 
   const validItemsCount = importItems.filter(item => !item.error).length;
   const selectedItemsCount = importItems.filter(item => item.selected && !item.error).length;
+
+  const handleSmartClassify = async () => {
+    if (importItems.length === 0) return;
+
+    setIsAnalyzing(true);
+    const toastId = toast.loading(t('importModal.smart.analyzing'));
+
+    try {
+      // 1. Convert items to text list
+      const listText = importItems.map(i => i.name).join(', ');
+
+      // 2. Build allowed categories
+      const allowedCats = categoryOptions.map(opt => ({ id: opt.value, name: opt.label }));
+
+      // 3. Call AI
+      const parseShoppingList = httpsCallable(functions, 'parseShoppingList');
+      const result = await parseShoppingList({
+        text: listText,
+        allowedCategories: allowedCats
+      });
+      const data = result.data as { items: { name: string; quantity: number, category?: string }[] };
+
+      if (!data.items || !Array.isArray(data.items)) {
+        throw new Error('AI Response Invalid');
+      }
+
+      // 4. Map results back to existing items
+      // We create a map of Name -> Category for O(1) lookup
+      const classificationMap = new Map(data.items.map(i => [i.name.trim().toLowerCase(), i.category]));
+
+      const updatedItems = importItems.map(item => {
+        const aiCategory = classificationMap.get(item.name.trim().toLowerCase());
+        const isValidCategory = aiCategory && allowedCats.some(c => c.id === aiCategory);
+
+        return {
+          ...item,
+          category: (isValidCategory ? aiCategory : item.category) as MenuCategory // Only update if AI found a valid category
+        };
+      });
+
+      setImportItems(updatedItems);
+      toast.success(t('importModal.smart.success'), { id: toastId });
+
+    } catch (error) {
+      console.error("Smart Classify Error:", error);
+      toast.error(t('importModal.smart.error'), { id: toastId });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   if (showDuplicateConfirm) {
     return (
@@ -683,6 +794,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem }: ImportItem
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-md font-medium text-gray-900">{t('importModal.preview.title', { count: importItems.length })}</h3>
                     <div className="flex items-center space-x-3 rtl:space-x-reverse">
+                      <button
+                        onClick={handleSmartClassify}
+                        disabled={isAnalyzing}
+                        className="flex items-center space-x-1 rtl:space-x-reverse text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg transition-colors text-sm font-medium disabled:opacity-50 mx-2"
+                        title={t('importModal.smart.title')}
+                      >
+                        {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                        <span className="hidden sm:inline">{t('importModal.smart.classifyBtn')}</span>
+                      </button>
+
                       <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
                       <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
                     </div>

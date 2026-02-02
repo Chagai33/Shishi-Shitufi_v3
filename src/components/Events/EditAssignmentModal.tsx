@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useId } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, Hash, MessageSquare, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -11,18 +11,22 @@ interface EditAssignmentModalProps {
   event: ShishiEvent;
   assignment: Assignment;
   onClose: () => void;
+  itemRowType?: 'needs' | 'offers';
 }
 
 interface FormErrors {
   quantity?: string;
 }
 
-export function EditAssignmentModal({ menuItem, event, assignment, onClose }: EditAssignmentModalProps) {
+export function EditAssignmentModal({ menuItem, event, assignment, onClose, itemRowType = 'needs' }: EditAssignmentModalProps) {
   const { updateAssignment } = useStore();
   const [quantity, setQuantity] = useState(assignment.quantity);
   const [notes, setNotes] = useState(assignment.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const isRideName = /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(menuItem.name || '');
+  const isOffers = itemRowType === 'offers' || menuItem.category === 'rides' || isRideName;
 
   // Accessibility: Unique IDs for ARIA labeling
   const titleId = useId();
@@ -59,16 +63,13 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose }: Ed
         updatedAt: Date.now()
       };
 
-      const success = await FirebaseService.updateAssignment(assignment.id, updates);
+      await FirebaseService.updateAssignment(event.id, assignment.id, updates);
 
-      if (success) {
-        // Update local store immediately
-        updateAssignment(assignment.id, updates);
-        toast.success('השיבוץ עודכן בהצלחה!');
-        onClose();
-      } else {
-        throw new Error('Failed to update assignment');
-      }
+      // Update local store immediately
+      updateAssignment(assignment.id, updates);
+      toast.success(isOffers ? 'הנסיעה עודכנה בהצלחה!' : 'השיבוץ עודכן בהצלחה!');
+      onClose();
+
     } catch (error) {
       console.error('Error updating assignment:', error);
       toast.error('שגיאה בעדכון השיבוץ. אנא נסה שוב.');
@@ -131,7 +132,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose }: Ed
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b">
-            <h2 id={titleId} className="text-lg font-semibold text-gray-900">עריכת שיבוץ</h2>
+            <h2 id={titleId} className="text-lg font-semibold text-gray-900">{isOffers ? 'עריכת נסיעה' : 'עריכת שיבוץ'}</h2>
             <button
               onClick={onClose}
               disabled={isSubmitting}
@@ -148,8 +149,8 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose }: Ed
             {/* Item Details */}
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <h3 className="font-medium text-gray-900 mb-2">{menuItem.name}</h3>
-              <p className="text-sm text-gray-600">עבור: {event.title}</p>
-              <p className="text-sm text-gray-600">משובץ ל: {assignment.userName}</p>
+              <p className="text-sm text-gray-600">עבור: {event.details.title}</p>
+              <p className="text-sm text-gray-600">{isOffers ? 'משוריין עבור' : 'משובץ ל'}: {assignment.userName}</p>
               {menuItem.isRequired && (
                 <div className="flex items-center mt-2">
                   <AlertCircle className="h-4 w-4 text-red-500 ml-1" aria-hidden="true" />
@@ -161,7 +162,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose }: Ed
             {/* Quantity Input */}
             <div className="mb-6">
               <label htmlFor="quantity-input" className="block text-sm font-medium text-gray-700 mb-2">
-                כמות שאביא <span className="text-red-500" aria-label="שדה חובה">*</span>
+                {isOffers ? 'מספר מקומות' : 'כמות שאביא'} <span className="text-red-500" aria-label="שדה חובה">*</span>
               </label>
               <div className="relative">
                 <Hash className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -224,7 +225,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose }: Ed
                     מעדכן…
                   </>
                 ) : (
-                  'עדכן שיבוץ'
+                  isOffers ? 'עדכן נסיעה' : 'עדכן שיבוץ'
                 )}
               </button>
               <button

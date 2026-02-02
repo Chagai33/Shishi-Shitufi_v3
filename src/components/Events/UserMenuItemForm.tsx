@@ -4,11 +4,12 @@ import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, ChefHat, MessageSquare, User as UserIcon, AlertCircle, Plus, Minus } from 'lucide-react';
 import { useStore, selectMenuItems } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
-import { ShishiEvent, MenuItem, MenuCategory } from '../../types';
+import { ShishiEvent, MenuItem, MenuCategory, CategoryConfig } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import FocusTrap from 'focus-trap-react';
+import { isCarpoolLogic } from '../../utils/eventUtils';
 
 interface UserMenuItemFormProps {
   event: ShishiEvent;
@@ -24,7 +25,7 @@ interface FormErrors {
   quantity?: string;
 }
 
-export function UserMenuItemForm({ event, onClose, category, availableCategories, isOrganizer, onSuccess }: UserMenuItemFormProps) {
+export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSuccess }: UserMenuItemFormProps) {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,14 +95,27 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     isRequired: false,
   });
 
-  const categoryOptions = [
-    { value: 'starter', label: t('categories.starter') },
-    { value: 'main', label: t('categories.main') },
-    { value: 'dessert', label: t('categories.dessert') },
-    { value: 'drink', label: t('categories.drink') },
-    { value: 'equipment', label: t('categories.equipment') },
-    { value: 'other', label: t('categories.other') }
-  ];
+  // Get dynamic categories from the event
+  const eventCategories = React.useMemo(() => {
+    // Helper to get categories (can import getEventCategories but let's replicate or import)
+    if (event.details.categories && event.details.categories.length > 0) {
+      return event.details.categories.sort((a, b) => a.order - b.order);
+    }
+    // Fallback import would be better, but let's define it here or assume imports
+    return [
+      { id: 'starter', name: t('categories.starter'), order: 1 },
+      { id: 'main', name: t('categories.main'), order: 2 },
+      { id: 'dessert', name: t('categories.dessert'), order: 3 },
+      { id: 'drink', name: t('categories.drink'), order: 4 },
+      { id: 'equipment', name: t('categories.equipment'), order: 5 },
+      { id: 'other', name: t('categories.other'), order: 6 },
+    ] as CategoryConfig[];
+  }, [event.details.categories, t]);
+
+  const categoryOptions = eventCategories.map(cat => ({
+    value: cat.id,
+    label: cat.name
+  }));
 
   useEffect(() => {
     if (authUser?.isAnonymous) {
@@ -254,6 +268,10 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
     }
   };
 
+  // Determine if current category is 'offers' type (Carpool)
+  const currentCategoryObj = eventCategories.find(c => c.id === formData.category);
+  const isOffersType = isCarpoolLogic(formData.name, formData.category, currentCategoryObj?.rowType);
+
   return (
     <div role="presentation" onClick={onClose}>
       <FocusTrap>
@@ -268,7 +286,9 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
             className="bg-white rounded-xl shadow-xl max-w-md w-full"
           >
             <div className="flex items-center justify-between p-6 border-b">
-              <h2 id={titleId} className="text-lg font-semibold text-gray-900">{t('userItemForm.title')}</h2>
+              <h2 id={titleId} className="text-lg font-semibold text-gray-900">
+                {isOffersType ? 'הצעת טרמפ החדשה' : t('userItemForm.title')}
+              </h2>
               <button
                 type="button"
                 onClick={onClose}
@@ -283,7 +303,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
               {showNameInput && (
                 <div className="mb-4">
                   <label htmlFor={participantNameId} className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('userItemForm.fields.fullName')}
+                    {isOffersType ? 'שם הנהג' : t('userItemForm.fields.fullName')}
                   </label>
                   <div className="relative">
                     <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -305,7 +325,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
               )}
               <div className="mb-4">
                 <label htmlFor={itemNameId} className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('userItemForm.fields.name')}
+                  {isOffersType ? 'פרטי הנסיעה (מאיפה ומתי?)' : t('userItemForm.fields.name')}
                 </label>
                 <div className="relative">
                   <ChefHat className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -314,7 +334,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder={t('userItemForm.fields.namePlaceholder')}
+                    placeholder={isOffersType ? 'לדוגמה: יציאה מחולון ב-16:00' : t('userItemForm.fields.namePlaceholder')}
                     className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
                       }`}
                     disabled={isSubmitting}
@@ -355,7 +375,9 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                 <div className="col-span-2 grid grid-cols-2 gap-4">
                   {/* Total Needed */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('userItemForm.fields.quantityTotal')}</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isOffersType ? 'מספר מקומות פנויים' : t('userItemForm.fields.quantityTotal')}
+                    </label>
                     <Stepper
                       value={formData.quantity}
                       onChange={(val) => {
@@ -372,10 +394,12 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                     />
                   </div>
 
-                  {/* My Contribution */}
+                  {/* My Contribution - Hide for Rides if creates confusion, or rebrand as "Reserved Spots" */}
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-medium text-gray-700">{t('userItemForm.fields.myContribution')}</label>
+                      <label className="block text-sm font-medium text-gray-700">
+                        {isOffersType ? 'שריין לעצמך/חברים' : t('userItemForm.fields.myContribution')}
+                      </label>
                       {myQuantity < formData.quantity && (
                         <button
                           type="button"
@@ -383,7 +407,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                           aria-label={t('userItemForm.fields.bringAll')}
                           className="text-xs text-orange-600 hover:text-orange-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded"
                         >
-                          {t('userItemForm.fields.bringAll')}
+                          {isOffersType ? 'מלא את הכל' : t('userItemForm.fields.bringAll')}
                         </button>
                       )}
                     </div>
@@ -391,20 +415,20 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                       value={myQuantity}
                       onChange={setMyQuantity}
                       max={formData.quantity}
-                      min={isOrganizer ? 0 : 1} // Organizer can set 0
+                      min={0} // Allow 0 for rides specifically
                       label={t('userItemForm.fields.myContribution')}
                     />
                   </div>
                   <div className="col-span-2 text-xs text-gray-500 text-center -mt-2">
                     {myQuantity < formData.quantity ?
-                      (myQuantity === 0 ? "אתה לא מביא כלום (מנהל)" : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
-                      t('userItemForm.fields.youBringAllMsg')}
+                      (myQuantity === 0 ? (isOffersType ? "כל המקומות פנויים לאחרים" : "אתה לא מביא כלום (מנהל)") : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
+                      (isOffersType ? "הרכב מלא (שריינת הכל)" : t('userItemForm.fields.youBringAllMsg'))}
                   </div>
                 </div>
               </div>
               <div className="mb-6">
                 <label htmlFor={notesId} className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('userItemForm.fields.notes')}
+                  {isOffersType ? 'הערות (מסלול, נקודות איסוף...)' : t('userItemForm.fields.notes')}
                 </label>
                 <div className="relative">
                   <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -412,7 +436,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                     id={notesId}
                     value={formData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder={t('userItemForm.fields.notesPlaceholder')}
+                    placeholder={isOffersType ? 'לדוגמה: יוצאים מרכבת ארלוזורוב, אין מקום למזוודות גדולות' : t('userItemForm.fields.notesPlaceholder')}
                     rows={3}
                     className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                     disabled={isSubmitting}
@@ -421,7 +445,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
               </div>
 
               {/* Admin: Is Required Checkbox */}
-              {isOrganizer && (
+              {isOrganizer && !isOffersType && (
                 <div className="mb-6 flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                   <input
                     id={isRequiredId}
@@ -450,7 +474,7 @@ export function UserMenuItemForm({ event, onClose, category, availableCategories
                       {t('userItemForm.submitting')}
                     </>
                   ) : (
-                    t('userItemForm.submit')
+                    isOffersType ? 'פרסם נסיעה' : t('userItemForm.submit')
                   )}
                 </button>
                 <button

@@ -1,118 +1,96 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
-import { MenuItem, Assignment } from '../../types';
-import { useTranslation } from 'react-i18next';
-
-// Define design details for each category (names removed, will use t())
-const categoryDetails: { [key: string]: { icon: string; color: string; glowClass: string } } = {
-  starter: { icon: '/Icons/2.gif', color: '#3498db', glowClass: 'glow-starter' },
-  main: { icon: '/Icons/1.gif', color: '#009688', glowClass: 'glow-main' },
-  dessert: { icon: '/Icons/3.gif', color: '#9b59b6', glowClass: 'glow-dessert' },
-  drink: { icon: '/Icons/4.gif', color: '#2ecc71', glowClass: 'glow-drink' },
-  equipment: { icon: '/Icons/6.gif', color: '#2ecc71', glowClass: 'glow-drink' },
-  other: { icon: '/Icons/5.gif', color: '#95a5a6', glowClass: 'glow-other' },
-};
+import { MenuItem, Assignment, CategoryConfig } from '../../types';
 
 interface CategorySelectorProps {
   menuItems: MenuItem[];
   assignments: Assignment[];
-  onSelectCategory: (category: string) => void;
+  categories: CategoryConfig[]; // NEW prop
+  onSelectCategory: (categoryId: string) => void;
   onAddItem: () => void;
   canAddMoreItems: boolean;
   userCreatedItemsCount: number;
   MAX_USER_ITEMS: number;
-  showLimit?: boolean;
+  showLimit?: boolean;  // Kept from original to avoid breaking usage if passed, though not in user snippet explicit props but likely needed for backward compat or usage in parent
 }
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
   menuItems,
   assignments,
+  categories,
   onSelectCategory,
   onAddItem,
   canAddMoreItems,
   userCreatedItemsCount,
   MAX_USER_ITEMS,
-  showLimit = true,
+  showLimit = true, // Defaulting if needed
 }) => {
-  const { t } = useTranslation();
+  // Helper to calculate progress
+  const getCategoryProgress = (categoryId: string) => {
+    // Note: strict check might fail if types are mixed, but valid for string comparison
+    const itemsInCategory = menuItems.filter(item => item.category === categoryId);
 
-  // Helper function to calculate status and progress for each category
-  const getCategoryProgress = (category: string) => {
-    const itemsInCategory = menuItems.filter(item => item.category === category);
+    // Count items as "completed" using the same logic as before if needed, or simplified as per user snippet
+    // User snippet logic:
+    const assignedItemsInCategory = itemsInCategory.filter(item =>
+      assignments.some(a => a.menuItemId === item.id)
+    );
 
-    // Count items as "completed" only if ALL their units are assigned
-    const completedItems = itemsInCategory.filter(item => {
-      const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
-
-      if (itemAssignments.length === 0) return false;
-
-      // For splittable items, check if total assigned >= quantity
-      if (item.isSplittable || item.quantity > 1) {
-        const totalAssigned = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
-        return totalAssigned >= item.quantity;
-      }
-
-      // For non-splittable items, any assignment means completed
-      return true;
-    });
+    // Ideally we should use the robust logic from previous version regarding splittable items, 
+    // but the user provided specific logic in the snippet: "assignedItemsInCategory.length"
+    // I will stick to the user's snippet logic for now to follow "Full File Rewrite Required" instructions strictly,
+    // assuming they simplified it or want this specific behavior.
 
     return {
-      assigned: completedItems.length,
+      assigned: assignedItemsInCategory.length,
       total: itemsInCategory.length,
     };
   };
 
-  const categoriesOrder = ['starter', 'main', 'dessert', 'drink', 'equipment', 'other'];
-
   return (
     <div>
-      {/* Categories grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categoriesOrder.map(categoryKey => {
-          const progress = getCategoryProgress(categoryKey);
+        {categories.map((category) => {
+          const progress = getCategoryProgress(category.id);
 
-          // Show category only if it has items
-          if (progress.total === 0) {
-            return null;
-          }
+          // Hide empty categories to keep the UI clean (Legacy Behavior)
+          if (progress.total === 0) return null;
 
-          const details = categoryDetails[categoryKey];
           const percentage = progress.total > 0 ? (progress.assigned / progress.total) * 100 : 0;
-          const categoryName = t(`categories.${categoryKey}`);
 
           return (
             <button
-              key={categoryKey}
-              type="button"
-              onClick={() => onSelectCategory(categoryKey)}
-              aria-label={`${categoryName}, ${progress.assigned} ${t('eventPage.stats.assigned')} ${progress.total}`}
+              key={category.id}
+              onClick={() => onSelectCategory(category.id)}
               className="group relative category-card-2025 p-6 rounded-xl cursor-pointer text-center overflow-hidden w-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              type="button"
             >
-              {/* Glow element activated on hover */}
-              <div className={`aurora-glow ${details.glowClass}`}></div>
+              <div className="aurora-glow" style={{ backgroundColor: category.color + '40' }}></div> {/* Low opacity glow */}
 
-              {/* Card content */}
               <div className="relative z-10 flex flex-col items-center h-full">
                 <img
-                  src={details.icon}
-                  alt=""
-                  aria-hidden="true"
+                  src={`/Icons/${category.icon}`}
+                  alt={category.name}
                   className="w-20 h-20 mx-auto mb-3 object-contain transition-transform duration-300 group-hover:scale-110"
+                  onError={(e) => {
+                    // Fallback if image fails
+                    (e.target as HTMLImageElement).src = '/Icons/general.png';
+                  }}
                 />
-                <h3 className="text-xl font-bold text-neutral-800 mb-2">{categoryName}</h3>
+                <h3 className="text-xl font-bold text-neutral-800 mb-2">{category.name}</h3>
 
-                <div className="flex-grow"></div> {/* Spacer to push progress bar to bottom */}
+                <div className="flex-grow"></div>
 
                 <div className="w-full">
                   <p className="text-center text-neutral-500 text-sm mb-4">
-                    {progress.assigned} / {progress.total} {t('eventPage.stats.assigned')}
+                    {progress.assigned} / {progress.total} שובצו
                   </p>
                   <div className="w-full bg-neutral-200 rounded-full h-2.5">
                     <div
                       className="h-2.5 rounded-full"
                       style={{
                         width: `${percentage}%`,
-                        backgroundColor: details.color,
+                        backgroundColor: category.color,
                         transition: 'width 0.5s ease-in-out'
                       }}
                     ></div>
@@ -124,22 +102,20 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         })}
       </div>
 
-      {/* Add item button */}
       <div className="mt-8">
         <button
           onClick={onAddItem}
           type="button"
           disabled={!canAddMoreItems}
-          title={canAddMoreItems ? t('eventPage.category.addItemTooltip') : t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS })}
-          aria-label={`${t('eventPage.category.addItem')} ${showLimit ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
+          title={canAddMoreItems ? "הוסף פריט חדש" : "לא ניתן להוסיף פריטים נוספים"}
           className={`w-full flex items-center justify-center text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500
             ${!canAddMoreItems
               ? 'bg-neutral-400 cursor-not-allowed'
               : 'bg-success hover:bg-success/90'
             }`}
         >
-          <Plus size={20} className="ml-2" aria-hidden="true" />
-          {t('eventPage.category.addItem')} {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
+          <Plus size={20} className="ml-2" />
+          הוסף פריט משלך {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
         </button>
       </div>
     </div>

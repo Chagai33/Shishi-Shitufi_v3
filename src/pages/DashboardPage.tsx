@@ -13,6 +13,7 @@ import { PresetListsManager } from '../components/Admin/PresetListsManager';
 import FocusTrap from 'focus-trap-react';
 
 import { useTranslation } from 'react-i18next';
+import { EventForm } from '../components/Admin/EventForm';
 
 // --- Event card component ---
 const EventCard: React.FC<{
@@ -191,149 +192,7 @@ const EventCard: React.FC<{
 };
 
 
-// --- Event creation form component ---
-const EventFormModal: React.FC<{ onClose: () => void, onEventCreated: () => void, editingEvent?: ShishiEvent }> = ({ onClose, onEventCreated, editingEvent }) => {
-    const { t } = useTranslation();
-    const user = useStore(state => state.user);
-    const titleId = useId();
-    const returnFocusRef = useRef<HTMLElement | null>(null);
-
-    const [details, setDetails] = useState<Omit<EventDetails, 'stats'>>({
-        title: editingEvent?.details.title || '',
-        date: editingEvent?.details.date || '',
-        time: editingEvent?.details.time || '19:00',
-        location: editingEvent?.details.location || '',
-        description: editingEvent?.details.description || '',
-        isActive: editingEvent?.details.isActive ?? true,
-        allowUserItems: editingEvent?.details.allowUserItems ?? true,
-        userItemLimit: editingEvent?.details.userItemLimit ?? 3,
-    });
-    const [isLoading, setIsLoading] = useState(false);
-
-    // ESC key handler
-    useEffect(() => {
-        const handleEscape = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [onClose]);
-
-    // Focus return
-    useEffect(() => {
-        returnFocusRef.current = document.activeElement as HTMLElement;
-        return () => {
-            returnFocusRef.current?.focus();
-        };
-    }, []);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user) {
-            toast.error(t('dashboard.eventForm.messages.userNotLoggedIn'));
-            return;
-        }
-        if (!details.title || !details.date || !details.time || !details.location) {
-            toast.error(t('dashboard.eventForm.messages.fillRequired'));
-            return;
-        }
-
-        setIsLoading(true);
-        try {
-            if (editingEvent) {
-                await FirebaseService.updateEventDetails(editingEvent.id, {
-                    ...details,
-                    allowUserItems: details.allowUserItems,
-                    userItemLimit: details.allowUserItems ? details.userItemLimit : 0,
-                });
-                toast.success(t('dashboard.eventForm.messages.updateSuccess'));
-            } else {
-                await FirebaseService.createEvent(user.id, {
-                    ...details,
-                    allowUserItems: details.allowUserItems,
-                    userItemLimit: details.allowUserItems ? details.userItemLimit : 0,
-                });
-                toast.success(t('dashboard.eventForm.messages.createSuccess'));
-            }
-            onEventCreated();
-            onClose();
-        } catch (error) {
-            console.error("Error saving event:", error);
-            toast.error(editingEvent ? t('dashboard.eventForm.messages.updateError') : t('dashboard.eventForm.messages.createError'));
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div role="presentation" onClick={onClose}>
-            <FocusTrap>
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby={titleId}
-                        className="bg-white rounded-xl shadow-xl max-w-lg w-full"
-                    >
-                        <form onSubmit={handleSubmit}>
-                            <div className="p-6">
-                                <h2 className="text-xl font-bold mb-4">{editingEvent ? t('dashboard.eventForm.title.edit') : t('dashboard.eventForm.title.create')}</h2>
-                                <div className="space-y-4">
-                                    <input type="text" placeholder={t('dashboard.eventForm.fields.eventName')} value={details.title} onChange={e => setDetails({ ...details, title: e.target.value })} className="w-full p-2 border rounded-lg" required />
-                                    <div className="flex space-x-4">
-                                        <input type="date" value={details.date} onChange={e => setDetails({ ...details, date: e.target.value })} className="w-full p-2 border rounded-lg" required />
-                                        <input type="time" value={details.time} onChange={e => setDetails({ ...details, time: e.target.value })} className="w-full p-2 border rounded-lg" required />
-                                    </div>
-                                    <input type="text" placeholder={t('dashboard.eventForm.fields.location')} value={details.location} onChange={e => setDetails({ ...details, location: e.target.value })} className="w-full p-2 border rounded-lg" required />
-                                    <textarea placeholder={t('dashboard.eventForm.fields.description')} value={details.description} onChange={e => setDetails({ ...details, description: e.target.value })} className="w-full p-2 border rounded-lg" rows={3}></textarea>
-                                    <label className="flex items-center">
-                                        <input type="checkbox" checked={details.isActive} onChange={(e) => setDetails({ ...details, isActive: e.target.checked })} className="rounded" />
-                                        <span className="mr-2 text-sm text-gray-700">{t('dashboard.eventForm.fields.isActive')}</span>
-                                    </label>
-
-                                    <div className="border-t pt-4 mt-4">
-                                        <label className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={details.allowUserItems}
-                                                onChange={(e) => setDetails({ ...details, allowUserItems: e.target.checked })}
-                                                className="rounded"
-                                            />
-                                            <span className="mr-2 text-sm text-gray-700">{t('dashboard.eventForm.fields.allowUserItems')}</span>
-                                        </label>
-                                        {details.allowUserItems && (
-                                            <div className="mt-2 mr-6">
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    {t('dashboard.eventForm.fields.userItemLimit')}
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    value={details.userItemLimit}
-                                                    onChange={(e) => setDetails({ ...details, userItemLimit: parseInt(e.target.value) || 1 })}
-                                                    className="w-24 p-2 border rounded-lg"
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
-                                <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300">{t('dashboard.eventForm.cancel')}</button>
-                                <button type="submit" disabled={isLoading} className="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600 disabled:bg-orange-300">
-                                    {isLoading ? (editingEvent ? t('dashboard.eventForm.submit.updating') : t('dashboard.eventForm.submit.creating')) : (editingEvent ? t('dashboard.eventForm.submit.update') : t('dashboard.eventForm.submit.create'))}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </FocusTrap>
-        </div>
-    );
-};
+// EventFormModal removed in favor of shared component
 
 
 // --- Main dashboard component ---
@@ -562,13 +421,13 @@ const DashboardPage: React.FC = () => {
             </main>
 
             {showCreateModal && (
-                <EventFormModal
+                <EventForm
                     onClose={() => {
                         setShowCreateModal(false);
                         setEditingEvent(null);
                     }}
-                    onEventCreated={fetchEvents}
-                    editingEvent={editingEvent || undefined}
+                    onSuccess={fetchEvents}
+                    event={editingEvent || undefined}
                 />
             )}
 

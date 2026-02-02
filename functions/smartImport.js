@@ -26,7 +26,7 @@ exports.parseShoppingList = onCall(
       throw new HttpsError("unauthenticated", "User must be logged in.");
     }
 
-    const { text, image, mimeType } = request.data;
+    const { text, image, mimeType, allowedCategories } = request.data;
 
     // Validate: Must have either text or image
     if ((!text || typeof text !== "string" || text.trim().length === 0) && (!image || typeof image !== "string")) {
@@ -55,14 +55,24 @@ exports.parseShoppingList = onCall(
       });
 
       // 4. Golden Prompt
-      const systemPrompt = `You are a Hebrew shopping list parser. Convert input (text or image) to strict JSON array: [{ name: string, quantity: number }]. 
-      Rules:
-      - Handle slang (e.g., '2 חלב', 'חלב פעמיים' -> quantity: 2).
-      - Clean names (remove 'bottles of', 'packages of', etc.).
-      - Default quantity = 1.
-      - Output ONLY valid JSON.`;
+      const systemPrompt = `You are a Hebrew event item parser and classifier.
+Your inputs are: 1. Text/Image list. 2. Allowed Categories (JSON Array of {id, name}).
+Task: Extract items [{ name: string, quantity: number, category: string }] and classify strictly into Allowed Categories.
+Rules:
+- Handle slang (e.g., '2 חלב', 'חלב פעמיים' -> quantity: 2).
+- Clean names (remove 'bottles of', 'packages of', etc.).
+- Default quantity = 1.
+- Category Logic:
+  - You will be provided with a JSON list of allowed categories.
+  - You MUST try to match each item to the most appropriate category 'id' from that list based on the 'name'.
+  - If "meat" (בשר) is in the list and item is "kebab", use "meat".
+  - If no match found, use "other" (or "general" if it exists in the list).
+- Output ONLY valid JSON array of objects.`;
 
       const parts = [systemPrompt];
+      if (allowedCategories && Array.isArray(allowedCategories)) {
+        parts.push(`Allowed Categories: ${JSON.stringify(allowedCategories)}`);
+      }
       if (text) parts.push(`Input Text: "${text}"`);
       if (image) {
         parts.push({

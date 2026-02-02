@@ -11,6 +11,17 @@ export interface User {
   isAdmin?: boolean;
 }
 
+export enum EventType {
+  FRIDAY_DINNER = 'friday_dinner',
+  BBQ = 'bbq',
+  PICNIC = 'picnic',
+  SCHOOL_PARTY = 'school_party',
+  PARTY = 'party',
+  DAIRY = 'dairy',
+  TRIP = 'trip', // NEW: Carpool/Trip
+  OTHER = 'other'
+}
+
 /**
  * Represents the core details of an event, as stored under event.details.
  */
@@ -23,19 +34,47 @@ export interface EventDetails {
   isActive: boolean;
   allowUserItems?: boolean; // Whether to allow participants to add items
   userItemLimit?: number;   // User item limit
+  categories?: CategoryConfig[]; // Custom categories for this event
+  eventType?: EventType; // Added EventType
+  endDate?: string;
+  endTime?: string;
+}
+
+/**
+ * Configuration for a single category.
+ */
+export interface CategoryConfig {
+  id: string;        // e.g., "meat", "starter"
+  name: string;      // Display name
+  icon: string;      // Filename e.g., "meat.png"
+  color: string;     // Hex code
+  order: number;     // For sorting
+  rowType?: 'needs' | 'offers'; // 'offers' changes UI to "Join/Reserve" model
+}
+
+/**
+ * Represents a saved custom template for a user.
+ */
+export interface CustomTemplate {
+  id: string;
+  name: string;
+  categories: CategoryConfig[];
+  createdAt: number;
 }
 
 /**
  * Represents a menu item for a specific event.
  * Note that the eventId field is no longer needed, as the item is nested under the event.
  */
-export type MenuCategory = 'starter' | 'main' | 'dessert' | 'drink' | 'other' | 'equipment';
+// export type MenuCategory = 'starter' | 'main' | 'dessert' | 'drink' | 'other' | 'equipment';
+export type MenuCategory = string; // Changed to string to support dynamic categories
 
 export interface MenuItem {
   id: string;
   eventId: string; // Added event ID for convenience
   name: string;
-  category: MenuCategory;
+  category: string; // Was MenuCategory
+
   quantity: number;
   notes?: string;
   isRequired: boolean;
@@ -47,6 +86,7 @@ export interface MenuItem {
   assignedTo?: string;
   assignedToName?: string;
   assignedAt?: number;
+  rowType?: 'needs' | 'offers';
 }
 
 

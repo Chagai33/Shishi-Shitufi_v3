@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { ImportItemsModal } from './ImportItemsModal';
 import { PresetListsManager } from './PresetListsManager';
+import { getEventCategories } from '../../constants/templates';
 
 interface BulkItemsManagerProps {
   onBack: () => void;
@@ -47,6 +48,7 @@ const MobileItemCard = ({
   onSave,
   onCancel,
   categoryOptions,
+  activeCategories,
   t
 }: {
   item: EditableItem;
@@ -57,8 +59,10 @@ const MobileItemCard = ({
   onSave: () => void;
   onCancel: () => void;
   categoryOptions: { value: string; label: string }[];
+  activeCategories: any[]; // Changed to accept full category objects for colors
   t: any;
 }) => {
+  const categoryConfig = activeCategories.find(c => c.id === item.category);
   return (
     <div className={`p-4 border-b border-gray-100 last:border-0 ${item.isSelected ? 'bg-blue-50/30' : 'bg-white'}`}>
       <div className="flex items-start gap-3">
@@ -124,11 +128,10 @@ const MobileItemCard = ({
                 ))}
               </select>
             ) : (
-              <span className={`text-xs px-2 py-0.5 rounded-full ${item.category === 'starter' ? 'bg-orange-100 text-orange-800' :
-                item.category === 'main' ? 'bg-blue-100 text-blue-800' :
-                  item.category === 'dessert' ? 'bg-pink-100 text-pink-800' :
-                    'bg-gray-100 text-gray-800'
-                }`}>
+              <span
+                className="text-xs px-2 py-0.5 rounded-full text-white"
+                style={{ backgroundColor: categoryConfig?.color || '#9ca3af' }}
+              >
                 {categoryOptions.find(opt => opt.value === item.category)?.label}
               </span>
             )}
@@ -277,11 +280,24 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
     setEditableItems(items);
   }, [allItems]);
 
-  const categoryOptions = [
-    { value: 'starter', label: t('categories.starter') }, { value: 'main', label: t('categories.main') },
-    { value: 'dessert', label: t('categories.dessert') }, { value: 'drink', label: t('categories.drink') },
-    { value: 'other', label: t('categories.other') }
-  ];
+  // Determine categories to show
+  const activeCategories = useMemo(() => {
+    if (event) {
+      return getEventCategories(event);
+    }
+    // If filtering by specific event, use that event's categories
+    if (filterEvent !== 'all') {
+      const selectedEvent = realtimeEvents.find(e => e.id === filterEvent);
+      return getEventCategories(selectedEvent);
+    }
+    // Fallback: Return Default categories (or maybe a superset if we want to be fancy)
+    return getEventCategories(undefined);
+  }, [event, filterEvent, realtimeEvents]);
+
+  const categoryOptions = activeCategories.map(cat => ({
+    value: cat.id,
+    label: cat.name
+  }));
 
   const assignedOptions = [
     { value: 'all', label: t('bulkEdit.filters.allOf') }, { value: 'assigned', label: t('bulkEdit.filters.assigned') },
@@ -293,9 +309,15 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
       if (searchTerm && !item.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
       if (filterEvent !== 'all' && item.eventId !== filterEvent) return false;
       if (filterCategory !== 'all' && item.category !== filterCategory) return false;
-      const isItemAssigned = (allAssignments || []).some(a => a.menuItemId === item.id);
-      if (filterAssigned === 'assigned' && !isItemAssigned) return false;
-      if (filterAssigned === 'unassigned' && isItemAssigned) return false;
+      const itemAssignments = (allAssignments || []).filter(a => a.menuItemId === item.id);
+      const totalAssigned = itemAssignments.reduce((acc, curr) => acc + (curr.quantity || 0), 0);
+      const isFullyAssigned = totalAssigned >= item.quantity;
+      const hasAnyAssignment = totalAssigned > 0;
+
+      if (filterAssigned === 'assigned' && !hasAnyAssignment) return false;
+      // Show in unassigned if NOT fully assigned (includes empty and partial assignments)
+      if (filterAssigned === 'unassigned' && isFullyAssigned) return false;
+
       if (filterAddedBy !== 'all') {
         const eventData = realtimeEvents.find(e => e.id === item.eventId);
         if (!eventData) return false; // If event not found, hide the item
@@ -309,15 +331,26 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
 
   // Group items by category in the desired order
   const categorizedItems = useMemo(() => {
-    const categories = ['starter', 'main', 'dessert', 'drink', 'other'];
     const grouped: { [key: string]: EditableItem[] } = {};
 
-    categories.forEach(category => {
-      grouped[category] = filteredItems.filter(item => item.category === category);
+    // Initialize groups for all active categories
+    activeCategories.forEach(cat => {
+      grouped[cat.id] = [];
+    });
+
+    // Sort items into groups
+    filteredItems.forEach(item => {
+      if (grouped[item.category]) {
+        grouped[item.category].push(item);
+      } else {
+        // Fallback for items with categories not in the current list
+        if (!grouped['other']) grouped['other'] = [];
+        grouped['other'].push(item);
+      }
     });
 
     return grouped;
-  }, [filteredItems]);
+  }, [filteredItems, activeCategories]);
 
   const getCategoryStats = (categoryItems: EditableItem[]) => {
     const assigned = categoryItems.filter(item =>
@@ -901,12 +934,19 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
             <p className="text-gray-500 max-w-sm mx-auto">{t('bulkEdit.table.noItemsDesc')}</p>
           </div>
         ) : (
-          ['starter', 'main', 'dessert', 'drink', 'other'].map(category => {
+          activeCategories.map(group => {
+            const category = group.id;
             const categoryItems = categorizedItems[category] || [];
             if (categoryItems.length === 0) return null;
 
             const stats = getCategoryStats(categoryItems);
-            const categoryLabel = categoryOptions.find(opt => opt.value === category)?.label || category;
+            // Label is now direct from the group object from activeCategories
+            const categoryLabel = group.name;
+
+            // Define colors dynamically or map them?
+            // We have color in group.color from templates!
+            // Let's use that instead of hardcoded classes if possible, or fallback to known IDs
+
 
             return (
               <div key={category} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -914,11 +954,10 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                 <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <span className={`w-2 h-6 rounded-full ${category === 'starter' ? 'bg-orange-400' :
-                        category === 'main' ? 'bg-blue-400' :
-                          category === 'dessert' ? 'bg-pink-400' :
-                            'bg-gray-400'
-                        }`}></span>
+                      <span
+                        className="w-2 h-6 rounded-full"
+                        style={{ backgroundColor: group.color || '#9ca3af' }}
+                      ></span>
                       {categoryLabel}
                     </h3>
                     <div className="flex items-center space-x-6 rtl:space-x-reverse text-sm">
@@ -953,6 +992,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                       onSave={() => saveItem(item.id)}
                       onCancel={() => cancelEditing(item.id)}
                       categoryOptions={categoryOptions}
+                      activeCategories={activeCategories}
                       t={t}
                     />
                   ))}

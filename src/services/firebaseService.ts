@@ -5,7 +5,7 @@ import { ref, push, set, get, onValue, off, remove, update, query, equalTo, orde
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added import
 import { database, auth } from '../lib/firebase';
-import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem } from '../types';
+import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
 
 import { toast } from 'react-hot-toast';
 
@@ -206,6 +206,108 @@ export class FirebaseService {
     } catch (error) {
       console.error('❌ Error in deleteEvent:', error);
       console.groupEnd();
+      throw error;
+    }
+  }
+
+  /**
+   * מוחק את כל הפריטים והשיבוצים של אירוע (עבור איתחול או הגירה)
+   */
+  static async deleteAllEventItems(eventId: string): Promise<void> {
+    try {
+      const updates: { [key: string]: null } = {};
+      updates[`events/${eventId}/menuItems`] = null;
+      updates[`events/${eventId}/assignments`] = null;
+      updates[`events/${eventId}/userItemCounts`] = null;
+
+      await update(ref(database), updates);
+    } catch (error) {
+      console.error('❌ Error in deleteAllEventItems:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Safe Migration: Replaces all event items with a new list in a single atomic update.
+   * This ensures we don't lose data if the user refreshes mid-process.
+   */
+  static async replaceAllMenuItems(
+    eventId: string,
+    newItems: Omit<MenuItem, 'id'>[],
+    creatorId: string,
+    migrationStartTime: number
+  ): Promise<void> {
+    const eventRef = ref(database, `events/${eventId}`);
+
+    try {
+      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
+        if (currentEventData === null) return currentEventData;
+
+        // 1. Identify "Concurrent Items" - items created AFTER we started the migration process
+        const concurrentItems: MenuItem[] = [];
+        if (currentEventData.menuItems) {
+          Object.values(currentEventData.menuItems).forEach((item: any) => {
+            if ((item.createdAt || 0) > migrationStartTime) {
+              concurrentItems.push({ ...item, category: 'other' }); // Move to safe 'other' category
+            }
+          });
+        }
+
+        // 2. Clear existing structure (Items, Assignments, Counts) for fresh slate
+        const newMenuItemsMap: { [key: string]: any } = {};
+        const newUserItemCounts: { [key: string]: number } = {};
+
+        // 3. Process the Admin's Migrated Items
+        let adminItemCount = 0;
+        newItems.forEach((item) => {
+          // Generate ID inside transaction
+          const newItemId = `migrated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+          const itemData: any = {
+            ...item,
+            id: newItemId,
+            createdAt: Date.now(),
+            creatorId: creatorId,
+            creatorName: 'Admin',
+            notes: item.notes || null,
+            isRequired: item.isRequired ?? false,
+            isSplittable: item.isSplittable ?? false
+          };
+          Object.keys(itemData).forEach(key => itemData[key] === undefined && delete itemData[key]);
+
+          newMenuItemsMap[newItemId] = itemData;
+          adminItemCount++;
+        });
+
+        // 4. Re-add Concurrent Items (Preserved)
+        concurrentItems.forEach(cItem => {
+          const cId = cItem.id;
+          newMenuItemsMap[cId] = {
+            ...cItem,
+            category: 'other',
+            notes: (cItem.notes || '') + ' (נוסף תוך כדי הגירה)'
+          };
+
+          if (cItem.creatorId) {
+            newUserItemCounts[cItem.creatorId] = (newUserItemCounts[cItem.creatorId] || 0) + 1;
+          }
+        });
+
+        // Add Admin counts
+        if (adminItemCount > 0) {
+          newUserItemCounts[creatorId] = (newUserItemCounts[creatorId] || 0) + adminItemCount;
+        }
+
+        // 5. Apply New Items to State
+        currentEventData.menuItems = newMenuItemsMap;
+        currentEventData.assignments = {};
+        currentEventData.userItemCounts = newUserItemCounts;
+
+        return currentEventData;
+      });
+
+    } catch (error) {
+      console.error('❌ Error in replaceAllMenuItems transaction:', error);
       throw error;
     }
   }
@@ -1013,5 +1115,57 @@ export class FirebaseService {
       console.error('❌ Error validating event data:', error);
       return { isValid: false, issues: ['שגיאה בבדיקת הנתונים'] };
     }
+  }
+
+  // ===============================
+  // Custom Templates Management
+  // ===============================
+
+  /**
+   * Save a custom user template (limit to 5 per user)
+   */
+  static async saveCustomTemplate(userId: string, name: string, categories: CategoryConfig[]): Promise<string> {
+    const templatesRef = ref(database, `users/${userId}/templates`);
+
+    // Check limit
+    const snapshot = await get(templatesRef);
+    if (snapshot.exists() && snapshot.size >= 5) {
+      throw new Error('Limit reached: You can save up to 5 custom templates.');
+    }
+
+    const newTemplateRef = push(templatesRef);
+    await set(newTemplateRef, {
+      id: newTemplateRef.key,
+      name,
+      categories,
+      createdAt: Date.now()
+    });
+
+    return newTemplateRef.key as string;
+  }
+
+  /**
+   * Get all custom templates for a user
+   */
+  static async getUserTemplates(userId: string): Promise<CustomTemplate[]> {
+    const templatesRef = ref(database, `users/${userId}/templates`);
+    const snapshot = await get(templatesRef);
+
+    if (!snapshot.exists()) return [];
+
+    const templates: CustomTemplate[] = [];
+    snapshot.forEach((child) => {
+      templates.push(child.val());
+    });
+
+    return templates.sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  /**
+   * Delete a custom template
+   */
+  static async deleteCustomTemplate(userId: string, templateId: string): Promise<void> {
+    const templateRef = ref(database, `users/${userId}/templates/${templateId}`);
+    await remove(templateRef);
   }
 }

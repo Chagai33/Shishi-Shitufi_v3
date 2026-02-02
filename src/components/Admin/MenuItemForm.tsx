@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, ChefHat, Hash, FileText, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
-import { ShishiEvent, MenuItem, MenuCategory } from '../../types';
+import { ShishiEvent, MenuItem } from '../../types';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth'; // 1. Import
+import { getEventCategories } from '../../constants/templates';
 import FocusTrap from 'focus-trap-react';
 
 interface MenuItemFormProps {
@@ -54,20 +55,20 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
 
   const [formData, setFormData] = useState({
     name: item?.name || '',
-    category: item?.category || 'main' as MenuCategory,
+    category: item?.category || (getEventCategories(event)[0]?.id || 'main'),
     quantity: item?.quantity || 1,
     notes: item?.notes || '',
     isRequired: item?.isRequired || false,
     isSplittable: item?.isSplittable || false
   });
 
-  const categoryOptions = [
-    { value: 'starter', label: 'מנה ראשונה' },
-    { value: 'main', label: 'מנה עיקרית' },
-    { value: 'dessert', label: 'קינוח' },
-    { value: 'drink', label: 'שתייה' },
-    { value: 'other', label: 'אחר' }
-  ];
+  // Get dynamic categories from the event configuration
+  const eventCategories = getEventCategories(event);
+
+  const categoryOptions = eventCategories.map(cat => ({
+    value: cat.id,
+    label: cat.name
+  }));
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -221,7 +222,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
                 <select
                   id={categoryId}
                   value={formData.category}
-                  onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   disabled={isSubmitting}
                   required

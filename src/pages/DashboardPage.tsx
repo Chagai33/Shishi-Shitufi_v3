@@ -101,21 +101,25 @@ const EventCard: React.FC<{
                     </div>
                 </div>
 
-                {menuItemsCount > 0 && (
-                    <div className="mt-4 pt-4 border-t border-neutral-200">
+                <div className="mt-4 pt-4 border-t border-neutral-200">
+                    {menuItemsCount > 0 ? (
                         <p className="text-xs text-neutral-600 mb-2 font-semibold">
                             <span className="text-neutral-900">{t('dashboard.eventCard.stats.items', { count: assignmentsCount, total: menuItemsCount })}</span>
                             <span className="mx-2">|</span>
                             <span className="text-neutral-900">{t('dashboard.eventCard.stats.participants', { count: participantsWithAssignmentsCount })}</span>
                         </p>
-                        <div className="w-full bg-neutral-200 rounded-full h-1.5">
-                            <div
-                                className="bg-accent h-1.5 rounded-full transition-all duration-500"
-                                style={{ width: `${assignmentPercentage}%` }}
-                            ></div>
-                        </div>
+                    ) : (
+                        <p className="text-xs text-neutral-500 mb-2 font-medium">
+                            {t('dashboard.eventCard.stats.noItems')}
+                        </p>
+                    )}
+                    <div className="w-full bg-neutral-200 rounded-full h-1.5">
+                        <div
+                            className="bg-accent h-1.5 rounded-full transition-all duration-500"
+                            style={{ width: `${assignmentPercentage}%` }}
+                        ></div>
                     </div>
-                )}
+                </div>
             </div>
             <div className="relative z-10 bg-neutral-50 border-t rounded-b-xl">
                 {/* Footer Actions: Clean Action Bar */}

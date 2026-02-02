@@ -129,6 +129,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
 
 
 
+
   const handleTemplateChange = (templateKey: string, isCustom = false) => {
     let template;
 
@@ -140,6 +141,23 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     }
 
     if (!template) return;
+
+    // Check for unsaved changes (dirty) before switching
+    const isModified = (() => {
+      for (const [, preset] of Object.entries(EVENT_PRESETS)) {
+        if (JSON.stringify(formData.categories) === JSON.stringify(preset.categories)) return false;
+      }
+      for (const tmpl of customTemplates) {
+        if (JSON.stringify(formData.categories) === JSON.stringify(tmpl.categories)) return false;
+      }
+      return true;
+    })();
+
+    if (isModified) {
+      if (!window.confirm('ביצעת שינויים בקטגוריות שלא נשמרו.\nהאם אתה בטוח שברצונך לעבור סוג אירוע? השינויים יאבדו.\n\nלחץ "אישור" כדי להמשיך ולאבד שינויים.\nלחץ "ביטול" כדי להישאר ולשמור תבנית חדשה.')) {
+        return;
+      }
+    }
 
     if (event && event.menuItems && Object.keys(event.menuItems).length > 0) {
       // Confirm template switch for existing events with items
@@ -369,28 +387,43 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                   </label>
 
                   {/* Save Template Button - Top Left */}
-                  {authUser && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const name = window.prompt('הכנס שם לתבנית החדשה:');
-                        if (!name || !name.trim()) return;
+                  {authUser && (() => {
+                    const isSaveDisabled = (() => {
+                      // Check against system presets
+                      for (const [, preset] of Object.entries(EVENT_PRESETS)) {
+                        if (JSON.stringify(formData.categories) === JSON.stringify(preset.categories)) return true; // Matches system -> Disabled
+                      }
+                      // Check against custom templates
+                      for (const tmpl of customTemplates) {
+                        if (JSON.stringify(formData.categories) === JSON.stringify(tmpl.categories)) return true; // Matches custom -> Disabled
+                      }
+                      return false;
+                    })();
 
-                        try {
-                          // @ts-ignore
-                          await FirebaseService.saveCustomTemplate(authUser.uid, name.trim(), formData.categories);
-                          toast.success('התבנית נשמרה!');
-                          loadCustomTemplates(); // Immediate refresh
-                        } catch (error: any) {
-                          toast.error(error.message || 'שגיאה בשמירה');
-                        }
-                      }}
-                      className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 transition-colors"
-                      title="שמור תבנית אישית"
-                    >
-                      <Save className="w-4 h-4" />
-                    </button>
-                  )}
+                    return (
+                      <button
+                        type="button"
+                        disabled={isSaveDisabled}
+                        onClick={async () => {
+                          const name = window.prompt('הכנס שם לתבנית החדשה:');
+                          if (!name || !name.trim()) return;
+
+                          try {
+                            // @ts-ignore
+                            await FirebaseService.saveCustomTemplate(authUser.uid, name.trim(), formData.categories);
+                            toast.success('התבנית נשמרה!');
+                            loadCustomTemplates(); // Immediate refresh
+                          } catch (error: any) {
+                            toast.error(error.message || 'שגיאה בשמירה');
+                          }
+                        }}
+                        className={`p-1 rounded transition-colors ${isSaveDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800 hover:bg-blue-100'}`}
+                        title={isSaveDisabled ? 'אין שינויים לשמירה' : 'שמור תבנית אישית'}
+                      >
+                        <Save className="w-4 h-4" />
+                      </button>
+                    );
+                  })()}
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 transition-all duration-300">
@@ -402,6 +435,12 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                       [EventType.FRIDAY_DINNER, EventType.BBQ, EventType.PICNIC].includes(key)
                     );
 
+                    // Determine if current categories match any system preset
+                    const currentMatchesSystem = allPresets.some(([_, p]) => JSON.stringify(formData.categories) === JSON.stringify(p.categories));
+                    // Also check custom
+                    const currentMatchesCustom = customTemplates.some(t => JSON.stringify(formData.categories) === JSON.stringify(t.categories));
+                    const isSaveDisabled = currentMatchesSystem || currentMatchesCustom;
+
                     // If expanded, show everything. If not, show Top 3.
                     const visibleSystemTemplates = isExpanded ? allPresets : topPresets;
 
@@ -410,6 +449,14 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
 
                     return (
                       <>
+                        {/* HACK: Update button disabled state via ref or just rely on react render cycle? 
+                            The button is above this block. I need to move the variable definition up or inline the check.
+                            Since I can't easily move code blocks with replace_file_content without context, I will just update the button above using a separate block if needed.
+                            Actually, I can just update the button's disabled prop in the previous block if I could reach it.
+                            Wait, the button is lines 373-392. This block starts at 396.
+                            I should have updated the button in the previous step or done a larger replace.
+                            I will update the button now.
+                        */}
                         {visibleSystemTemplates.map(([key, template]) => (
                           <button
                             type="button"

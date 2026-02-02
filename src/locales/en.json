@@ -207,7 +207,9 @@
                 },
                 "stats": {
                     "items": "{{count}} of {{total}} items assigned",
-                    "participants": "{{count}} participants"
+                    "participants": "{{count}} participants",
+                    "progress": "Assignment Progress",
+                    "noItems": "No items added yet"
                 },
                 "actions": {
                     "goToEvent": "To Event Page",

@@ -209,7 +209,9 @@
                 },
                 "stats": {
                     "items": "{{count}} מתוך {{total}} פריטים שובצו",
-                    "participants": "{{count}} משתתפים"
+                    "participants": "{{count}} משתתפים",
+                    "progress": "התקדמות שיבוצים",
+                    "noItems": "טרם נוספו פריטים"
                 },
                 "actions": {
                     "goToEvent": "לאירוע",

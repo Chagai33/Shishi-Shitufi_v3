@@ -12,6 +12,22 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({ categories, onCh
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState<string | null>(null);
 
+  const listRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (editingId) {
+      // Tiny timeout to ensure DOM is ready
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`category-input-${editingId}`);
+        if (el && document.activeElement !== el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          el.focus({ preventScroll: true });
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [editingId]);
+
   const handleUpdate = (id: string, field: keyof CategoryConfig, value: any) => {
     const updated = categories.map(c => c.id === id ? { ...c, [field]: value } : c);
     onChange(updated);
@@ -27,7 +43,10 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({ categories, onCh
       order: categories.length + 1
     };
     onChange([...categories, newCategory]);
-    setEditingId(newId); // Auto-start editing
+    // The useEffect will handle scrolling
+    // setEditingId is handled in the effect or directly? 
+    // We set editing ID here, scrolling happens in effect.
+    setEditingId(newId);
   };
 
   const handleDelete = (id: string) => {
@@ -66,7 +85,10 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({ categories, onCh
         </div>
       </div>
 
-      <div className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+      <div
+        ref={listRef}
+        className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar"
+      >
         {categories.map((category, index) => (
           <div
             key={category.id}
@@ -133,6 +155,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({ categories, onCh
             {/* Content */}
             <div className="flex-1 space-y-2">
               <input
+                id={`category-input-${category.id}`}
                 type="text"
                 value={category.name}
                 onChange={(e) => handleUpdate(category.id, 'name', e.target.value)}

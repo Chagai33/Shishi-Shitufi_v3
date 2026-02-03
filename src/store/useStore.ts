@@ -13,6 +13,7 @@ interface AppState {
   // Actions to update the state
   setUser: (user: User | null) => void;
   setCurrentEvent: (event: ShishiEvent | null) => void;
+  updateCurrentEventPartial: (updates: Partial<ShishiEvent>) => void; // NEW: For granular updates
   setLoading: (loading: boolean) => void;
   clearCurrentEvent: () => void;
   toggleDeleteAccountModal: () => void; // New action for modal management
@@ -42,6 +43,34 @@ export const useStore = create<AppState>((set, get) => ({
 
   // This action will now receive the complete event object from Firebase
   setCurrentEvent: (event) => set({ currentEvent: event, isLoading: false }),
+
+  // NEW: Partial update for granular subscriptions (bandwidth optimization)
+  // Safe initialization - creates base event if doesn't exist yet
+  updateCurrentEventPartial: (updates) => set((state) => {
+    if (!state.currentEvent) {
+      // First data arriving - initialize with minimal structure
+      return {
+        currentEvent: {
+          id: (updates as any).id || '',
+          organizerId: '',
+          organizerName: '',
+          createdAt: 0,
+          details: {} as any,
+          menuItems: {},
+          assignments: {},
+          participants: {},
+          userItemCounts: {},
+          ...updates
+        },
+        isLoading: false
+      };
+    }
+    
+    return {
+      currentEvent: { ...state.currentEvent, ...updates },
+      isLoading: false
+    };
+  }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 
@@ -268,4 +297,27 @@ export const selectParticipants = (state: AppState): Participant[] => {
         ...(participant as Omit<Participant, 'id'>),
         id,
     }));
+};
+
+/**
+ * 🚀 OPTIMIZATION: סלקטור שמחזיר assignments מאורגנים לפי menuItemId (O(1) lookup).
+ * משפר ביצועים עבור רשימות גדולות - במקום O(n) filter לכל פריט.
+ */
+export const selectAssignmentsByItemId = (state: AppState): Map<string, Assignment[]> => {
+  const event = state.currentEvent;
+  if (!event?.assignments) return new Map();
+
+  const map = new Map<string, Assignment[]>();
+  
+  Object.entries(event.assignments).forEach(([id, assignment]) => {
+    const fullAssignment = { ...(assignment as Omit<Assignment, 'id'>), id };
+    const menuItemId = fullAssignment.menuItemId;
+    
+    if (!map.has(menuItemId)) {
+      map.set(menuItemId, []);
+    }
+    map.get(menuItemId)!.push(fullAssignment);
+  });
+
+  return map;
 };

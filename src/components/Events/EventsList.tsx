@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Calendar, Clock, MapPin, ChefHat, Search, X, ArrowRight } from 'lucide-react';
-import { useStore, selectMenuItems, selectAssignments } from '../../store/useStore';
+import { useStore, selectMenuItems, selectAssignments, selectAssignmentsByItemId } from '../../store/useStore';
 import AssignmentModal from './AssignmentModal';
 import { EditAssignmentModal } from './EditAssignmentModal';
 import { RideCard } from './Cards/RideCard';
@@ -12,6 +12,7 @@ import { BulkItemsManager } from '../Admin/BulkItemsManager';
 import { UserMenuItemForm } from './UserMenuItemForm';
 import { CategorySelector } from './CategorySelector';
 import { useTranslation } from 'react-i18next';
+import { useDebounce } from '../../hooks/useDebounce';
 
 export function EventsList() {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export function EventsList() {
 
   const menuItems = useStore(selectMenuItems);
   const assignments = useStore(selectAssignments);
+  const assignmentsByItemId = useStore(selectAssignmentsByItemId); // 🚀 OPTIMIZATION: O(1) lookups
 
   // Use currentEvent as the single-item events list for now if needed, 
   // or adjust code that expects multiple events.
@@ -31,6 +33,7 @@ export function EventsList() {
   const [selectedMenuItem, setSelectedMenuItem] = useState<{ item: MenuItem; assignment?: Assignment; isAddMore?: boolean } | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<{ item: MenuItem; assignment: Assignment } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300); // 🚀 OPTIMIZATION: Debounced search
   const [showBulkManager, setShowBulkManager] = useState(false);
   const [showUserItemForm, setShowUserItemForm] = useState(false);
   const [userItemFormConfig, setUserItemFormConfig] = useState<{ category?: string; rowType?: 'needs' | 'offers' } | null>(null);
@@ -79,12 +82,13 @@ export function EventsList() {
     [eventMenuItems, eventAssignments]
   );
 
+  // 🚀 OPTIMIZATION: Use debounced search term to reduce filtering operations
   const displayedItems = useMemo(() => {
     let items = eventMenuItems;
 
-    if (searchTerm.trim()) {
+    if (debouncedSearchTerm.trim()) {
       return items.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.trim().toLowerCase())
+        item.name.toLowerCase().includes(debouncedSearchTerm.trim().toLowerCase())
       );
     }
 
@@ -99,7 +103,7 @@ export function EventsList() {
     }
 
     return [];
-  }, [eventMenuItems, searchTerm, selectedCategory, showMyAssignments, eventAssignments, user?.id]);
+  }, [eventMenuItems, debouncedSearchTerm, selectedCategory, showMyAssignments, eventAssignments, user?.id]);
 
   const availableCategories = useMemo(() => {
     const categoriesSet = new Set(eventMenuItems.map(item => item.category));
@@ -302,11 +306,15 @@ export function EventsList() {
                           {itemsToRender.available.map((item) => {
                             const isRide = item.category === 'ride_offers' || item.category === 'ride_requests' || item.category === 'trempim' || item.category === 'rides';
 
+                            // 🚀 OPTIMIZATION: Use indexed map instead of filtering entire array
+                            const itemAssignments = assignmentsByItemId.get(item.id) || [];
+                            const myAssignment = itemAssignments.find(a => a.userId === user?.id);
+
                             const commonProps = {
                               item,
-                              assignments: eventAssignments.filter(a => a.menuItemId === item.id),
-                              assignment: eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id),
-                              isMyAssignment: eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id),
+                              assignments: itemAssignments,
+                              assignment: myAssignment,
+                              isMyAssignment: !!myAssignment,
                               isEventActive: !!canAssign,
                               onAssign: () => handleAssignItem(item),
                               onEdit: () => handleEditAssignment(item),
@@ -343,11 +351,15 @@ export function EventsList() {
                           {itemsToRender.assigned.map((item) => {
                             const isRide = item.category === 'ride_offers' || item.category === 'ride_requests' || item.category === 'trempim' || item.category === 'rides';
 
+                            // 🚀 OPTIMIZATION: Use indexed map instead of filtering entire array
+                            const itemAssignments = assignmentsByItemId.get(item.id) || [];
+                            const myAssignment = itemAssignments.find(a => a.userId === user?.id);
+
                             const commonProps = {
                               item,
-                              assignments: eventAssignments.filter(a => a.menuItemId === item.id),
-                              assignment: eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id),
-                              isMyAssignment: eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id),
+                              assignments: itemAssignments,
+                              assignment: myAssignment,
+                              isMyAssignment: !!myAssignment,
                               isEventActive: !!canAssign,
                               onAssign: () => handleAssignItem(item),
                               onEdit: () => handleEditAssignment(item),

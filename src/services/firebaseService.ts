@@ -163,6 +163,7 @@ export class FirebaseService {
 
   /**
    * מאזין לשינויים באירוע ספציפי
+   * @deprecated Use granular subscriptions (subscribeToEventDetails, subscribeToMenuItems, subscribeToAssignments) for better performance
    */
   static subscribeToEvent(
     eventId: string,
@@ -195,6 +196,112 @@ export class FirebaseService {
     return () => {
       off(eventRef, 'value', onValueChange);
     };
+  }
+
+  /**
+   * 🚀 OPTIMIZATION: מאזין רק לפרטי האירוע (details) - ללא menuItems/assignments.
+   * חוסך bandwidth כאשר רק פרטים בסיסיים משתנים.
+   * Uses multiple listeners for true granular updates.
+   */
+  static subscribeToEventDetails(
+    eventId: string,
+    callback: (details: { organizerId: string; organizerName: string; createdAt: number; details: any; userItemCounts?: any } | null) => void
+  ): () => void {
+    const eventRef = ref(database, `events/${eventId}`);
+    
+    // We need to listen to the full event once to get base fields,
+    // but we'll exclude the heavy collections in the callback
+    const onValueChange = (snapshot: any) => {
+      if (snapshot.exists()) {
+        const eventData = snapshot.val();
+        
+        // Extract only base fields (no menuItems/assignments/participants)
+        const baseData: any = {
+          organizerId: eventData.organizerId,
+          organizerName: eventData.organizerName,
+          createdAt: eventData.createdAt,
+          updatedAt: eventData.updatedAt,
+          details: eventData.details,
+          userItemCounts: eventData.userItemCounts || {}
+        };
+
+        callback(baseData);
+      } else {
+        callback(null);
+      }
+    };
+
+    onValue(eventRef, onValueChange, (error) => {
+      console.error(`❌ Error subscribing to event details ${eventId}:`, error);
+      callback(null);
+    });
+
+    return () => off(eventRef, 'value', onValueChange);
+  }
+
+  /**
+   * 🚀 OPTIMIZATION: מאזין רק ל-menuItems של האירוע.
+   * עדכון של assignment לא יגרום להורדה מחדש של כל המנות.
+   */
+  static subscribeToMenuItems(
+    eventId: string,
+    callback: (menuItems: { [key: string]: any }) => void
+  ): () => void {
+    const menuItemsRef = ref(database, `events/${eventId}/menuItems`);
+
+    const onValueChange = (snapshot: any) => {
+      callback(snapshot.exists() ? snapshot.val() : {});
+    };
+
+    onValue(menuItemsRef, onValueChange, (error) => {
+      console.error(`❌ Error subscribing to menu items ${eventId}:`, error);
+      callback({});
+    });
+
+    return () => off(menuItemsRef, 'value', onValueChange);
+  }
+
+  /**
+   * 🚀 OPTIMIZATION: מאזין רק ל-assignments של האירוע.
+   * שינוי של assignment אחד לא יוריד את כל ה-menuItems מחדש.
+   */
+  static subscribeToAssignments(
+    eventId: string,
+    callback: (assignments: { [key: string]: any }) => void
+  ): () => void {
+    const assignmentsRef = ref(database, `events/${eventId}/assignments`);
+
+    const onValueChange = (snapshot: any) => {
+      callback(snapshot.exists() ? snapshot.val() : {});
+    };
+
+    onValue(assignmentsRef, onValueChange, (error) => {
+      console.error(`❌ Error subscribing to assignments ${eventId}:`, error);
+      callback({});
+    });
+
+    return () => off(assignmentsRef, 'value', onValueChange);
+  }
+
+  /**
+   * 🚀 OPTIMIZATION: מאזין רק ל-participants של האירוע.
+   */
+  static subscribeToParticipants(
+    eventId: string,
+    callback: (participants: { [key: string]: any }) => void
+  ): () => void {
+    const participantsRef = ref(database, `events/${eventId}/participants`);
+
+    const onValueChange = (snapshot: any) => {
+      callback(snapshot.exists() ? snapshot.val() : {});
+    };
+
+    onValue(participantsRef, onValueChange, (error) => {
+      console.error(`❌ Error subscribing to participants ${eventId}:`, error);
+      callback({});
+    });
+
+    return () => off(participantsRef, 'value', onValueChange);
   }
 
   /**

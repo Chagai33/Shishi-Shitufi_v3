@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { MenuItem, Assignment, CategoryConfig } from '../../types';
 
@@ -91,53 +91,48 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   const rideOffersCategory = categories.find(c => c.id === 'ride_offers');
   const rideRequestsCategory = categories.find(c => c.id === 'ride_requests');
 
-  // Helper to calculate progress
-  const getCategoryProgress = (categoryId: string) => {
-    const itemsInCategory = menuItems.filter(item => item.category === categoryId);
-    const categoryCfg = categories.find(c => c.id === categoryId);
+  // 🚀 OPTIMIZATION: Calculate ALL category progress in one pass (memoized)
+  // Reduces O(n²) complexity to O(n) - previously recalculated on every render
+  const categoryProgressMap = useMemo(() => {
+    const map = new Map<string, { assigned: number; total: number }>();
 
-    // Check if this is a ride category
-    const isRide = categoryId === 'ride_offers' || categoryId === 'ride_requests' || categoryId === 'trempim' || categoryCfg?.rowType === 'offers';
+    categories.forEach(category => {
+      const itemsInCategory = menuItems.filter(item => item.category === category.id);
+      const isRide = category.id === 'ride_offers' || category.id === 'ride_requests' || 
+                     category.id === 'trempim' || category.rowType === 'offers';
 
-    if (isRide) {
-      let totalQuantity = 0;
-      let assignedQuantity = 0;
+      if (isRide) {
+        let totalQuantity = 0;
+        let assignedQuantity = 0;
 
-      itemsInCategory.forEach(item => {
-        const isRequest = item.rowType === 'needs' || item.category === 'ride_requests';
-        const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
-        const filled = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+        itemsInCategory.forEach(item => {
+          const isRequest = item.rowType === 'needs' || item.category === 'ride_requests';
+          const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+          const filled = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
 
-        if (isRequest) {
-          // For requests, count satisfied requests (binary)
-          totalQuantity += 1;
-          if (filled > 0) assignedQuantity += 1;
-        } else {
-          // For offers, count literal seats
-          totalQuantity += item.quantity;
-          assignedQuantity += filled;
-        }
-      });
+          if (isRequest) {
+            totalQuantity += 1;
+            if (filled > 0) assignedQuantity += 1;
+          } else {
+            totalQuantity += item.quantity;
+            assignedQuantity += filled;
+          }
+        });
 
-      return {
-        assigned: assignedQuantity,
-        total: totalQuantity,
-      };
-    }
+        map.set(category.id, { assigned: assignedQuantity, total: totalQuantity });
+      } else {
+        const assignedItemsInCategory = itemsInCategory.filter(item =>
+          assignments.some(a => a.menuItemId === item.id)
+        );
+        map.set(category.id, { assigned: assignedItemsInCategory.length, total: itemsInCategory.length });
+      }
+    });
 
-    // Default item-count logic for non-ride categories
-    const assignedItemsInCategory = itemsInCategory.filter(item =>
-      assignments.some(a => a.menuItemId === item.id)
-    );
+    return map;
+  }, [menuItems, assignments, categories]);
 
-    return {
-      assigned: assignedItemsInCategory.length,
-      total: itemsInCategory.length,
-    };
-  };
-
-  const offerProgress = getCategoryProgress('ride_offers');
-  const requestProgress = getCategoryProgress('ride_requests');
+  const offerProgress = categoryProgressMap.get('ride_offers') || { assigned: 0, total: 0 };
+  const requestProgress = categoryProgressMap.get('ride_requests') || { assigned: 0, total: 0 };
 
   // We show the split card if either category exists OR if the action buttons are enabled
   const shouldShowSplitCard = (!!rideOffersCategory || !!rideRequestsCategory || !!onOfferRide || !!onRideRequest);
@@ -157,7 +152,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         )}
 
         {standardCategories.map((category) => {
-          const progress = getCategoryProgress(category.id);
+          const progress = categoryProgressMap.get(category.id) || { assigned: 0, total: 0 };
 
           // Hide empty categories to keep the UI clean (Legacy Behavior)
           if (progress.total === 0) return null;

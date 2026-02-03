@@ -448,86 +448,89 @@ export function UserMenuItemForm({
                   </p>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {!isLocked && (
-                  <div>
-                    <label htmlFor={categoryId} className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('userItemForm.fields.category')}
-                    </label>
-                    <select
-                      id={categoryId}
-                      value={formData.category}
-                      onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      disabled={isSubmitting}
-                      required
-                      aria-required="true"
-                    >
-                      {categoryOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div className={`${isLocked ? 'col-span-2' : ''} grid grid-cols-2 gap-4`}>
 
-                  {/* Total Needed */}
+              {/* Category Selection - Full Width Row */}
+              {!isLocked && (
+                <div className="mb-4">
+                  <label htmlFor={categoryId} className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('userItemForm.fields.category')}
+                  </label>
+                  <select
+                    id={categoryId}
+                    value={formData.category}
+                    onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    disabled={isSubmitting}
+                    required
+                    aria-required="true"
+                  >
+                    {categoryOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Quantity Section - Separate Row */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Total Needed */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {isRequest ? 'כמה מקומות אתם?' : (isOffersType ? 'מספר מקומות פנויים' : t('userItemForm.fields.quantityTotal'))}
+                  </label>
+                  <Stepper
+                    value={formData.quantity}
+                    onChange={(val) => {
+                      handleInputChange('quantity', val);
+                      if (!isRequest) {
+                        const newMyQty = myQuantity > val ? val : myQuantity;
+                        if (myQuantity > val) setMyQuantity(val);
+                        if (val > newMyQty) handleInputChange('isSplittable', true);
+                      }
+                    }}
+                    label={isRequest ? 'מספר מקומות' : t('userItemForm.fields.quantityTotal')}
+                  />
+                </div>
+
+                {/* My Contribution */}
+                {!isRequest && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {isRequest ? 'כמה מקומות אתם?' : (isOffersType ? 'מספר מקומות פנויים' : t('userItemForm.fields.quantityTotal'))}
-                    </label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-medium text-gray-700">
+                        {isOffersType ? 'שריין לעצמך/חברים' : t('userItemForm.fields.myContribution')}
+                      </label>
+                      {myQuantity < formData.quantity && (
+                        <button
+                          type="button"
+                          onClick={() => setMyQuantity(formData.quantity)}
+                          aria-label={t('userItemForm.fields.bringAll')}
+                          className="text-xs text-orange-600 hover:text-orange-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded"
+                        >
+                          {isOffersType ? 'מלא את הכל' : t('userItemForm.fields.bringAll')}
+                        </button>
+                      )}
+                    </div>
                     <Stepper
-                      value={formData.quantity}
-                      onChange={(val) => {
-                        handleInputChange('quantity', val);
-                        if (!isRequest) {
-                          const newMyQty = myQuantity > val ? val : myQuantity;
-                          if (myQuantity > val) setMyQuantity(val);
-                          if (val > newMyQty) handleInputChange('isSplittable', true);
-                        }
-                      }}
-                      label={isRequest ? 'מספר מקומות' : t('userItemForm.fields.quantityTotal')}
+                      value={myQuantity}
+                      onChange={setMyQuantity}
+                      max={formData.quantity}
+                      min={0} // Allow 0 for rides specifically
+                      label={t('userItemForm.fields.myContribution')}
                     />
                   </div>
-
-                  {/* My Contribution */}
-                  {!isRequest && (
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-medium text-gray-700">
-                          {isOffersType ? 'שריין לעצמך/חברים' : t('userItemForm.fields.myContribution')}
-                        </label>
-                        {myQuantity < formData.quantity && (
-                          <button
-                            type="button"
-                            onClick={() => setMyQuantity(formData.quantity)}
-                            aria-label={t('userItemForm.fields.bringAll')}
-                            className="text-xs text-orange-600 hover:text-orange-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded"
-                          >
-                            {isOffersType ? 'מלא את הכל' : t('userItemForm.fields.bringAll')}
-                          </button>
-                        )}
-                      </div>
-                      <Stepper
-                        value={myQuantity}
-                        onChange={setMyQuantity}
-                        max={formData.quantity}
-                        min={0} // Allow 0 for rides specifically
-                        label={t('userItemForm.fields.myContribution')}
-                      />
-                    </div>
-                  )}
-                  {!isRequest && (
-                    <div className="col-span-2 text-xs text-gray-500 text-center -mt-2">
-                      {myQuantity < formData.quantity ?
-                        (myQuantity === 0 ? (isOffersType ? "כל המקומות פנויים לאחרים" : "אתה לא מביא כלום (מנהל)") : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
-                        (isOffersType ? "הרכב מלא (שריינת הכל)" : t('userItemForm.fields.youBringAllMsg'))}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
+
+              {/* Status Message - Below Quantities */}
+              {!isRequest && (
+                <div className="text-xs text-gray-500 text-center -mt-2 mb-4">
+                  {myQuantity < formData.quantity ?
+                    (myQuantity === 0 ? (isOffersType ? "כל המקומות פנויים לאחרים" : "אתה לא מביא כלום (מנהל)") : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
+                    (isOffersType ? "הרכב מלא (שריינת הכל)" : t('userItemForm.fields.youBringAllMsg'))}
+                </div>
+              )}
               <div className="mb-6">
                 <label htmlFor={notesId} className="block text-sm font-medium text-gray-700 mb-2">
                   {isRequest ? 'הערות (מסלול, נקודות איסוף...)' : (isOffersType ? 'הערות (מסלול, נקודות איסוף...)' : t('userItemForm.fields.notes'))}
@@ -605,7 +608,14 @@ export function UserMenuItemForm({
                       {t('userItemForm.submitting')}
                     </>
                   ) : (
-                    isRequest ? 'בקש טרמפ' : (isOffersType ? 'הצע טרמפ' : t('userItemForm.submit'))
+                    // Dynamic button text based on context
+                    isRequest 
+                      ? 'בקש טרמפ' 
+                      : isOffersType 
+                        ? 'הצע טרמפ' 
+                        : myQuantity === 0 
+                          ? 'הוסף פריט' 
+                          : 'הוסף ושבץ אותי'
                   )}
                 </button>
                 <button

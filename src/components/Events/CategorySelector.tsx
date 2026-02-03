@@ -13,7 +13,65 @@ interface CategorySelectorProps {
   MAX_USER_ITEMS: number;
   showLimit?: boolean;
   onOfferRide?: () => void; // New prop for ride offers
+  onRideRequest?: () => void; // NEW prop for ride requests
 }
+
+const RideSplitCard: React.FC<{
+  onSelect: (id: string) => void;
+  offerProgress: { assigned: number; total: number };
+  requestProgress: { assigned: number; total: number };
+  showOffers: boolean;
+  showRequests: boolean;
+}> = ({ onSelect, offerProgress, requestProgress, showOffers, showRequests }) => {
+  return (
+    <div className="group relative category-card-2025 rounded-xl overflow-hidden w-full flex h-full shadow-sm hover:shadow-md transition-all border border-gray-100 min-h-[160px]">
+      {/* Offers Half */}
+      {showOffers && (
+        <button
+          onClick={() => onSelect('ride_offers')}
+          className={`relative flex-1 p-4 flex flex-col items-center justify-center transition-colors hover:bg-green-50/50 group/offer ${showRequests ? 'border-l border-gray-100' : ''}`}
+          type="button"
+        >
+          <div className="relative z-10 flex flex-col items-center">
+            <img
+              src="/Icons/car.gif"
+              alt="Offer Ride"
+              className="w-14 h-14 mb-2 object-contain transition-transform group-hover/offer:scale-110"
+            />
+            <h3 className="text-base font-bold text-neutral-800">מציע טרמפ</h3>
+            <p className="text-[10px] text-neutral-500 mt-1 font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+              {offerProgress.total - offerProgress.assigned} מושבים פנויים
+            </p>
+          </div>
+          <div className="absolute inset-0 bg-green-50/20 opacity-0 group-hover/offer:opacity-100 transition-opacity" />
+        </button>
+      )}
+
+      {/* Requests Half */}
+      {showRequests && (
+        <button
+          onClick={() => onSelect('ride_requests')}
+          className="relative flex-1 p-4 flex flex-col items-center justify-center transition-colors hover:bg-purple-50/50 group/request"
+          type="button"
+        >
+          <div className="relative z-10 flex flex-col items-center">
+            <img
+              src="/Icons/car.gif"
+              alt="Request Ride"
+              className="w-14 h-14 mb-2 object-contain transition-transform group-hover/request:scale-110 brightness-110 hue-rotate-15 contrast-125"
+              style={{ transform: 'scaleX(-1)' }}
+            />
+            <h3 className="text-base font-bold text-neutral-800">צריך טרמפ</h3>
+            <p className="text-[10px] text-neutral-500 mt-1 font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+              {requestProgress.total - requestProgress.assigned} נוסעים ללא טרמפ
+            </p>
+          </div>
+          <div className="absolute inset-0 bg-purple-50/20 opacity-0 group-hover/request:opacity-100 transition-opacity" />
+        </button>
+      )}
+    </div>
+  );
+};
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
   menuItems,
@@ -25,23 +83,52 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   userCreatedItemsCount,
   MAX_USER_ITEMS,
   showLimit = true,
-  onOfferRide, // Destructure
+  onOfferRide,
+  onRideRequest,
 }) => {
+  // Filter out ride categories from the main loop
+  const standardCategories = categories.filter(c => c.id !== 'ride_offers' && c.id !== 'ride_requests');
+  const rideOffersCategory = categories.find(c => c.id === 'ride_offers');
+  const rideRequestsCategory = categories.find(c => c.id === 'ride_requests');
+
   // Helper to calculate progress
   const getCategoryProgress = (categoryId: string) => {
-    // Note: strict check might fail if types are mixed, but valid for string comparison
     const itemsInCategory = menuItems.filter(item => item.category === categoryId);
+    const categoryCfg = categories.find(c => c.id === categoryId);
 
-    // Count items as "completed" using the same logic as before if needed, or simplified as per user snippet
-    // User snippet logic:
+    // Check if this is a ride category
+    const isRide = categoryId === 'ride_offers' || categoryId === 'ride_requests' || categoryId === 'trempim' || categoryCfg?.rowType === 'offers';
+
+    if (isRide) {
+      let totalQuantity = 0;
+      let assignedQuantity = 0;
+
+      itemsInCategory.forEach(item => {
+        const isRequest = item.rowType === 'needs' || item.category === 'ride_requests';
+        const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+        const filled = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+
+        if (isRequest) {
+          // For requests, count satisfied requests (binary)
+          totalQuantity += 1;
+          if (filled > 0) assignedQuantity += 1;
+        } else {
+          // For offers, count literal seats
+          totalQuantity += item.quantity;
+          assignedQuantity += filled;
+        }
+      });
+
+      return {
+        assigned: assignedQuantity,
+        total: totalQuantity,
+      };
+    }
+
+    // Default item-count logic for non-ride categories
     const assignedItemsInCategory = itemsInCategory.filter(item =>
       assignments.some(a => a.menuItemId === item.id)
     );
-
-    // Ideally we should use the robust logic from previous version regarding splittable items, 
-    // but the user provided specific logic in the snippet: "assignedItemsInCategory.length"
-    // I will stick to the user's snippet logic for now to follow "Full File Rewrite Required" instructions strictly,
-    // assuming they simplified it or want this specific behavior.
 
     return {
       assigned: assignedItemsInCategory.length,
@@ -49,10 +136,27 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
     };
   };
 
+  const offerProgress = getCategoryProgress('ride_offers');
+  const requestProgress = getCategoryProgress('ride_requests');
+
+  // We show the split card if either category exists OR if the action buttons are enabled
+  const shouldShowSplitCard = (!!rideOffersCategory || !!rideRequestsCategory || !!onOfferRide || !!onRideRequest);
+
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category) => {
+        {/* Render Split Card First if applicable */}
+        {shouldShowSplitCard && (
+          <RideSplitCard
+            onSelect={onSelectCategory}
+            offerProgress={offerProgress}
+            requestProgress={requestProgress}
+            showOffers={!!rideOffersCategory || !!onOfferRide}
+            showRequests={!!rideRequestsCategory || !!onRideRequest}
+          />
+        )}
+
+        {standardCategories.map((category) => {
           const progress = getCategoryProgress(category.id);
 
           // Hide empty categories to keep the UI clean (Legacy Behavior)
@@ -67,7 +171,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               className="group relative category-card-2025 p-6 rounded-xl cursor-pointer text-center overflow-hidden w-full transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               type="button"
             >
-              <div className="aurora-glow" style={{ backgroundColor: category.color + '40' }}></div> {/* Low opacity glow */}
+              <div className="aurora-glow" style={{ backgroundColor: category.color + '40' }}></div>
 
               <div className="relative z-10 flex flex-col items-center h-full">
                 <img
@@ -75,7 +179,6 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                   alt={category.name}
                   className="w-20 h-20 mx-auto mb-3 object-contain transition-transform duration-300 group-hover:scale-110"
                   onError={(e) => {
-                    // Fallback if image fails
                     (e.target as HTMLImageElement).src = '/Icons/general.png';
                   }}
                 />
@@ -85,7 +188,12 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
                 <div className="w-full">
                   <p className="text-center text-neutral-500 text-sm mb-4">
-                    {progress.assigned} / {progress.total} שובצו
+                    {category.id === 'ride_offers' || category.id === 'trempim'
+                      ? `${progress.total - progress.assigned} מושבים פנויים`
+                      : category.id === 'ride_requests'
+                        ? `${progress.total - progress.assigned} נוסעים ללא טרמפ`
+                        : `${progress.assigned} / ${progress.total} שובצו`
+                    }
                   </p>
                   <div className="w-full bg-neutral-200 rounded-full h-2.5">
                     <div
@@ -104,28 +212,14 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         })}
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-4">
-        {onOfferRide && (
-          <button
-            onClick={onOfferRide}
-            type="button"
-            className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-blue-600 hover:bg-blue-700"
-          >
-            <img src="/Icons/car.gif" alt="car" className="w-8 h-8 ml-2 object-contain" />
-            <span className="truncate">הצע טרמפ</span>
-          </button>
-        )}
+      <div className="mt-8">
 
         <button
           onClick={onAddItem}
           type="button"
           disabled={!canAddMoreItems}
           title={canAddMoreItems ? "הוסף פריט חדש" : "לא ניתן להוסיף פריטים נוספים"}
-          className={`w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500
-            ${!canAddMoreItems
-              ? 'bg-neutral-400 cursor-not-allowed'
-              : 'bg-success hover:bg-success/90'
-            } ${!onOfferRide ? 'col-span-2' : ''}`}
+          className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500 bg-success hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed"
         >
           <Plus size={20} className="ml-2 flex-shrink-0" />
           <span className="truncate">הוסף פריט {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}</span>

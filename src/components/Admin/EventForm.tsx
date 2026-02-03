@@ -84,6 +84,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     endTime: event?.details.endTime || '',
     allowUserItems: event?.details.allowUserItems ?? true, // Default: enabled
     allowRideOffers: event?.details.allowRideOffers ?? true, // Default: enabled
+    allowRideRequests: event?.details.allowRideRequests ?? false, // Default: disabled (standard for now)
     userItemLimit: event?.details.userItemLimit || 3, // Default: 3
     categories: event?.details.categories || TEMPLATES['DEFAULT'].categories,
   });
@@ -262,6 +263,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
         isActive: formData.isActive,
         allowUserItems: formData.allowUserItems,
         allowRideOffers: formData.allowRideOffers,
+        allowRideRequests: formData.allowRideRequests,
         userItemLimit: formData.allowUserItems ? formData.userItemLimit : 0,
         categories: formData.categories,
         ...(formData.description.trim() ? { description: formData.description.trim() } : {}),
@@ -807,6 +809,22 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                 </label>
                 <p className="text-xs text-gray-500 mt-1 mr-6">
                   כפתור "הצע טרמפ" יוצג למשתתפים
+                </p>
+              </div>
+
+              <div className="mb-6">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.allowRideRequests}
+                    onChange={(e) => handleInputChange('allowRideRequests', e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                  />
+                  <span className="mr-2 text-sm text-gray-700">אפשר בקשת טרמפים</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1 mr-6">
+                  כפתור "בקש טרמפ" יוצג למשתתפים
                 </p>
               </div>
 

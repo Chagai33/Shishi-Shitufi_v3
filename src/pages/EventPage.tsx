@@ -18,7 +18,7 @@ import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
 import { ParticipantsListModal } from '../components/Events/ParticipantsListModal';
 import { getEventCategories } from '../constants/templates';
-import { resolveCategoryDisplayName } from '../utils/eventUtils';
+import { resolveCategoryDisplayName, isCarpoolLogic } from '../utils/eventUtils';
 
 
 
@@ -120,7 +120,7 @@ const EventPage: React.FC = () => {
         };
     }, [menuItems, assignments]);
 
-    const [modalState, setModalState] = useState<{ type: 'assign' | 'edit' | 'add-user-item' | 'add-more' | 'edit-item'; item?: MenuItemType; assignment?: AssignmentType; category?: string } | null>(null);
+    const [modalState, setModalState] = useState<{ type: 'assign' | 'edit' | 'add-user-item' | 'add-more' | 'edit-item'; item?: MenuItemType; assignment?: AssignmentType; category?: string; rowType?: 'needs' | 'offers' } | null>(null);
     const [itemToAssignAfterJoin, setItemToAssignAfterJoin] = useState<MenuItemType | null>(null);
     const [showNameModal, setShowNameModal] = useState(false);
     const [showParticipantsList, setShowParticipantsList] = useState(false);
@@ -281,6 +281,7 @@ const EventPage: React.FC = () => {
     const handleEditClick = (item: MenuItemType, assignment: AssignmentType) => setModalState({ type: 'edit', item, assignment });
     const handleEditItemClick = (item: MenuItemType) => setModalState({ type: 'edit-item', item });
     const handleBackToCategories = () => { setView('categories'); setSelectedCategory(null); setSearchTerm(''); };
+    const handleAllCategoriesClick = () => { setView('categories'); setSelectedCategory(null); setSearchTerm(''); };
     const handleCategoryClick = (category: string) => { setSelectedCategory(category); setView('items'); };
 
     const handleMyAssignmentsClick = () => {
@@ -500,13 +501,26 @@ const EventPage: React.FC = () => {
                                         setSelectedCategory(null);
                                     }}
                                     type="button"
-                                    className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 ${i18n.language === 'he' ? 'left-2' : 'right-10'}`}
+                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                     aria-label={t('common.clearSearch')}
                                 >
-                                    <X className="h-4 w-4" aria-hidden="true" />
+                                    <X size={16} />
                                 </button>
                             )}
                         </div>
+                    </div>
+
+                    <div className="flex overflow-x-auto pb-2 gap-2 mt-4 no-scrollbar">
+                        <button
+                            onClick={handleAllCategoriesClick}
+                            type="button"
+                            className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${!selectedCategory && view === 'categories'
+                                ? 'bg-accent text-white border-accent'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                }`}
+                        >
+                            {t('eventPage.filter.all')}
+                        </button>
                         <button
                             onClick={handleMyAssignmentsClick}
                             type="button"
@@ -552,7 +566,7 @@ const EventPage: React.FC = () => {
                             onSelectCategory={handleCategoryClick}
                             onAddItem={() => {
                                 if (canAddMoreItems) {
-                                    setModalState({ type: 'add-user-item' });
+                                    setModalState({ type: 'add-user-item', rowType: 'offers' });
                                 } else {
                                     toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
                                 }
@@ -563,21 +577,36 @@ const EventPage: React.FC = () => {
                             showLimit={!showAdminButton}
                             categories={getEventCategories(currentEvent || undefined)}
                             onOfferRide={currentEvent?.details.allowRideOffers !== false ? () => {
-                                // 2. Check if user already has a ride offer
+                                // Check if user already has a ride offer
                                 if (localUser) {
                                     const userHasRide = menuItems.some(item =>
-                                        (item.category === 'trempim' || item.category === 'rides') &&
-                                        item.creatorId === localUser.uid
+                                        (item.category === 'ride_offers' || item.category === 'trempim' || item.category === 'rides') &&
+                                        item.creatorId === localUser.uid &&
+                                        item.rowType === 'offers'
                                     );
 
                                     if (userHasRide) {
-                                        toast.error("כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת."); // "You already published a ride..."
+                                        toast.error("כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת.");
                                         return;
                                     }
                                 }
 
-                                // 3. Open Modal with 'trempim' category
-                                setModalState({ type: 'add-user-item', category: 'trempim' });
+                                setModalState({ type: 'add-user-item', category: 'ride_offers', rowType: 'offers' });
+                            } : undefined}
+                            onRideRequest={currentEvent?.details.allowRideRequests !== false ? () => {
+                                if (localUser) {
+                                    const userHasRequest = menuItems.some(item =>
+                                        (item.category === 'ride_requests' || item.category === 'trempim' || item.category === 'rides') &&
+                                        item.creatorId === localUser.uid &&
+                                        item.rowType === 'needs'
+                                    );
+
+                                    if (userHasRequest) {
+                                        toast.error("כבר פרסמת בקשת נסיעה. ניתן לערוך את הבקשה הקיימת.");
+                                        return;
+                                    }
+                                }
+                                setModalState({ type: 'add-user-item', category: 'ride_requests', rowType: 'needs' });
                             } : undefined}
                         />
                         <div className="max-w-4xl mx-auto px-4 mt-8">
@@ -595,39 +624,59 @@ const EventPage: React.FC = () => {
                             {t('eventPage.backToCategories')}
                         </button>
                         <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-bold text-neutral-800">
-                                    {searchTerm
-                                        ? t('eventPage.list.searchResults')
-                                        : (selectedCategory === 'my-assignments' || selectedCategory === 'assigned' || selectedCategory === 'unassigned')
-                                            ? t(`eventPage.filter.${selectedCategory}`)
-                                            : getCategoryName(selectedCategory!)}
-                                </h2>
-
-                            </div>
+                            <h2 className="text-xl font-bold text-neutral-800">
+                                {searchTerm
+                                    ? t('eventPage.list.searchResults')
+                                    : (selectedCategory === 'my-assignments' || selectedCategory === 'assigned' || selectedCategory === 'unassigned')
+                                        ? t(`eventPage.filter.${selectedCategory}`)
+                                        : getCategoryName(selectedCategory!)}
+                            </h2>
                             {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
                                 <button
                                     onClick={() => {
+                                        if (localUser && (selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests')) {
+                                            const isRideOffer = selectedCategory === 'ride_offers';
+                                            const alreadyHasOne = menuItems.some(item =>
+                                                item.creatorId === localUser.uid &&
+                                                (isRideOffer
+                                                    ? (item.category === 'ride_offers' || item.category === 'trempim' || item.category === 'rides')
+                                                    : (item.category === 'ride_requests')
+                                                )
+                                            );
+
+                                            if (alreadyHasOne && !showAdminButton) {
+                                                toast.error(isRideOffer
+                                                    ? "כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת."
+                                                    : "כבר פרסמת בקשת טרמפ. ניתן לערוך את הבקשה הקיימת."
+                                                );
+                                                return;
+                                            }
+                                        }
+
                                         if (canAddMoreItems) {
                                             setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
                                         } else {
                                             toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
                                         }
                                     }}
-                                    type="button"
-                                    title={canAddMoreItems ? t('eventPage.category.addItemTooltip') : t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS })}
                                     className="bg-success text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center"
                                     disabled={!canAddMoreItems}
-                                    aria-label={`${t('eventPage.category.addItem')} ${!showAdminButton ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
+                                    aria-label={`${t('eventPage.category.addItem')} ${(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
                                 >
                                     <Plus size={16} className="inline-block ml-1" aria-hidden="true" />
-                                    {t('eventPage.category.addItem')} {!showAdminButton && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
+                                    {selectedCategory === 'ride_offers' ? 'הצע טרמפ' : selectedCategory === 'ride_requests' ? 'בקש טרמפ' : t('eventPage.category.addItem')} {(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
                                 </button>
                             )}
+
                         </div>
                         {itemsToDisplay.length > 0 ? (
                             <div className="space-y-6">
                                 {(() => {
+                                    const itemsInList = itemsToDisplay;
+                                    const isAnyRide = itemsInList.some(item => isCarpoolLogic(item.name, item.category, item.rowType));
+
+                                    const isRideContext = selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' || selectedCategory === 'trempim' || selectedCategory === 'rides' || (itemsInList.length > 0 && isAnyRide && searchTerm);
+
                                     const isItemCompleted = (item: MenuItemType) => {
                                         const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
                                         if (itemAssignments.length === 0) return false;
@@ -647,7 +696,11 @@ const EventPage: React.FC = () => {
                                         <>
                                             {availableItems.length > 0 && (
                                                 <div>
-                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">{t('eventPage.list.available')}</h3>
+                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">
+                                                        {isRideContext
+                                                            ? (selectedCategory === 'ride_requests' ? 'בקשות פתוחות' : 'נסיעות פנויות')
+                                                            : t('eventPage.list.available')}
+                                                    </h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {availableItems.map(item => {
                                                             const assignment = assignments.find(a => a.menuItemId === item.id);
@@ -666,13 +719,13 @@ const EventPage: React.FC = () => {
                                                                 isOrganizer: !!showAdminButton,
                                                                 currentUserId: localUser?.uid,
                                                                 categoryDisplayName: getCategoryName(item.category),
-                                                                eventName: currentEvent.details.title
+                                                                eventName: currentEvent.details.title,
+                                                                onEditAssignment: (a: AssignmentType) => handleEditClick(item, a)
                                                             };
 
-                                                            if (item.category === 'trempim' || item.category === 'rides') {
-                                                                return <RideCard {...commonProps} />;
-                                                            }
-                                                            return <ItemCard {...commonProps} onEditAssignment={(a) => handleEditClick(item, a)} />;
+                                                            const isRide = isCarpoolLogic(item.name, item.category, item.rowType);
+
+                                                            return isRide ? <RideCard {...commonProps} /> : <ItemCard {...commonProps} />;
                                                         })}
                                                     </div>
                                                 </div>
@@ -680,7 +733,12 @@ const EventPage: React.FC = () => {
 
                                             {assignedItems.length > 0 && (
                                                 <div className={availableItems.length > 0 ? 'pt-6 border-t' : ''}>
-                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">{t('eventPage.list.completed')}</h3>
+                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">
+                                                        {isRideContext
+                                                            ? (selectedCategory === 'ride_requests' ? 'בקשות שטופלו' : 'רכבים מלאים')
+                                                            : t('eventPage.list.completed')}
+                                                    </h3>
+
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {assignedItems.map(item => {
                                                             const assignment = assignments.find(a => a.menuItemId === item.id);
@@ -699,13 +757,11 @@ const EventPage: React.FC = () => {
                                                                 isOrganizer: !!showAdminButton,
                                                                 currentUserId: localUser?.uid,
                                                                 categoryDisplayName: getCategoryName(item.category),
-                                                                eventName: currentEvent.details.title
+                                                                eventName: currentEvent.details.title,
+                                                                onEditAssignment: (a: AssignmentType) => handleEditClick(item, a)
                                                             };
-
-                                                            if (item.category === 'trempim' || item.category === 'rides') {
-                                                                return <RideCard {...commonProps} />;
-                                                            }
-                                                            return <ItemCard {...commonProps} onEditAssignment={(a) => handleEditClick(item, a)} />;
+                                                            const isRide = isCarpoolLogic(item.name, item.category, item.rowType);
+                                                            return isRide ? <RideCard {...commonProps} /> : <ItemCard {...commonProps} />;
                                                         })}
                                                     </div>
                                                 </div>
@@ -714,11 +770,12 @@ const EventPage: React.FC = () => {
                                     );
                                 })()}
                             </div>
-                        ) : <p className="text-center text-neutral-500 py-8">{t('eventPage.list.noItems')}</p>}
+                        ) : (
+                            <p className="text-center text-neutral-500 py-8">{t('eventPage.list.noItems')}</p>
+                        )}
                     </div>
-                )
-                }
-            </main >
+                )}
+            </main>
 
             <div className="max-w-4xl mx-auto px-4 mt-8 mb-8">
                 <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 text-center">
@@ -740,47 +797,44 @@ const EventPage: React.FC = () => {
 
             {showNameModal && (<NameModal isLoading={isJoining} onSave={handleJoinEvent} onClose={() => setShowNameModal(false)} />)}
 
-            {localUser && modalState?.type === 'assign' && modalState.item && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} />)}
-            {localUser && modalState?.type === 'edit' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} existingAssignment={modalState.assignment} />)}
-            {localUser && modalState?.type === 'add-more' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} isAddMore={true} existingAssignment={modalState.assignment} />)}
-            {
-                modalState?.type === 'add-user-item' && currentEvent && (
-                    <UserMenuItemForm
-                        event={currentEvent}
-                        onClose={() => setModalState(null)}
-                        category={(modalState.category || lastManualCategory) as any}
-                        isOrganizer={isOrganizer}
-                        onSuccess={(cat) => setLastManualCategory(cat)}
-                        initialCategory={modalState.category} // Pass initial category (e.g. 'trempim')
-                    />
-                )
-            }
-            {
-                modalState?.type === 'edit-item' && modalState.item && (
-                    <EditItemModal
-                        item={modalState.item}
-                        eventId={eventId!}
-                        assignments={assignments}
-                        onClose={() => setModalState(null)}
-                    />
-                )
-            }
+            {localUser && modalState?.type === 'assign' && modalState.item && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} itemRowType={modalState.item.rowType} />)}
+            {localUser && modalState?.type === 'edit' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} existingAssignment={modalState.assignment} itemRowType={modalState.item.rowType} />)}
+            {localUser && modalState?.type === 'add-more' && modalState.item && modalState.assignment && (<AssignmentModal item={modalState.item} eventId={eventId!} user={localUser} onClose={() => setModalState(null)} isEdit={true} isAddMore={true} existingAssignment={modalState.assignment} itemRowType={modalState.item.rowType} />)}
 
-            {
-                showParticipantsList && (
-                    <ParticipantsListModal
-                        assignments={assignments}
-                        menuItems={menuItems}
-                        onClose={() => setShowParticipantsList(false)}
-                        onDeleteAssignment={async (assignmentId, menuItemId) => {
-                            if (!eventId) return;
-                            await FirebaseService.cancelAssignment(eventId, assignmentId, menuItemId);
-                        }}
-                        isOrganizer={!!showAdminButton}
-                    />
-                )
-            }
-        </div >
+            {modalState?.type === 'add-user-item' && currentEvent && (
+                <UserMenuItemForm
+                    event={currentEvent}
+                    onClose={() => setModalState(null)}
+                    category={(modalState.category || lastManualCategory) as any}
+                    isOrganizer={isOrganizer}
+                    onSuccess={(cat) => setLastManualCategory(cat)}
+                    initialCategory={modalState.category}
+                    initialRowType={modalState.rowType}
+                />
+            )}
+
+            {modalState?.type === 'edit-item' && modalState.item && (
+                <EditItemModal
+                    item={modalState.item}
+                    eventId={eventId!}
+                    assignments={assignments}
+                    onClose={() => setModalState(null)}
+                />
+            )}
+
+            {showParticipantsList && (
+                <ParticipantsListModal
+                    assignments={assignments}
+                    menuItems={menuItems}
+                    onClose={() => setShowParticipantsList(false)}
+                    onDeleteAssignment={async (assignmentId, menuItemId) => {
+                        if (!eventId) return;
+                        await FirebaseService.cancelAssignment(eventId, assignmentId, menuItemId);
+                    }}
+                    isOrganizer={!!showAdminButton}
+                />
+            )}
+        </div>
     );
 };
 

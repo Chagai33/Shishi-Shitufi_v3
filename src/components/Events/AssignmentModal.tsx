@@ -107,6 +107,12 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       toast.error(t('eventPage.assignment.nameRequired'));
       return;
     }
+
+    if (isOffers && !phoneNumber.trim()) {
+      toast.error('חובה להזין מספר טלפון לתיאום הנסיעה');
+      return;
+    }
+
     if (quantity <= 0) { toast.error(t('eventPage.assignment.quantityPositive')); return; }
     if ((item.isSplittable || item.quantity > 1) && quantity > maxQuantity) {
       toast.error(t('eventPage.assignment.quantityExceedsAvailable', { maxQuantity }));
@@ -299,7 +305,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               {isOffers && (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    מספר טלפון (ליצירת קשר עם הנהג)
+                    מספר טלפון (חובה לתיאום הנסיעה) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input

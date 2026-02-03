@@ -11,8 +11,7 @@ import { useTranslation } from 'react-i18next';
 import FocusTrap from 'focus-trap-react';
 import { isCarpoolLogic } from '../../utils/eventUtils';
 
-// Import TREMPIM_CATEGORY_DEF
-import { TREMPIM_CATEGORY_DEF } from '../../utils/eventUtils';
+
 
 interface UserMenuItemFormProps {
   event: ShishiEvent;
@@ -21,15 +20,25 @@ interface UserMenuItemFormProps {
   availableCategories?: string[]; // Kept for compat
   isOrganizer?: boolean;
   onSuccess?: (category: MenuCategory) => void;
-  initialCategory?: string; // New Prop
+  initialCategory?: string;
+  initialRowType?: 'needs' | 'offers';
 }
 
 interface FormErrors {
   name?: string;
   quantity?: string;
+  phoneNumber?: string;
 }
 
-export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSuccess, initialCategory }: UserMenuItemFormProps) {
+export function UserMenuItemForm({
+  event,
+  onClose,
+  category,
+  isOrganizer,
+  onSuccess,
+  initialCategory,
+  initialRowType
+}: UserMenuItemFormProps) {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,13 +47,13 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
   const [showNameInput, setShowNameInput] = useState(false);
 
   // Decide initial category: prop > explicit category > 'main'
+  const isLocked = !!(initialCategory || category);
   const defaultCat = initialCategory || category || 'main';
 
+
   // Default to 1 for regular users, 0 for organizers (so they can just add items)
-  // For Rides (trempim), default to 0 (Driver typically brings "the car" + 0 reserved spots initially, or 1 self? Usually 0 reserved spots for others)
-  // Actually, if I offer a ride, "Quantity" is Total Seats. "My Quantity" is how many I take.
-  // Let's keep logic simple: 1.
-  const [myQuantity, setMyQuantity] = useState(isOrganizer ? 0 : (defaultCat === 'trempim' ? 0 : 1));
+  const isRideOffer = defaultCat === 'ride_offers' || defaultCat === 'trempim';
+  const [myQuantity, setMyQuantity] = useState(isOrganizer ? 0 : (isRideOffer ? 0 : 1));
 
   // Accessibility: IDs and refs
   const titleId = useId();
@@ -100,12 +109,17 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
   const [formData, setFormData] = useState({
     name: '',
     category: defaultCat as MenuCategory,
-    quantity: (defaultCat === 'trempim' ? 4 : 1), // Default 4 seats for car
+    quantity: (isRideOffer ? (initialRowType === 'needs' ? 1 : 4) : 1),
     notes: '',
-    isSplittable: (defaultCat === 'trempim'), // Default split yes for car
+    isSplittable: (isRideOffer || defaultCat === 'ride_requests'),
     isRequired: false,
     phoneNumber: '',
+    rowType: initialRowType || (defaultCat === 'ride_offers' || defaultCat === 'trempim' ? 'offers' : (defaultCat === 'ride_requests' ? 'needs' : undefined))
   });
+
+
+  const isRequest = formData.rowType === 'needs';
+
 
   // Get dynamic categories from the event
   const eventCategories = React.useMemo(() => {
@@ -131,12 +145,19 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
       label: cat.name
     }));
 
-    // If current mode is 'trempim' but it's not in the list, add it visually
+    // For backwards compatibility or explicit locking
     if (formData.category === 'trempim' && !opts.some(o => o.value === 'trempim')) {
       opts.push({ value: 'trempim', label: 'טרמפים' });
     }
+    if (formData.category === 'ride_offers' && !opts.some(o => o.value === 'ride_offers')) {
+      opts.push({ value: 'ride_offers', label: 'הצעות טרמפ' });
+    }
+    if (formData.category === 'ride_requests' && !opts.some(o => o.value === 'ride_requests')) {
+      opts.push({ value: 'ride_requests', label: 'בקשות טרמפ' });
+    }
     return opts;
   }, [eventCategories, formData.category]);
+
 
 
   useEffect(() => {
@@ -164,6 +185,10 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
       newErrors.quantity = t('userItemForm.errors.quantityMax');
     }
 
+    if ((formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim') && !formData.phoneNumber?.trim()) {
+      newErrors.phoneNumber = 'חובה להזין מספר טלפון ליצירת קשר';
+    }
+
     setErrors(newErrors);
     const isValid = Object.keys(newErrors).length === 0;
     return isValid;
@@ -182,7 +207,11 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
     }
 
     if (!validateForm()) {
-      toast.error(t('userItemForm.errors.fixErrors'));
+      if (errors.phoneNumber) {
+        toast.error(errors.phoneNumber);
+      } else {
+        toast.error(t('userItemForm.errors.fixErrors'));
+      }
       return;
     }
 
@@ -218,30 +247,33 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
         finalUserName = existingParticipant?.name || authUser.displayName || t('header.guest');
       }
 
-      // Dynamic Category Creation (Trempim)
-      if (formData.category === 'trempim') {
-        const existingTrempCat = event.details.categories?.find(c => c.id === 'trempim');
-        if (!existingTrempCat) {
-          // We need to add the category first!
-          // We can use updateEvent via FirebaseService. 
-          // Ideally this should be server side or atomic, but for now client side is fine as verified in plan.
+      // Dynamic Category Creation (New System)
+      const rideCatIds = ['ride_offers', 'ride_requests'];
+      if (rideCatIds.includes(formData.category)) {
+        const existingCat = event.details.categories?.find(c => c.id === formData.category);
+        if (!existingCat) {
           const currentCats = event.details.categories || [];
-          const newCats = [...currentCats, TREMPIM_CATEGORY_DEF];
+          const catToAdd = formData.category === 'ride_offers'
+            ? { id: 'ride_offers', name: 'הצעות טרמפ', icon: 'car.gif', color: '#34495e', order: 90, rowType: 'offers' }
+            : { id: 'ride_requests', name: 'בקשות טרמפ', icon: 'car.gif', color: '#8e44ad', order: 91, rowType: 'needs' };
+
+          const newCats = [...currentCats, catToAdd as any];
           await FirebaseService.updateEvent(event.id, {
             details: { ...event.details, categories: newCats }
           });
-          // No need to reload, optimistic update happens via subscription
         }
       }
+
 
       const newItemData: Omit<MenuItem, 'id'> = {
         name: formData.name.trim(),
         category: formData.category,
         quantity: formData.quantity,
         notes: formData.notes.trim() || '',
-        phoneNumber: formData.phoneNumber?.trim() || '', // Add Phone Number
+        phoneNumber: formData.phoneNumber?.trim() || '',
         isSplittable: formData.quantity > 1,
         isRequired: formData.isRequired,
+        rowType: formData.rowType,
         createdAt: Date.now(),
         creatorId: authUser.uid,
         creatorName: finalUserName,
@@ -255,8 +287,9 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
       if (!newItemData.notes) delete (newItemData as any).notes;
 
       // 1. Create Item (Total Quantity)
-      // Pass bypassLimit: isOrganizer OR isTremp to skip checks
-      const shouldBypassLimit = isOrganizer || formData.category === 'trempim';
+      // Pass bypassLimit: isOrganizer OR ride category to skip checks
+      const shouldBypassLimit = isOrganizer || ['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(formData.category);
+
 
       const itemId = await FirebaseService.addMenuItem(event.id, {
         ...newItemData,
@@ -301,7 +334,26 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
 
   const handleInputChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => {
-      const updates = { [field]: value };
+      const updates: any = { [field]: value };
+
+      // If switching category, reset ride-specific fields if new category is NOT a ride
+      if (field === 'category') {
+        const isNewRide = ['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(value);
+        if (!isNewRide) {
+          updates.rowType = undefined;
+          updates.phoneNumber = '';
+          // Reset quantity to 1 for regular items if it was set to something high like 4 for rides
+          if (prev.quantity === 4 || prev.quantity === 0) {
+            updates.quantity = 1;
+          }
+        } else {
+          // If switching TO a ride, set appropriate rowType if not set
+          if (!prev.rowType || (prev.category !== value)) {
+            updates.rowType = (value === 'ride_offers' || value === 'trempim') ? 'offers' : 'needs';
+          }
+        }
+      }
+
       if (field === 'quantity' && (typeof value === 'number' && value <= 1)) {
         Object.assign(updates, { isSplittable: false });
       }
@@ -332,7 +384,7 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
           >
             <div className="flex items-center justify-between p-6 border-b">
               <h2 id={titleId} className="text-lg font-semibold text-gray-900">
-                {isOffersType ? 'הצעת טרמפ החדשה' : t('userItemForm.title')}
+                {isRequest ? 'בקשת טרמפ חדשה' : (isOffersType ? 'הצעת טרמפ חדשה' : t('userItemForm.title'))}
               </h2>
               <button
                 type="button"
@@ -348,7 +400,7 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
               {showNameInput && (
                 <div className="mb-4">
                   <label htmlFor={participantNameId} className="block text-sm font-medium text-gray-700 mb-2">
-                    {isOffersType ? 'שם הנהג' : t('userItemForm.fields.fullName')}
+                    {isRequest ? 'שם הנוסע/ת' : (isOffersType ? 'שם הנהג' : t('userItemForm.fields.fullName'))}
                   </label>
                   <div className="relative">
                     <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -370,7 +422,7 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
               )}
               <div className="mb-4">
                 <label htmlFor={itemNameId} className="block text-sm font-medium text-gray-700 mb-2">
-                  {isOffersType ? 'פרטי הנסיעה (מאיפה ומתי?)' : t('userItemForm.fields.name')}
+                  {isRequest ? 'מאיפה ומתי?' : (isOffersType ? 'פרטי הנסיעה (מאיפה ומתי?)' : t('userItemForm.fields.name'))}
                 </label>
                 <div className="relative">
                   <ChefHat className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -379,7 +431,7 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder={isOffersType ? 'לדוגמה: יציאה מחולון ב-16:00' : t('userItemForm.fields.namePlaceholder')}
+                    placeholder={isRequest ? 'לדוגמה: מחפש טרמפ מירושלים ב-15:00' : (isOffersType ? 'לדוגמה: יציאה מחולון ב-16:00' : t('userItemForm.fields.namePlaceholder'))}
                     className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
                       }`}
                     disabled={isSubmitting}
@@ -397,83 +449,88 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label htmlFor={categoryId} className="block text-sm font-medium text-gray-700 mb-2">
-                    {t('userItemForm.fields.category')}
-                  </label>
-                  <select
-                    id={categoryId}
-                    value={formData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    disabled={isSubmitting}
-                    required
-                    aria-required="true"
-                  >
-                    {categoryOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-span-2 grid grid-cols-2 gap-4">
+                {!isLocked && (
+                  <div>
+                    <label htmlFor={categoryId} className="block text-sm font-medium text-gray-700 mb-2">
+                      {t('userItemForm.fields.category')}
+                    </label>
+                    <select
+                      id={categoryId}
+                      value={formData.category}
+                      onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      disabled={isSubmitting}
+                      required
+                      aria-required="true"
+                    >
+                      {categoryOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className={`${isLocked ? 'col-span-2' : ''} grid grid-cols-2 gap-4`}>
+
                   {/* Total Needed */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {isOffersType ? 'מספר מקומות פנויים' : t('userItemForm.fields.quantityTotal')}
+                      {isRequest ? 'כמה מקומות אתם?' : (isOffersType ? 'מספר מקומות פנויים' : t('userItemForm.fields.quantityTotal'))}
                     </label>
                     <Stepper
                       value={formData.quantity}
                       onChange={(val) => {
                         handleInputChange('quantity', val);
-                        const newMyQty = myQuantity > val ? val : myQuantity;
-                        if (myQuantity > val) setMyQuantity(val);
-
-                        // UX Auto-Logic: If Total > My Contribution, enable splitting automatically
-                        if (val > newMyQty) {
-                          handleInputChange('isSplittable', true);
+                        if (!isRequest) {
+                          const newMyQty = myQuantity > val ? val : myQuantity;
+                          if (myQuantity > val) setMyQuantity(val);
+                          if (val > newMyQty) handleInputChange('isSplittable', true);
                         }
                       }}
-                      label={t('userItemForm.fields.quantityTotal')}
+                      label={isRequest ? 'מספר מקומות' : t('userItemForm.fields.quantityTotal')}
                     />
                   </div>
 
-                  {/* My Contribution - Hide for Rides if creates confusion, or rebrand as "Reserved Spots" */}
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        {isOffersType ? 'שריין לעצמך/חברים' : t('userItemForm.fields.myContribution')}
-                      </label>
-                      {myQuantity < formData.quantity && (
-                        <button
-                          type="button"
-                          onClick={() => setMyQuantity(formData.quantity)}
-                          aria-label={t('userItemForm.fields.bringAll')}
-                          className="text-xs text-orange-600 hover:text-orange-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded"
-                        >
-                          {isOffersType ? 'מלא את הכל' : t('userItemForm.fields.bringAll')}
-                        </button>
-                      )}
+                  {/* My Contribution */}
+                  {!isRequest && (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          {isOffersType ? 'שריין לעצמך/חברים' : t('userItemForm.fields.myContribution')}
+                        </label>
+                        {myQuantity < formData.quantity && (
+                          <button
+                            type="button"
+                            onClick={() => setMyQuantity(formData.quantity)}
+                            aria-label={t('userItemForm.fields.bringAll')}
+                            className="text-xs text-orange-600 hover:text-orange-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded"
+                          >
+                            {isOffersType ? 'מלא את הכל' : t('userItemForm.fields.bringAll')}
+                          </button>
+                        )}
+                      </div>
+                      <Stepper
+                        value={myQuantity}
+                        onChange={setMyQuantity}
+                        max={formData.quantity}
+                        min={0} // Allow 0 for rides specifically
+                        label={t('userItemForm.fields.myContribution')}
+                      />
                     </div>
-                    <Stepper
-                      value={myQuantity}
-                      onChange={setMyQuantity}
-                      max={formData.quantity}
-                      min={0} // Allow 0 for rides specifically
-                      label={t('userItemForm.fields.myContribution')}
-                    />
-                  </div>
-                  <div className="col-span-2 text-xs text-gray-500 text-center -mt-2">
-                    {myQuantity < formData.quantity ?
-                      (myQuantity === 0 ? (isOffersType ? "כל המקומות פנויים לאחרים" : "אתה לא מביא כלום (מנהל)") : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
-                      (isOffersType ? "הרכב מלא (שריינת הכל)" : t('userItemForm.fields.youBringAllMsg'))}
-                  </div>
+                  )}
+                  {!isRequest && (
+                    <div className="col-span-2 text-xs text-gray-500 text-center -mt-2">
+                      {myQuantity < formData.quantity ?
+                        (myQuantity === 0 ? (isOffersType ? "כל המקומות פנויים לאחרים" : "אתה לא מביא כלום (מנהל)") : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
+                        (isOffersType ? "הרכב מלא (שריינת הכל)" : t('userItemForm.fields.youBringAllMsg'))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="mb-6">
                 <label htmlFor={notesId} className="block text-sm font-medium text-gray-700 mb-2">
-                  {isOffersType ? 'הערות (מסלול, נקודות איסוף...)' : t('userItemForm.fields.notes')}
+                  {isRequest ? 'הערות (מסלול, נקודות איסוף...)' : (isOffersType ? 'הערות (מסלול, נקודות איסוף...)' : t('userItemForm.fields.notes'))}
                 </label>
                 <div className="relative">
                   <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -481,7 +538,7 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
                     id={notesId}
                     value={formData.notes}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder={isOffersType ? 'לדוגמה: יוצאים מרכבת ארלוזורוב, אין מקום למזוודות גדולות' : t('userItemForm.fields.notesPlaceholder')}
+                    placeholder={isRequest ? 'לדוגמה: מחכה ליד בית הכנסת הגדול' : (isOffersType ? 'לדוגמה: יוצאים מרכבת ארלוזורוב, אין מקום למזוודות גדולות' : t('userItemForm.fields.notesPlaceholder'))}
                     rows={3}
                     className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                     disabled={isSubmitting}
@@ -490,10 +547,10 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
               </div>
 
               {/* Phone Number - Only for Rides */}
-              {isOffersType && (
+              {(isOffersType || isRequest) && (
                 <div className="mb-4">
                   <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                    מספר טלפון (ליצירת קשר)
+                    מספר טלפון (חובה ליצירת קשר) <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -504,16 +561,22 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
                       value={formData.phoneNumber || ''}
                       onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                       placeholder="050-0000000"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-right sm:text-left dir-ltr"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-right sm:text-left dir-ltr ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'}`}
                       disabled={isSubmitting}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">יוצג רק למי שמצטרף לנסיעה</p>
+                  {errors.phoneNumber && (
+                    <p className="mt-1 text-xs text-red-600 flex items-center" role="alert">
+                      <AlertCircle className="h-3 w-3 ml-1" aria-hidden="true" />
+                      {errors.phoneNumber}
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">יוצג רק למי שלוקח/מצטרף לנסיעה</p>
                 </div>
               )}
 
               {/* Admin: Is Required Checkbox */}
-              {isOrganizer && !isOffersType && (
+              {isOrganizer && !isOffersType && !isRequest && (
                 <div className="mb-6 flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
                   <input
                     id={isRequiredId}
@@ -542,7 +605,7 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
                       {t('userItemForm.submitting')}
                     </>
                   ) : (
-                    isOffersType ? 'פרסם נסיעה' : t('userItemForm.submit')
+                    isRequest ? 'בקש טרמפ' : (isOffersType ? 'הצע טרמפ' : t('userItemForm.submit'))
                   )}
                 </button>
                 <button

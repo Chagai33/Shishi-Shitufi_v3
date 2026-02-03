@@ -20,7 +20,8 @@
             "close": "סגור",
             "confirm": "אישור",
             "back": "חזור",
-            "moreActions": "פעולות נוספות"
+            "moreActions": "פעולות נוספות",
+            "me": "(אני)"
         },
         "errors": {
             "auth": {
@@ -510,11 +511,20 @@
                 "clear": "נקה חיפוש"
             },
             "filter": {
+                "all": "הכל",
                 "my-assignments": "השיבוצים שלי",
                 "assigned": "שובצו",
                 "unassigned": "לא שובצו",
                 "backToCategories": "חזור לקטגוריות",
                 "searchResults": "תוצאות חיפוש"
+            },
+            "rides": {
+                "available": "נסיעות פנויות",
+                "openRequests": "בקשות פתוחות",
+                "completed": "רכבים מלאים",
+                "handledRequests": "בקשות שטופלו",
+                "offer": "הצע טרמפ",
+                "request": "בקש טרמפ"
             },
             "actions": {
                 "addItem": "הוסף פריט",
@@ -643,8 +653,38 @@
                 "missingName": "יש להזין שם כדי להוסיף פריט",
                 "success": "הפריט נוסף בהצלחה!",
                 "generalError": "שגיאה בהוספת הפריט",
-                "permissionDenied": "אין הרשאה להוסיף פריט. בדוק את הגדרות Firebase"
+                "permissionDenied": "אין הרשאה להוסיף פריט. בדוק את הגדרות Firebase",
+                "phoneRequired": "חובה להזין מספר טלפון ליצירת קשר"
+            },
+            "rides": {
+                "offerTitle": "הצעת טרמפ חדשה",
+                "requestTitle": "בקשת טרמפ חדשה",
+                "driverName": "שם הנהג",
+                "passengerName": "שם הנוסע/ת",
+                "details": "פרטי הנסיעה (מאיפה ומתי?)",
+                "detailsRequest": "מאיפה ומתי?",
+                "placeholderOffer": "לדוגמה: יציאה מחולון ב-16:00",
+                "placeholderRequest": "לדוגמה: מחפש טרמפ מירושלים ב-15:00"
             }
+        },
+        "rideCard": {
+            "driver": "נהג/ת",
+            "passenger": "נוסע/ת",
+            "offeredSeats": "מקומות מוצעים",
+            "passengers": "נוסעים",
+            "driverPhone": "טלפון הנהג/ת:",
+            "passengerPhone": "טלפון הנוסע/ת:",
+            "notes": "הערות:",
+            "status": "מצב שיבוץ",
+            "occupancy": "תפוסה",
+            "foundDriver": "נמצא נהג/ת",
+            "full": "הרכב מלא",
+            "join": "אני אצטרף",
+            "take": "אני יכול/ה לקחת",
+            "passengersInRide": "נוסעים בטרמפ:",
+            "registeredDriver": "נהג/ת רשום:",
+            "cancel": "בטל שיבוץ",
+            "remove": "הסר שיבוץ"
         }
     }
 }

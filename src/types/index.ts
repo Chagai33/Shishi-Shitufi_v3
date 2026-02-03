@@ -39,6 +39,7 @@ export interface EventDetails {
   endDate?: string;
   endTime?: string;
   allowRideOffers?: boolean; // Whether to allow "Offer Ride" feature
+  allowRideRequests?: boolean; // Whether to allow "Request Ride" feature
 }
 
 /**

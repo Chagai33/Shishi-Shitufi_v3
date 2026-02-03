@@ -4,6 +4,24 @@ import { CategoryConfig, ShishiEvent, EventType } from '../types';
 // PRESET DEFINITIONS - ISRAELI EVENT TYPES
 // ============================================================================
 
+export const RIDE_OFFERS_CATEGORY: CategoryConfig = {
+  id: 'ride_offers',
+  name: 'הצעות טרמפ (נהגים)',
+  icon: 'car.gif',
+  color: '#34495e',
+  order: 90,
+  rowType: 'offers'
+};
+
+export const RIDE_REQUESTS_CATEGORY: CategoryConfig = {
+  id: 'ride_requests',
+  name: 'בקשות טרמפ (נוסעים)',
+  icon: 'car.gif',
+  color: '#8e44ad',
+  order: 91,
+  rowType: 'needs'
+};
+
 export const FRIDAY_DINNER_CATEGORIES: CategoryConfig[] = [
   { id: 'starter', name: 'מנה ראשונה', icon: '2.gif', color: '#3498db', order: 1 },
   { id: 'main', name: 'מנה עיקרית', icon: '1.gif', color: '#009688', order: 2 },
@@ -49,9 +67,10 @@ export const DAIRY_CATEGORIES: CategoryConfig[] = [
 ];
 
 export const TRIP_CATEGORIES: CategoryConfig[] = [
-  { id: 'rides', name: 'טרמפים (נהגים מציעים)', icon: 'car.gif', color: '#34495e', order: 1, rowType: 'offers' },
-  { id: 'food', name: 'אוכל ושתייה', icon: '1.gif', color: '#e67e22', order: 2 },
-  { id: 'equipment', name: 'ציוד', icon: 'tent.gif', color: '#27ae60', order: 3 },
+  { ...RIDE_OFFERS_CATEGORY, order: 1 },
+  { ...RIDE_REQUESTS_CATEGORY, order: 2 },
+  { id: 'food', name: 'אוכל ושתייה', icon: '1.gif', color: '#e67e22', order: 3 },
+  { id: 'equipment', name: 'ציוד', icon: 'tent.gif', color: '#27ae60', order: 4 },
 ];
 
 // Map EventType to Presets
@@ -80,15 +99,27 @@ export const TEMPLATES = {
  * If not (Legacy Event), it returns the default Friday Dinner categories.
  */
 export const getEventCategories = (event: ShishiEvent | undefined): CategoryConfig[] => {
-  if (!event) return DEFAULT_CATEGORIES;
+  let categories: CategoryConfig[] = [];
 
-  // If the event has its own categories configuration, use it.
-  if (event.details.categories && event.details.categories.length > 0) {
-    return event.details.categories.sort((a, b) => a.order - b.order);
+  if (!event) {
+    categories = [...DEFAULT_CATEGORIES];
+  } else if (event.details.categories && event.details.categories.length > 0) {
+    categories = [...event.details.categories];
+  } else {
+    categories = [...DEFAULT_CATEGORIES];
   }
 
-  // Fallback for legacy events
-  return DEFAULT_CATEGORIES;
+  // Inject Ride Categories if enabled but missing (for Card display/Selector)
+  if (event) {
+    if (event.details.allowRideOffers !== false && !categories.some(c => c.id === 'ride_offers')) {
+      categories.push({ ...RIDE_OFFERS_CATEGORY, order: 20 });
+    }
+    if (event.details.allowRideRequests === true && !categories.some(c => c.id === 'ride_requests')) {
+      categories.push({ ...RIDE_REQUESTS_CATEGORY, order: 21 });
+    }
+  }
+
+  return categories.sort((a, b) => (a.order || 0) - (b.order || 0));
 };
 
 /**

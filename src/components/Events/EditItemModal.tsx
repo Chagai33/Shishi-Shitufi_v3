@@ -18,6 +18,7 @@ interface EditItemModalProps {
 interface FormErrors {
     name?: string;
     quantity?: string;
+    phoneNumber?: string;
 }
 
 export function EditItemModal({ item, eventId, assignments, onClose }: EditItemModalProps) {
@@ -25,12 +26,15 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
 
-    const isRide = item.category === 'trempim' || item.category === 'rides';
+    const isOffer = item.category === 'ride_offers';
+    const isRequest = item.category === 'ride_requests';
+    const isRide = isOffer || isRequest || item.category === 'trempim' || item.category === 'rides';
 
     // Calculate total assigned quantity for this item
     const totalAssigned = assignments
         .filter(a => a.menuItemId === item.id)
-        .reduce((sum, a) => sum + a.quantity, 0);
+        .reduce((sum, a) => sum + (a.quantity || 0), 0);
+
 
     const [formData, setFormData] = useState({
         name: item.name,
@@ -100,6 +104,10 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
             newErrors.quantity = t('editItemModal.errors.quantityMax');
         }
 
+        if (isRide && !formData.phoneNumber?.trim()) {
+            newErrors.phoneNumber = 'חובה להזין מספר טלפון ליצירת קשר';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -108,7 +116,11 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
         e.preventDefault();
 
         if (!validateForm()) {
-            toast.error(t('editItemModal.errors.fixErrors'));
+            if (errors.phoneNumber) {
+                toast.error(errors.phoneNumber);
+            } else {
+                toast.error(t('editItemModal.errors.fixErrors'));
+            }
             return;
         }
 
@@ -193,7 +205,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                 >
                     <div className="flex items-center justify-between p-6 border-b">
                         <h2 id={titleId} className="text-lg font-semibold text-gray-900">
-                            {isRide ? 'עריכת הצעת טרמפ' : t('editItemModal.title')}
+                            {isOffer ? 'עריכת הצעת טרמפ' : isRequest ? 'עריכת בקשת טרמפ' : t('editItemModal.title')}
                         </h2>
                         <button
                             onClick={onClose}
@@ -241,8 +253,18 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                             )}
                         </div>
 
-                        {/* Category - Only show if not a ride, or show read-only/simpler? Usually category is fixed for rides */}
-                        {!isRide && (
+                        {/* Category - Locked for rides */}
+                        {isRide ? (
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    קטגוריה
+                                </label>
+                                <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 text-sm font-medium flex items-center gap-2">
+                                    <Car size={16} className="text-blue-500" />
+                                    {isOffer ? 'הצעת טרמפ' : isRequest ? 'בקשת טרמפ' : 'טרמפים'}
+                                </div>
+                            </div>
+                        ) : (
                             <div className="mb-4">
                                 <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 mb-2">
                                     {t('editItemModal.fields.category')}
@@ -267,7 +289,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                         {/* Quantity */}
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {isRide ? 'מספר מקומות פנויים' : t('editItemModal.fields.quantity')}
+                                {isOffer ? 'סה"כ מקומות ברכב' : isRequest ? 'מספר נוסעים' : t('editItemModal.fields.quantity')}
                             </label>
                             <Stepper
                                 value={formData.quantity}
@@ -277,9 +299,11 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                             />
                             {totalAssigned > 0 && (
                                 <p className="mt-1 text-xs text-gray-500">
-                                    {isRide
-                                        ? `יש ${totalAssigned} מצטרפים כרגע`
-                                        : t('editItemModal.fields.assignedInfo', { assigned: totalAssigned })}
+                                    {isOffer
+                                        ? (totalAssigned > 0 ? `שוריינו ${totalAssigned} מקומות ע"י נוסעים` : 'אין נוסעים רשומים עדיין')
+                                        : isRequest
+                                            ? (totalAssigned > 0 ? 'יש נהג/ת רשום/ה' : 'אין נהג/ת עדיין')
+                                            : t('editItemModal.fields.assignedInfo', { assigned: totalAssigned })}
                                 </p>
                             )}
                             {errors.quantity && (
@@ -294,7 +318,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                         {isRide && (
                             <div className="mb-4">
                                 <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                                    מספר טלפון (ליצירת קשר)
+                                    מספר טלפון (חובה ליצירת קשר) <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     id="phoneNumber"
@@ -302,9 +326,15 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                     value={formData.phoneNumber || ''}
                                     onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                                     placeholder="050-0000000"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dir-ltr text-right"
+                                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dir-ltr text-right ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'}`}
                                     disabled={isSubmitting}
                                 />
+                                {errors.phoneNumber && (
+                                    <p className="mt-1 text-sm text-red-600 flex items-center" role="alert">
+                                        <AlertCircle className="h-4 w-4 ml-1" aria-hidden="true" />
+                                        {errors.phoneNumber}
+                                    </p>
+                                )}
                             </div>
                         )}
 

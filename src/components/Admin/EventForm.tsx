@@ -45,6 +45,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
   const descriptionId = useId();
   const isActiveId = useId();
   const allowUserItemsId = useId();
+  const allowRideOffersId = useId(); // NEW
   const userItemLimitId = useId();
   const titleErrorId = useId();
   const dateErrorId = useId();
@@ -82,6 +83,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     endDate: event?.details.endDate || '',
     endTime: event?.details.endTime || '',
     allowUserItems: event?.details.allowUserItems ?? true, // Default: enabled
+    allowRideOffers: event?.details.allowRideOffers ?? true, // Default: enabled
     userItemLimit: event?.details.userItemLimit || 3, // Default: 3
     categories: event?.details.categories || TEMPLATES['DEFAULT'].categories,
   });
@@ -241,6 +243,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
         location: formData.location.trim(),
         isActive: formData.isActive,
         allowUserItems: formData.allowUserItems,
+        allowRideOffers: formData.allowRideOffers,
         userItemLimit: formData.allowUserItems ? formData.userItemLimit : 0,
         categories: formData.categories,
         ...(formData.description.trim() ? { description: formData.description.trim() } : {}),
@@ -741,6 +744,23 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     />
                   </div>
                 )}
+              </div>
+
+              <div className="mb-6">
+                <label className="flex items-center">
+                  <input
+                    id={allowRideOffersId}
+                    type="checkbox"
+                    checked={formData.allowRideOffers}
+                    onChange={(e) => handleInputChange('allowRideOffers', e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                  />
+                  <span className="mr-2 text-sm text-gray-700">אפשר הצעת טרמפים</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1 mr-6">
+                  כפתור "הצע טרמפ" יוצג למשתתפים
+                </p>
               </div>
 
               {/* Actions */}

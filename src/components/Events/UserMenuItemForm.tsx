@@ -11,13 +11,17 @@ import { useTranslation } from 'react-i18next';
 import FocusTrap from 'focus-trap-react';
 import { isCarpoolLogic } from '../../utils/eventUtils';
 
+// Import TREMPIM_CATEGORY_DEF
+import { TREMPIM_CATEGORY_DEF } from '../../utils/eventUtils';
+
 interface UserMenuItemFormProps {
   event: ShishiEvent;
   onClose: () => void;
   category?: MenuCategory;
-  availableCategories?: string[];
+  availableCategories?: string[]; // Kept for compat
   isOrganizer?: boolean;
   onSuccess?: (category: MenuCategory) => void;
+  initialCategory?: string; // New Prop
 }
 
 interface FormErrors {
@@ -25,15 +29,22 @@ interface FormErrors {
   quantity?: string;
 }
 
-export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSuccess }: UserMenuItemFormProps) {
+export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSuccess, initialCategory }: UserMenuItemFormProps) {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
+
+  // Decide initial category: prop > explicit category > 'main'
+  const defaultCat = initialCategory || category || 'main';
+
   // Default to 1 for regular users, 0 for organizers (so they can just add items)
-  const [myQuantity, setMyQuantity] = useState(isOrganizer ? 0 : 1);
+  // For Rides (trempim), default to 0 (Driver typically brings "the car" + 0 reserved spots initially, or 1 self? Usually 0 reserved spots for others)
+  // Actually, if I offer a ride, "Quantity" is Total Seats. "My Quantity" is how many I take.
+  // Let's keep logic simple: 1.
+  const [myQuantity, setMyQuantity] = useState(isOrganizer ? 0 : (defaultCat === 'trempim' ? 0 : 1));
 
   // Accessibility: IDs and refs
   const titleId = useId();
@@ -88,11 +99,12 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
 
   const [formData, setFormData] = useState({
     name: '',
-    category: category || ('main' as MenuCategory),
-    quantity: 1,
+    category: defaultCat as MenuCategory,
+    quantity: (defaultCat === 'trempim' ? 4 : 1), // Default 4 seats for car
     notes: '',
-    isSplittable: false,
+    isSplittable: (defaultCat === 'trempim'), // Default split yes for car
     isRequired: false,
+    phoneNumber: '',
   });
 
   // Get dynamic categories from the event
@@ -112,10 +124,20 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
     ] as CategoryConfig[];
   }, [event.details.categories, t]);
 
-  const categoryOptions = eventCategories.map(cat => ({
-    value: cat.id,
-    label: cat.name
-  }));
+  // Ensure "trempim" is in the options even if not yet in event (visual only if we are in that mode)
+  const categoryOptions = React.useMemo(() => {
+    const opts = eventCategories.map(cat => ({
+      value: cat.id,
+      label: cat.name
+    }));
+
+    // If current mode is 'trempim' but it's not in the list, add it visually
+    if (formData.category === 'trempim' && !opts.some(o => o.value === 'trempim')) {
+      opts.push({ value: 'trempim', label: 'טרמפים' });
+    }
+    return opts;
+  }, [eventCategories, formData.category]);
+
 
   useEffect(() => {
     if (authUser?.isAnonymous) {
@@ -196,27 +218,50 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
         finalUserName = existingParticipant?.name || authUser.displayName || t('header.guest');
       }
 
+      // Dynamic Category Creation (Trempim)
+      if (formData.category === 'trempim') {
+        const existingTrempCat = event.details.categories?.find(c => c.id === 'trempim');
+        if (!existingTrempCat) {
+          // We need to add the category first!
+          // We can use updateEvent via FirebaseService. 
+          // Ideally this should be server side or atomic, but for now client side is fine as verified in plan.
+          const currentCats = event.details.categories || [];
+          const newCats = [...currentCats, TREMPIM_CATEGORY_DEF];
+          await FirebaseService.updateEvent(event.id, {
+            details: { ...event.details, categories: newCats }
+          });
+          // No need to reload, optimistic update happens via subscription
+        }
+      }
+
       const newItemData: Omit<MenuItem, 'id'> = {
         name: formData.name.trim(),
         category: formData.category,
         quantity: formData.quantity,
         notes: formData.notes.trim() || '',
+        phoneNumber: formData.phoneNumber?.trim() || '', // Add Phone Number
         isSplittable: formData.quantity > 1,
-        isRequired: formData.isRequired, // Pass from form state
+        isRequired: formData.isRequired,
         createdAt: Date.now(),
         creatorId: authUser.uid,
         creatorName: finalUserName,
         eventId: event.id
       };
 
+      if (formData.phoneNumber?.trim()) {
+        (newItemData as any).phoneNumber = formData.phoneNumber.trim();
+      }
+
       if (!newItemData.notes) delete (newItemData as any).notes;
 
       // 1. Create Item (Total Quantity)
-      // Pass bypassLimit: isOrganizer to skip backend checks if needed (though backend checks organizerId too)
+      // Pass bypassLimit: isOrganizer OR isTremp to skip checks
+      const shouldBypassLimit = isOrganizer || formData.category === 'trempim';
+
       const itemId = await FirebaseService.addMenuItem(event.id, {
         ...newItemData,
         quantity: formData.quantity,
-      }, { bypassLimit: isOrganizer });
+      }, { bypassLimit: shouldBypassLimit });
 
       // 2. Create Assignment (My Contribution) - only if > 0
       if (itemId && myQuantity > 0) {
@@ -444,6 +489,29 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
                 </div>
               </div>
 
+              {/* Phone Number - Only for Rides */}
+              {isOffersType && (
+                <div className="mb-4">
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                    מספר טלפון (ליצירת קשר)
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="phoneNumber"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={formData.phoneNumber || ''}
+                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                      placeholder="050-0000000"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-right sm:text-left dir-ltr"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">יוצג רק למי שמצטרף לנסיעה</p>
+                </div>
+              )}
+
               {/* Admin: Is Required Checkbox */}
               {isOrganizer && !isOffersType && (
                 <div className="mb-6 flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
@@ -460,7 +528,7 @@ export function UserMenuItemForm({ event, onClose, category, isOrganizer, onSucc
                 </div>
               )}
 
-              {/* Auto-split logic applied implicitly for quantity > 1 */}
+              {/* Actions */}
               <div className="flex space-x-3 rtl:space-x-reverse">
                 <button
                   type="submit"

@@ -38,6 +38,7 @@ export interface EventDetails {
   eventType?: EventType; // Added EventType
   endDate?: string;
   endTime?: string;
+  allowRideOffers?: boolean; // Whether to allow "Offer Ride" feature
 }
 
 /**
@@ -87,6 +88,7 @@ export interface MenuItem {
   assignedToName?: string;
   assignedAt?: number;
   rowType?: 'needs' | 'offers';
+  phoneNumber?: string; // Contact number (relevant for rides)
 }
 
 
@@ -104,6 +106,7 @@ export interface Assignment {
   status: 'confirmed' | 'pending' | 'completed';
   assignedAt: number;
   updatedAt?: number;
+  phoneNumber?: string; // Contact number for the assignee
 }
 
 

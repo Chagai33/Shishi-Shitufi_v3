@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useId } from 'react';
 import FocusTrap from 'focus-trap-react';
-import { X, ChefHat, MessageSquare, AlertCircle, Plus, Minus } from 'lucide-react';
+import { X, ChefHat, MessageSquare, AlertCircle, Plus, Minus, Car } from 'lucide-react';
 import { FirebaseService } from '../../services/firebaseService';
 import { MenuItem, MenuCategory, Assignment } from '../../types';
 import toast from 'react-hot-toast';
@@ -25,6 +25,8 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState<FormErrors>({});
 
+    const isRide = item.category === 'trempim' || item.category === 'rides';
+
     // Calculate total assigned quantity for this item
     const totalAssigned = assignments
         .filter(a => a.menuItemId === item.id)
@@ -35,6 +37,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
         category: item.category,
         quantity: item.quantity,
         notes: item.notes || '',
+        phoneNumber: item.phoneNumber || '',
     });
 
     // Accessibility: Unique IDs for ARIA labeling
@@ -46,13 +49,13 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
     const returnFocusRef = useRef<HTMLElement | null>(null);
 
     // Helper Stepper Component
-    const Stepper = ({ value, onChange, min }: { value: number, onChange: (val: number) => void, min: number }) => (
+    const Stepper = ({ value, onChange, min, label }: { value: number, onChange: (val: number) => void, min: number, label?: string }) => (
         <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden h-10 w-full dir-ltr">
             <button
                 type="button"
                 onClick={() => onChange(Math.max(min, value - 1))}
                 disabled={value <= min}
-                aria-label={t('editItemModal.fields.decrease')}
+                aria-label={t('editItemModal.fields.decrease') + (label ? ` ${label}` : '')}
                 className="w-10 h-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 border-r border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed"
             >
                 <Minus size={16} aria-hidden="true" />
@@ -61,7 +64,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
             <button
                 type="button"
                 onClick={() => onChange(value + 1)}
-                aria-label={t('editItemModal.fields.increase')}
+                aria-label={t('editItemModal.fields.increase') + (label ? ` ${label}` : '')}
                 className="w-10 h-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 border-l border-gray-200"
             >
                 <Plus size={16} aria-hidden="true" />
@@ -75,7 +78,9 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
         { value: 'dessert', label: t('categories.dessert') },
         { value: 'drink', label: t('categories.drink') },
         { value: 'equipment', label: t('categories.equipment') },
-        { value: 'other', label: t('categories.other') }
+        { value: 'other', label: t('categories.other') },
+        // Add Trempim if editing a ride
+        ...(isRide ? [{ value: 'trempim', label: 'טרמפים' }] : [])
     ];
 
     const validateForm = (): boolean => {
@@ -117,6 +122,13 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                 notes: formData.notes.trim() || undefined,
                 isSplittable: formData.quantity > 1, // Preserve splittable status based on quantity
             };
+
+            if (formData.phoneNumber?.trim()) {
+                updates.phoneNumber = formData.phoneNumber.trim();
+            } else if (item.phoneNumber) {
+                // If it had a phone number but now it's empty, we should explicitly set it to null to delete it in Firebase
+                updates.phoneNumber = null as any;
+            }
 
             await FirebaseService.updateMenuItem(eventId, item.id, updates);
             toast.success(t('editItemModal.success'));
@@ -180,7 +192,9 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                     className="bg-white rounded-xl shadow-xl max-w-md w-full"
                 >
                     <div className="flex items-center justify-between p-6 border-b">
-                        <h2 id={titleId} className="text-lg font-semibold text-gray-900">{t('editItemModal.title')}</h2>
+                        <h2 id={titleId} className="text-lg font-semibold text-gray-900">
+                            {isRide ? 'עריכת הצעת טרמפ' : t('editItemModal.title')}
+                        </h2>
                         <button
                             onClick={onClose}
                             disabled={isSubmitting}
@@ -196,15 +210,20 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                         {/* Item Name */}
                         <div className="mb-4">
                             <label htmlFor="item-name" className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('editItemModal.fields.name')}
+                                {isRide ? 'פרטי הנסיעה (מאיפה ומתי?)' : t('editItemModal.fields.name')}
                             </label>
                             <div className="relative">
-                                <ChefHat className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+                                {isRide ? (
+                                    <Car className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+                                ) : (
+                                    <ChefHat className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+                                )}
                                 <input
                                     id="item-name"
                                     type="text"
                                     value={formData.name}
                                     onChange={(e) => handleInputChange('name', e.target.value)}
+                                    placeholder={isRide ? 'לדוגמה: יציאה מרכבת מרכז ב-17:00' : ''}
                                     className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
                                         }`}
                                     disabled={isSubmitting}
@@ -222,40 +241,45 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                             )}
                         </div>
 
-                        {/* Category */}
-                        <div className="mb-4">
-                            <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('editItemModal.fields.category')}
-                            </label>
-                            <select
-                                id="category-select"
-                                value={formData.category}
-                                onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                disabled={isSubmitting}
-                                required
-                            >
-                                {categoryOptions.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Category - Only show if not a ride, or show read-only/simpler? Usually category is fixed for rides */}
+                        {!isRide && (
+                            <div className="mb-4">
+                                <label htmlFor="category-select" className="block text-sm font-medium text-gray-700 mb-2">
+                                    {t('editItemModal.fields.category')}
+                                </label>
+                                <select
+                                    id="category-select"
+                                    value={formData.category}
+                                    onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    disabled={isSubmitting}
+                                    required
+                                >
+                                    {categoryOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
                         {/* Quantity */}
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('editItemModal.fields.quantity')}
+                                {isRide ? 'מספר מקומות פנויים' : t('editItemModal.fields.quantity')}
                             </label>
                             <Stepper
                                 value={formData.quantity}
                                 onChange={(val) => handleInputChange('quantity', val)}
-                                min={totalAssigned}
+                                min={Math.max(1, totalAssigned)} // Can't go below what's assigned
+                                label={isRide ? 'מספר מקומות' : undefined}
                             />
                             {totalAssigned > 0 && (
                                 <p className="mt-1 text-xs text-gray-500">
-                                    {t('editItemModal.fields.assignedInfo', { assigned: totalAssigned })}
+                                    {isRide
+                                        ? `יש ${totalAssigned} מצטרפים כרגע`
+                                        : t('editItemModal.fields.assignedInfo', { assigned: totalAssigned })}
                                 </p>
                             )}
                             {errors.quantity && (
@@ -266,10 +290,28 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                             )}
                         </div>
 
+                        {/* Phone Number - Only for Rides */}
+                        {isRide && (
+                            <div className="mb-4">
+                                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                                    מספר טלפון (ליצירת קשר)
+                                </label>
+                                <input
+                                    id="phoneNumber"
+                                    type="tel"
+                                    value={formData.phoneNumber || ''}
+                                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                    placeholder="050-0000000"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dir-ltr text-right"
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                        )}
+
                         {/* Notes */}
                         <div className="mb-6">
                             <label htmlFor="notes-input" className="block text-sm font-medium text-gray-700 mb-2">
-                                {t('editItemModal.fields.notes')}
+                                {isRide ? 'הערות נוספות' : t('editItemModal.fields.notes')}
                             </label>
                             <div className="relative">
                                 <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -277,7 +319,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                     id="notes-input"
                                     value={formData.notes}
                                     onChange={(e) => handleInputChange('notes', e.target.value)}
-                                    placeholder={t('editItemModal.fields.notesPlaceholder')}
+                                    placeholder={isRide ? 'לדוגמה: אין מקום למזוודות' : t('editItemModal.fields.notesPlaceholder')}
                                     rows={3}
                                     autoComplete="off"
                                     className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -317,3 +359,4 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
         </div>
     );
 }
+

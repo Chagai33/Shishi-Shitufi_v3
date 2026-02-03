@@ -11,7 +11,8 @@ interface CategorySelectorProps {
   canAddMoreItems: boolean;
   userCreatedItemsCount: number;
   MAX_USER_ITEMS: number;
-  showLimit?: boolean;  // Kept from original to avoid breaking usage if passed, though not in user snippet explicit props but likely needed for backward compat or usage in parent
+  showLimit?: boolean;
+  onOfferRide?: () => void; // New prop for ride offers
 }
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
@@ -23,7 +24,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   canAddMoreItems,
   userCreatedItemsCount,
   MAX_USER_ITEMS,
-  showLimit = true, // Defaulting if needed
+  showLimit = true,
+  onOfferRide, // Destructure
 }) => {
   // Helper to calculate progress
   const getCategoryProgress = (categoryId: string) => {
@@ -102,20 +104,31 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         })}
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 grid grid-cols-2 gap-4">
+        {onOfferRide && (
+          <button
+            onClick={onOfferRide}
+            type="button"
+            className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-blue-600 hover:bg-blue-700"
+          >
+            <img src="/Icons/car.gif" alt="car" className="w-8 h-8 ml-2 object-contain" />
+            <span className="truncate">הצע טרמפ</span>
+          </button>
+        )}
+
         <button
           onClick={onAddItem}
           type="button"
           disabled={!canAddMoreItems}
           title={canAddMoreItems ? "הוסף פריט חדש" : "לא ניתן להוסיף פריטים נוספים"}
-          className={`w-full flex items-center justify-center text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500
+          className={`w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500
             ${!canAddMoreItems
               ? 'bg-neutral-400 cursor-not-allowed'
               : 'bg-success hover:bg-success/90'
-            }`}
+            } ${!onOfferRide ? 'col-span-2' : ''}`}
         >
-          <Plus size={20} className="ml-2" />
-          הוסף פריט משלך {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
+          <Plus size={20} className="ml-2 flex-shrink-0" />
+          <span className="truncate">הוסף פריט {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}</span>
         </button>
       </div>
     </div>

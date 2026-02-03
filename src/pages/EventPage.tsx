@@ -26,7 +26,8 @@ import { resolveCategoryDisplayName } from '../utils/eventUtils';
 // --- Component: CategorySelector removed, using imported component ---
 
 
-import MenuItemCard from '../components/Events/MenuItemCard';
+import { ItemCard } from '../components/Events/Cards/ItemCard';
+import { RideCard } from '../components/Events/Cards/RideCard';
 
 import AssignmentModal from '../components/Events/AssignmentModal';
 
@@ -561,6 +562,23 @@ const EventPage: React.FC = () => {
                             MAX_USER_ITEMS={MAX_USER_ITEMS}
                             showLimit={!showAdminButton}
                             categories={getEventCategories(currentEvent || undefined)}
+                            onOfferRide={currentEvent?.details.allowRideOffers !== false ? () => {
+                                // 2. Check if user already has a ride offer
+                                if (localUser) {
+                                    const userHasRide = menuItems.some(item =>
+                                        (item.category === 'trempim' || item.category === 'rides') &&
+                                        item.creatorId === localUser.uid
+                                    );
+
+                                    if (userHasRide) {
+                                        toast.error("כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת."); // "You already published a ride..."
+                                        return;
+                                    }
+                                }
+
+                                // 3. Open Modal with 'trempim' category
+                                setModalState({ type: 'add-user-item', category: 'trempim' });
+                            } : undefined}
                         />
                         <div className="max-w-4xl mx-auto px-4 mt-8">
                             {/* Button removed as it is now inside CategorySelector */}
@@ -633,23 +651,28 @@ const EventPage: React.FC = () => {
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {availableItems.map(item => {
                                                             const assignment = assignments.find(a => a.menuItemId === item.id);
-                                                            return <MenuItemCard
-                                                                key={item.id}
-                                                                item={item}
-                                                                assignment={assignment}
-                                                                assignments={assignments.filter(a => a.menuItemId === item.id)}
-                                                                onAssign={() => handleAssignClick(item)}
-                                                                onEdit={() => handleEditClick(item, assignment!)}
-                                                                onEditItem={() => handleEditItemClick(item)}
-                                                                onCancel={(a) => handleCancelClick(a || assignment!)}
-                                                                onDeleteItem={() => handleDeleteItem(item)}
-                                                                isMyAssignment={localUser?.uid === assignment?.userId}
-                                                                isEventActive={isEventActive}
-                                                                isOrganizer={!!showAdminButton}
-                                                                currentUserId={localUser?.uid}
-                                                                itemRowType={item.rowType ? (item.rowType as 'needs' | 'offers') : 'needs'}
-                                                                categoryDisplayName={getCategoryName(item.category)}
-                                                            />
+                                                            const commonProps = {
+                                                                key: item.id,
+                                                                item,
+                                                                assignment,
+                                                                assignments: assignments.filter(a => a.menuItemId === item.id),
+                                                                onAssign: () => handleAssignClick(item),
+                                                                onEdit: () => handleEditClick(item, assignment!),
+                                                                onEditItem: () => handleEditItemClick(item),
+                                                                onCancel: (a: AssignmentType) => handleCancelClick(a || assignment!),
+                                                                onDeleteItem: () => handleDeleteItem(item),
+                                                                isMyAssignment: localUser?.uid === assignment?.userId,
+                                                                isEventActive,
+                                                                isOrganizer: !!showAdminButton,
+                                                                currentUserId: localUser?.uid,
+                                                                categoryDisplayName: getCategoryName(item.category),
+                                                                eventName: currentEvent.details.title
+                                                            };
+
+                                                            if (item.category === 'trempim' || item.category === 'rides') {
+                                                                return <RideCard {...commonProps} />;
+                                                            }
+                                                            return <ItemCard {...commonProps} onEditAssignment={(a) => handleEditClick(item, a)} />;
                                                         })}
                                                     </div>
                                                 </div>
@@ -661,24 +684,28 @@ const EventPage: React.FC = () => {
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {assignedItems.map(item => {
                                                             const assignment = assignments.find(a => a.menuItemId === item.id);
-                                                            return <MenuItemCard
-                                                                key={item.id}
-                                                                item={item}
-                                                                assignment={assignment}
-                                                                assignments={assignments.filter(a => a.menuItemId === item.id)}
-                                                                onAssign={() => handleAssignClick(item)}
-                                                                onEdit={() => handleEditClick(item, assignment!)}
-                                                                onEditItem={() => handleEditItemClick(item)}
-                                                                onEditAssignment={(a) => handleEditClick(item, a)}
-                                                                onCancel={(a) => handleCancelClick(a || assignment!)}
-                                                                onDeleteItem={() => handleDeleteItem(item)}
-                                                                isMyAssignment={localUser?.uid === assignment?.userId}
-                                                                isEventActive={isEventActive}
-                                                                isOrganizer={!!showAdminButton}
-                                                                currentUserId={localUser?.uid}
-                                                                itemRowType={item.rowType ? (item.rowType as 'needs' | 'offers') : 'needs'} // rowType is now valid
-                                                                categoryDisplayName={getCategoryName(item.category)}
-                                                            />
+                                                            const commonProps = {
+                                                                key: item.id,
+                                                                item,
+                                                                assignment,
+                                                                assignments: assignments.filter(a => a.menuItemId === item.id),
+                                                                onAssign: () => handleAssignClick(item),
+                                                                onEdit: () => handleEditClick(item, assignment!),
+                                                                onEditItem: () => handleEditItemClick(item),
+                                                                onCancel: (a: AssignmentType) => handleCancelClick(a || assignment!),
+                                                                onDeleteItem: () => handleDeleteItem(item),
+                                                                isMyAssignment: localUser?.uid === assignment?.userId,
+                                                                isEventActive,
+                                                                isOrganizer: !!showAdminButton,
+                                                                currentUserId: localUser?.uid,
+                                                                categoryDisplayName: getCategoryName(item.category),
+                                                                eventName: currentEvent.details.title
+                                                            };
+
+                                                            if (item.category === 'trempim' || item.category === 'rides') {
+                                                                return <RideCard {...commonProps} />;
+                                                            }
+                                                            return <ItemCard {...commonProps} onEditAssignment={(a) => handleEditClick(item, a)} />;
                                                         })}
                                                     </div>
                                                 </div>
@@ -689,8 +716,9 @@ const EventPage: React.FC = () => {
                             </div>
                         ) : <p className="text-center text-neutral-500 py-8">{t('eventPage.list.noItems')}</p>}
                     </div>
-                )}
-            </main>
+                )
+                }
+            </main >
 
             <div className="max-w-4xl mx-auto px-4 mt-8 mb-8">
                 <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 text-center">
@@ -723,6 +751,7 @@ const EventPage: React.FC = () => {
                         category={(modalState.category || lastManualCategory) as any}
                         isOrganizer={isOrganizer}
                         onSuccess={(cat) => setLastManualCategory(cat)}
+                        initialCategory={modalState.category} // Pass initial category (e.g. 'trempim')
                     />
                 )
             }
@@ -737,18 +766,20 @@ const EventPage: React.FC = () => {
                 )
             }
 
-            {showParticipantsList && (
-                <ParticipantsListModal
-                    assignments={assignments}
-                    menuItems={menuItems}
-                    onClose={() => setShowParticipantsList(false)}
-                    onDeleteAssignment={async (assignmentId, menuItemId) => {
-                        if (!eventId) return;
-                        await FirebaseService.cancelAssignment(eventId, assignmentId, menuItemId);
-                    }}
-                    isOrganizer={!!showAdminButton}
-                />
-            )}
+            {
+                showParticipantsList && (
+                    <ParticipantsListModal
+                        assignments={assignments}
+                        menuItems={menuItems}
+                        onClose={() => setShowParticipantsList(false)}
+                        onDeleteAssignment={async (assignmentId, menuItemId) => {
+                            if (!eventId) return;
+                            await FirebaseService.cancelAssignment(eventId, assignmentId, menuItemId);
+                        }}
+                        isOrganizer={!!showAdminButton}
+                    />
+                )
+            }
         </div >
     );
 };

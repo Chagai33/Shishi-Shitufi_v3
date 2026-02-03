@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowRight, Calendar, Clock, MapPin, Users, ChefHat, Plus, Phone, Mail, RefreshCw, Settings, Wand2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
-import { MenuItemCard } from './MenuItemCard';
+import { RideCard } from './Cards/RideCard';
+import { ItemCard } from './Cards/ItemCard';
 import { AssignmentModal } from './AssignmentModal';
 import { EditAssignmentModal } from './EditAssignmentModal';
 import { UserInfoModal } from './UserInfoModal';
@@ -243,22 +244,27 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {filteredItems.map((item) => {
               const itemCategory = eventCategories.find(c => c.id === item.category);
-              const isRideName = (name?: string) => /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(name || '');
-              const itemRowType = itemCategory?.rowType || (item.category === 'rides' || isRideName(itemCategory?.name) || isRideName(item.name) ? 'offers' : undefined);
+              const isRide = item.category === 'trempim' || item.category === 'rides';
+
+              const commonProps = {
+                key: item.id,
+                item,
+                assignments: eventAssignments.filter(a => a.menuItemId === item.id),
+                assignment: eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id),
+                isMyAssignment: eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id),
+                isEventActive: !!(canAssign && dataLoaded),
+                onAssign: () => handleAssignItem(item),
+                onEdit: () => handleEditAssignment(item),
+                onCancel: (_: any) => { /* No cancel action in details view context? default empty */ },
+                currentUserId: user?.id,
+                isOrganizer: isAdmin,
+                categoryDisplayName: itemCategory?.name
+              };
 
               return (
-                <MenuItemCard
-                  key={item.id}
-                  item={item}
-                  assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
-                  assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
-                  isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
-                  isEventActive={!!(canAssign && dataLoaded)}
-                  onAssign={() => handleAssignItem(item)}
-                  onEdit={() => handleEditAssignment(item)}
-                  onCancel={() => { }} // No cancel action in details view context or handle via parent reload
-                  itemRowType={itemRowType}
-                />
+                <React.Fragment key={item.id}>
+                  {isRide ? <RideCard {...commonProps} /> : <ItemCard {...commonProps} />}
+                </React.Fragment>
               );
             })}
           </div>

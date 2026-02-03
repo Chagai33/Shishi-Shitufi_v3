@@ -34,6 +34,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState(existingAssignment?.quantity || item.quantity);
   const [notes, setNotes] = useState(existingAssignment?.notes || '');
+  const [phoneNumber, setPhoneNumber] = useState(existingAssignment?.phoneNumber || ''); // NEW
   const [isLoading, setIsLoading] = useState(false);
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
@@ -118,21 +119,44 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         await FirebaseService.joinEvent(eventId, user.uid, finalUserName);
       }
 
+      const assignmentData: any = {
+        quantity,
+        notes: notes.trim(),
+        userName: finalUserName,
+      };
+
+      if (phoneNumber.trim()) {
+        assignmentData.phoneNumber = phoneNumber.trim();
+      }
+
       if (isEdit && existingAssignment) {
         let finalQuantity = quantity;
-        let finalNotes = notes.trim();
 
         if (isAddMore) {
           finalQuantity = existingAssignment.quantity + quantity;
         }
 
-        await FirebaseService.updateAssignment(eventId, existingAssignment.id, { quantity: finalQuantity, notes: finalNotes, userName: finalUserName });
+        assignmentData.quantity = finalQuantity;
+
+        await FirebaseService.updateAssignment(eventId, existingAssignment.id, assignmentData);
         toast.success(isAddMore ? t('eventPage.assignment.addMoreSuccess') : (isOffers ? 'הנסיעה עודכנה בהצלחה!' : t('eventPage.assignment.updateSuccess')));
       } else {
-        await FirebaseService.createAssignment(eventId, {
-          menuItemId: item.id, userId: user.uid, userName: finalUserName,
-          quantity, notes: notes.trim(), status: 'confirmed', assignedAt: Date.now(), eventId
-        });
+        const newAssignment: any = {
+          menuItemId: item.id,
+          userId: user.uid,
+          userName: finalUserName,
+          quantity,
+          notes: notes.trim(),
+          status: 'confirmed',
+          assignedAt: Date.now(),
+          eventId
+        };
+
+        if (phoneNumber.trim()) {
+          newAssignment.phoneNumber = phoneNumber.trim();
+        }
+
+        await FirebaseService.createAssignment(eventId, newAssignment);
         toast.success(isOffers ? 'הצטרפת לנסיעה בהצלחה!' : t('eventPage.assignment.assignSuccess', { itemName: item.name }));
       }
       onClose();
@@ -270,6 +294,27 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Phone Number - Only for Rides */}
+              {isOffers && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    מספר טלפון (ליצירת קשר עם הנהג)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="050-0000000"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-right sm:text-left dir-ltr"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">המספר יוצג לנהג בלבד לתיאום הנסיעה</p>
+                </div>
+              )}
 
               {/* Notes */}
               <div>

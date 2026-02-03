@@ -315,6 +315,22 @@ export class FirebaseService {
   /**
    * מעדכן פרטי אירוע
    */
+  static async updateEvent(
+    eventId: string,
+    updates: Partial<ShishiEvent>
+  ): Promise<void> {
+    try {
+      const eventRef = ref(database, `events/${eventId}`);
+      await update(eventRef, updates);
+    } catch (error) {
+      console.error('❌ Error in updateEvent:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * מעדכן פרטי אירוע (פרטים פנימיים)
+   */
   static async updateEventDetails(eventId: string, updates: Partial<EventDetails>): Promise<void> {
     try {
       const detailsRef = ref(database, `events/${eventId}/details`);
@@ -737,8 +753,16 @@ export class FirebaseService {
         }
 
         // --- 4. Finalize Assignment ---
+        const sanitizedAssignmentData: any = { ...assignmentData };
+        // Remove undefined values to prevent "Transaction failed: Data returned contains undefined"
+        Object.keys(sanitizedAssignmentData).forEach(key => {
+          if (sanitizedAssignmentData[key] === undefined) {
+            delete sanitizedAssignmentData[key];
+          }
+        });
+
         const finalAssignmentData = {
-          ...assignmentData,
+          ...sanitizedAssignmentData,
           id: newAssignmentId,
           assignedAt: Date.now()
         };
@@ -749,8 +773,12 @@ export class FirebaseService {
       });
 
       return newAssignmentId;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error in createAssignment transaction:', error);
+      // Improve error message for known issues
+      if (error.message && error.message.includes('contains undefined')) {
+        throw new Error('שגיאת מערכת: נתונים לא תקינים (undefined). אנא נסה שנית או פנה לתמיכה.');
+      }
       throw error;
     }
   }

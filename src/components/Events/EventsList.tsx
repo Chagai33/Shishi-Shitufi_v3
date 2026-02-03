@@ -1,11 +1,10 @@
-// src/components/Events/EventsList.tsx
-
-import React, { useState, useMemo } from 'react';
-import { Calendar, Clock, MapPin, ChefHat, Search, X, ArrowRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Calendar, Clock, MapPin, ChefHat, Search, X } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { AssignmentModal } from './AssignmentModal';
+import AssignmentModal from './AssignmentModal';
 import { EditAssignmentModal } from './EditAssignmentModal';
-import { MenuItemCard } from './MenuItemCard';
+import { RideCard } from './Cards/RideCard';
+import { ItemCard } from './Cards/ItemCard';
 import { MenuItem, Assignment } from '../../types';
 import { formatDate, formatTime, isEventPast } from '../../utils/dateUtils';
 import { BulkItemsManager } from '../Admin/BulkItemsManager';
@@ -230,6 +229,9 @@ export function EventsList() {
                 }}
                 onAddItem={() => setShowUserItemForm(true)}
                 canAddMoreItems={canAddMoreItems}
+                categories={activeEvent.details.categories}
+                userCreatedItemsCount={userCreatedItemsCount}
+                MAX_USER_ITEMS={MAX_USER_ITEMS}
               />
             ) : (
               <div>
@@ -278,20 +280,28 @@ export function EventsList() {
                           role="list"
                           className="grid grid-cols-1 sm:grid-cols-2 gap-4 list-none p-0 m-0"
                         >
-                          {itemsToRender.available.map((item) => (
-                            <li key={item.id} className="grid">
-                              <MenuItemCard
-                                item={item}
-                                assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
-                                assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
-                                isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
-                                isEventActive={!!canAssign}
-                                onAssign={() => handleAssignItem(item)}
-                                onEdit={() => handleEditAssignment(item)}
-                                onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
-                              />
-                            </li>
-                          ))}
+                          {itemsToRender.available.map((item) => {
+                            const isRide = item.category === 'trempim' || item.category === 'rides';
+                            const commonProps = {
+                              item,
+                              assignments: eventAssignments.filter(a => a.menuItemId === item.id),
+                              assignment: eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id),
+                              isMyAssignment: eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id),
+                              isEventActive: !!canAssign,
+                              onAssign: () => handleAssignItem(item),
+                              onEdit: () => handleEditAssignment(item),
+                              onCancel: (assignment: any) => { /* EventsList cancel is simplified, maybe needs fix? */ setSelectedCategory(null); setShowMyAssignments(false); },
+                              currentUserId: user?.id,
+                              isOrganizer: isAdmin,
+                              eventName: activeEvent?.title
+                            };
+
+                            return (
+                              <li key={item.id} className="grid">
+                                {isRide ? <RideCard {...commonProps} onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }} /> : <ItemCard {...commonProps} onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }} />}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}
@@ -310,20 +320,28 @@ export function EventsList() {
                           role="list"
                           className="grid grid-cols-1 sm:grid-cols-2 gap-4 list-none p-0 m-0"
                         >
-                          {itemsToRender.assigned.map((item) => (
-                            <li key={item.id} className="grid">
-                              <MenuItemCard
-                                item={item}
-                                assignments={eventAssignments.filter(a => a.menuItemId === item.id)}
-                                assignment={eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id)}
-                                isMyAssignment={eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id)}
-                                isEventActive={!!canAssign}
-                                onAssign={() => handleAssignItem(item)}
-                                onEdit={() => handleEditAssignment(item)}
-                                onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }}
-                              />
-                            </li>
-                          ))}
+                          {itemsToRender.assigned.map((item) => {
+                            const isRide = item.category === 'trempim' || item.category === 'rides';
+                            const commonProps = {
+                              item,
+                              assignments: eventAssignments.filter(a => a.menuItemId === item.id),
+                              assignment: eventAssignments.find(a => a.menuItemId === item.id && a.userId === user?.id),
+                              isMyAssignment: eventAssignments.some(a => a.menuItemId === item.id && a.userId === user?.id),
+                              isEventActive: !!canAssign,
+                              onAssign: () => handleAssignItem(item),
+                              onEdit: () => handleEditAssignment(item),
+                              onCancel: (assignment: any) => { setSelectedCategory(null); setShowMyAssignments(false); },
+                              currentUserId: user?.id,
+                              isOrganizer: isAdmin,
+                              eventName: activeEvent?.title
+                            };
+
+                            return (
+                              <li key={item.id} className="grid">
+                                {isRide ? <RideCard {...commonProps} onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }} /> : <ItemCard {...commonProps} onCancel={() => { setSelectedCategory(null); setShowMyAssignments(false); }} />}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}

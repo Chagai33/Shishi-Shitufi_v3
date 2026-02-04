@@ -1,15 +1,164 @@
 // src/components/Events/UserMenuItemForm.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
-import { X, ChefHat, MessageSquare, User as UserIcon, AlertCircle, Plus, Minus } from 'lucide-react';
+import { X, ChefHat, User as UserIcon, AlertCircle, Plus, Minus, Clock, MapPin, ChevronDown, ChevronUp, Info, Phone } from 'lucide-react';
 import { useStore, selectMenuItems } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
-import { ShishiEvent, MenuItem, MenuCategory, CategoryConfig } from '../../types';
+import { ShishiEvent, MenuCategory, CategoryConfig } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import FocusTrap from 'focus-trap-react';
 import { isCarpoolLogic } from '../../utils/eventUtils';
+
+// ============================================================================
+// HELPER COMPONENTS - Card View Style
+// ============================================================================
+
+// TimeSelect: Dropdown with 15-minute intervals
+
+interface TimeSelectProps {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  disabled?: boolean;
+  required?: boolean;
+  referenceTime?: string; // Event time "HH:MM"
+  type?: 'to' | 'from';   // Logic for offset
+}
+
+const TimeSelect: React.FC<TimeSelectProps> = ({
+  label, value, onChange, disabled = false, required = false,
+  referenceTime, type = 'to'
+}) => {
+  const times: string[] = [];
+
+  // Calculate start hour based on event time
+  let startHour = 0;
+  if (referenceTime) {
+    const [h] = referenceTime.split(':').map(Number);
+    if (!isNaN(h)) {
+      if (type === 'to') {
+        // Start 5 hours before event
+        startHour = (h - 5 + 24) % 24;
+      } else {
+        // Start from event time (e.g., event end usually starts *at* event time or later)
+        // Let's assume return rides start around event time + 1 hour? Or just event time.
+        // User said: "Event at 19:00... like inbound"
+        startHour = h;
+      }
+    }
+  }
+
+  // Generate 24 hours starting from startHour
+  for (let i = 0; i < 24; i++) {
+    const h = (startHour + i) % 24;
+    for (let m = 0; m < 60; m += 15) {
+      const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      times.push(time);
+    }
+  }
+
+  return (
+    <div className="mb-4">
+      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      <div className="relative">
+
+        <select
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          required={required}
+          className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white appearance-none text-gray-700"
+        >
+          <option value="" disabled>בחר שעה...</option>
+          {times.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+          <ChevronDown size={16} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// FlexibilitySelector: Select dropdown for time flexibility
+interface FlexibilitySelectorProps {
+  label?: string;
+  selected: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+const FlexibilitySelector: React.FC<FlexibilitySelectorProps> = ({ label, selected, onChange, disabled = false }) => {
+  const options = [
+    { id: 'exact', label: 'בדיוק' },
+    { id: '15min', label: '±15 דקות' },
+    { id: '30min', label: '±30 דקות' },
+    { id: '1hour', label: '±שעה' },
+    { id: 'flexible', label: 'גמיש' },
+  ];
+
+  return (
+    <div>
+      {label && <span className="text-xs text-gray-500 mb-1 block">{label}</span>}
+      <select
+        value={selected}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white text-gray-700"
+      >
+        {options.map((opt) => (
+          <option key={opt.id} value={opt.id}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+// CollapsibleNotes: Accordion for remarks
+interface CollapsibleNotesProps {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}
+
+const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, disabled = false, placeholder = 'פרטים נוספים...' }) => {
+  const [isOpen, setIsOpen] = useState(!!value);
+
+  return (
+    <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden bg-gray-50 transition-all">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
+      >
+        <div className="flex items-center gap-2">
+          <span>הערות (אופציונלי)</span>
+          {value && !isOpen && <span className="text-xs text-teal-600">נוספו הערות</span>}
+        </div>
+        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+      {isOpen && (
+        <div className="p-3 bg-white border-t border-gray-100">
+          <textarea
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+            className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none resize-none"
+            rows={3}
+            placeholder={placeholder}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
 
 
 
@@ -57,11 +206,9 @@ export function UserMenuItemForm({
 
   // Accessibility: IDs and refs
   const titleId = useId();
-  const nameErrorId = useId();
   const participantNameId = useId();
   const itemNameId = useId();
   const categoryId = useId();
-  const notesId = useId();
   const isRequiredId = useId();
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
@@ -109,7 +256,7 @@ export function UserMenuItemForm({
   const [formData, setFormData] = useState({
     name: '',
     category: defaultCat as MenuCategory,
-    quantity: (isRideOffer ? (initialRowType === 'needs' ? 1 : 4) : 1),
+    quantity: (isRideOffer ? (initialRowType === 'needs' ? 1 : 2) : 1),
     notes: '',
     isSplittable: (isRideOffer || defaultCat === 'ride_requests'),
     isRequired: false,
@@ -117,8 +264,38 @@ export function UserMenuItemForm({
     rowType: initialRowType || (defaultCat === 'ride_offers' || defaultCat === 'trempim' ? 'offers' : (defaultCat === 'ride_requests' ? 'needs' : undefined))
   });
 
+  // Ride-specific state
+  const [rideDirection, setRideDirection] = useState<'to_event' | 'from_event' | 'both'>('to_event');
+  const [departureTimeTo, setDepartureTimeTo] = useState('');
+  const [departureTimeFrom, setDepartureTimeFrom] = useState('');
+  const [timeFlexibilityTo, setTimeFlexibilityTo] = useState<'exact' | '15min' | '30min' | '1hour' | 'flexible'>('15min');
+  const [timeFlexibilityFrom, setTimeFlexibilityFrom] = useState<'exact' | '15min' | '30min' | '1hour' | 'flexible'>('15min');
+  const [timeWarning, setTimeWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (rideDirection === 'both' && departureTimeTo && departureTimeFrom) {
+      const [hTo, mTo] = departureTimeTo.split(':').map(Number);
+      const [hFrom, mFrom] = departureTimeFrom.split(':').map(Number);
+      const minTo = hTo * 60 + mTo;
+      const minFrom = hFrom * 60 + mFrom;
+
+      if (minFrom < minTo) {
+        setTimeWarning('שים לב: שעת החזרה היא ביום למחרת 🌙');
+      } else {
+        setTimeWarning(null);
+      }
+    } else {
+      setTimeWarning(null);
+    }
+  }, [departureTimeTo, departureTimeFrom, rideDirection]);
+
+
 
   const isRequest = formData.rowType === 'needs';
+  const isRideCategory = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim';
+
+  // For rides, don't allow self-assignment
+  const effectiveMyQuantity = isRideCategory ? 0 : myQuantity;
 
 
   // Get dynamic categories from the event
@@ -138,14 +315,20 @@ export function UserMenuItemForm({
     ] as CategoryConfig[];
   }, [event.details.categories, t]);
 
-  // Ensure "trempim" is in the options even if not yet in event (visual only if we are in that mode)
+  // Ensure "trempim" and ride options are filtered out for manual selection unless active
   const categoryOptions = React.useMemo(() => {
-    const opts = eventCategories.map(cat => ({
+    let opts = eventCategories.map(cat => ({
       value: cat.id,
-      label: cat.name
+      // Aggressively clean specific emojis if present in DB data as requested
+      label: cat.name.replace(/[📦🎯⚠️✅]/g, '').trim()
     }));
 
-    // For backwards compatibility or explicit locking
+    // Filter out ride categories from the dropdown options unless it's the currently selected one
+    // This hides them from the "Add Item" form for admins/users
+    const rideIds = ['ride_offers', 'ride_requests', 'trempim'];
+    opts = opts.filter(o => !rideIds.includes(o.value) || o.value === formData.category);
+
+    // For backwards compatibility or explicit locking (if editing an existing ride item)
     if (formData.category === 'trempim' && !opts.some(o => o.value === 'trempim')) {
       opts.push({ value: 'trempim', label: 'טרמפים' });
     }
@@ -170,28 +353,91 @@ export function UserMenuItemForm({
     }
   }, [authUser, event.participants]);
 
+  // Validation Logic
+  const getFieldError = (field: keyof FormErrors, value: any): string | undefined => {
+    const isRide = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim';
+
+    switch (field) {
+      case 'name':
+        if (!value || !value.toString().trim()) return t('userItemForm.errors.nameRequired');
+        const minLen = isRide ? 3 : 2;
+        if (value.toString().trim().length < minLen) {
+          return isRide ? 'נא להזין מיקום ברור (לפחות 3 תווים)' : t('userItemForm.errors.nameLength');
+        }
+        break;
+
+      case 'quantity':
+        const num = Number(value);
+        if (num < 1) return t('userItemForm.errors.quantityMin');
+        if (isRide && num > 8) return 'מספר מקומות לא הגיוני (מקסימום 8)';
+        if (!isRide && num > 100) return t('userItemForm.errors.quantityMax');
+        break;
+
+      case 'phoneNumber':
+        if (isRide) {
+          const raw = value?.toString().trim() || '';
+          const clean = raw.replace(/\D/g, '').replace(/^972/, '0');
+          if (!raw) return 'חובה להזין מספר טלפון';
+          if (!/^05\d{8}$/.test(clean)) return 'מספר טלפון לא תקין (10 ספרות, קידומת 05)';
+        }
+        break;
+    }
+    return undefined;
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    // Map input names to error keys if needed, assuming direct mapping
+    const error = getFieldError(name as keyof FormErrors, value);
+
+    setErrors(prev => {
+      const next = { ...prev };
+      if (error) next[name as keyof FormErrors] = error;
+      else delete next[name as keyof FormErrors];
+      return next;
+    });
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
+    const isRide = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim';
 
-    if (!formData.name.trim()) {
-      newErrors.name = t('userItemForm.errors.nameRequired');
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = t('userItemForm.errors.nameLength');
-    }
+    // Validate all fields
+    const nameErr = getFieldError('name', formData.name);
+    if (nameErr) newErrors.name = nameErr;
 
-    if (formData.quantity < 1) {
-      newErrors.quantity = t('userItemForm.errors.quantityMin');
-    } else if (formData.quantity > 100) {
-      newErrors.quantity = t('userItemForm.errors.quantityMax');
-    }
+    const qtyErr = getFieldError('quantity', formData.quantity);
+    if (qtyErr) newErrors.quantity = qtyErr;
 
-    if ((formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim') && !formData.phoneNumber?.trim()) {
-      newErrors.phoneNumber = 'חובה להזין מספר טלפון ליצירת קשר';
+    if (isRide) {
+      const phoneErr = getFieldError('phoneNumber', formData.phoneNumber);
+      if (phoneErr) newErrors.phoneNumber = phoneErr;
+
+      // Time Validation (Cross-field logic remains here)
+      if ((rideDirection === 'to_event' || rideDirection === 'both') && !departureTimeTo) {
+        toast.error('חובה להזין שעת יציאה להלוך');
+        return false; // Blocking
+      }
+      if ((rideDirection === 'from_event' || rideDirection === 'both') && !departureTimeFrom) {
+        toast.error('חובה להזין שעת יציאה לחזור');
+        return false;
+      }
+
+      if (rideDirection === 'both' && departureTimeTo && departureTimeFrom) {
+        const [hTo, mTo] = departureTimeTo.split(':').map(Number);
+        const [hFrom, mFrom] = departureTimeFrom.split(':').map(Number);
+        const minTo = hTo * 60 + mTo;
+        const minFrom = hFrom * 60 + mFrom;
+
+        if (minFrom === minTo) {
+          toast.error('שעת החזרה זהה לשעת היציאה');
+          return false;
+        }
+      }
     }
 
     setErrors(newErrors);
-    const isValid = Object.keys(newErrors).length === 0;
-    return isValid;
+    return Object.keys(newErrors).length === 0;
   };
 
   // Helper: Check if user can add more items
@@ -265,7 +511,10 @@ export function UserMenuItemForm({
       }
 
 
-      const newItemData: Omit<MenuItem, 'id'> = {
+      const isRide = ['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(formData.category);
+      const shouldBypassLimit = isOrganizer || isRide;
+
+      const baseItemData = {
         name: formData.name.trim(),
         category: formData.category,
         quantity: formData.quantity,
@@ -280,43 +529,113 @@ export function UserMenuItemForm({
         eventId: event.id
       };
 
-      if (formData.phoneNumber?.trim()) {
-        (newItemData as any).phoneNumber = formData.phoneNumber.trim();
-      }
+      if (!baseItemData.notes) delete (baseItemData as any).notes;
+      if (!baseItemData.phoneNumber) delete (baseItemData as any).phoneNumber;
 
-      if (!newItemData.notes) delete (newItemData as any).notes;
+      // Handle ride items with directions
+      if (isRide && rideDirection === 'both') {
+        // Create two items - one for each direction
 
-      // 1. Create Item (Total Quantity)
-      // Pass bypassLimit: isOrganizer OR ride category to skip checks
-      const shouldBypassLimit = isOrganizer || ['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(formData.category);
+        // Item 1: To Event (הלוך)
+        const itemDataTo: any = {
+          ...baseItemData,
+          name: `${formData.name.trim()} (הלוך)`,
+          direction: 'to_event',
+          departureTime: departureTimeTo,
+          timeFlexibility: timeFlexibilityTo,
+        };
 
+        const itemIdTo = await FirebaseService.addMenuItem(event.id, itemDataTo, { bypassLimit: true });
 
-      const itemId = await FirebaseService.addMenuItem(event.id, {
-        ...newItemData,
-        quantity: formData.quantity,
-      }, { bypassLimit: shouldBypassLimit });
+        // Create assignment for "to" if needed
+        if (itemIdTo && effectiveMyQuantity > 0) {
+          await FirebaseService.createAssignment(event.id, {
+            eventId: event.id,
+            menuItemId: itemIdTo,
+            userId: authUser.uid,
+            userName: finalUserName,
+            quantity: effectiveMyQuantity,
+            status: 'confirmed' as const,
+            assignedAt: Date.now(),
+            notes: formData.notes
+          });
+        }
 
-      // 2. Create Assignment (My Contribution) - only if > 0
-      if (itemId && myQuantity > 0) {
-        await FirebaseService.createAssignment(event.id, {
-          eventId: event.id,
-          menuItemId: itemId,
-          userId: authUser.uid,
-          userName: finalUserName,
-          quantity: myQuantity,
-          status: 'confirmed' as const,
-          assignedAt: Date.now(),
-          notes: formData.notes
-        });
-      }
+        // Item 2: From Event (חזור)
+        const itemDataFrom: any = {
+          ...baseItemData,
+          name: `${formData.name.trim()} (חזור)`,
+          direction: 'from_event',
+          departureTime: departureTimeFrom,
+          timeFlexibility: timeFlexibilityFrom,
+        };
 
-      if (itemId) {
+        const itemIdFrom = await FirebaseService.addMenuItem(event.id, itemDataFrom, { bypassLimit: true });
+
+        // Create assignment for "from" if needed
+        if (itemIdFrom && effectiveMyQuantity > 0) {
+          await FirebaseService.createAssignment(event.id, {
+            eventId: event.id,
+            menuItemId: itemIdFrom,
+            userId: authUser.uid,
+            userName: finalUserName,
+            quantity: effectiveMyQuantity,
+            status: 'confirmed' as const,
+            assignedAt: Date.now(),
+            notes: formData.notes
+          });
+        }
+
+        toast.success('הטרמפ נוסף בהצלחה (הלוך וחזור)');
+
+      } else if (isRide) {
+        // Single direction ride
+        const itemData: any = {
+          ...baseItemData,
+          name: `${formData.name.trim()} (${rideDirection === 'to_event' ? 'הלוך' : 'חזור'})`,
+          direction: rideDirection === 'from_event' ? 'from_event' : 'to_event',
+          departureTime: rideDirection === 'to_event' ? departureTimeTo : departureTimeFrom,
+          timeFlexibility: rideDirection === 'to_event' ? timeFlexibilityTo : timeFlexibilityFrom,
+        };
+
+        const itemId = await FirebaseService.addMenuItem(event.id, itemData, { bypassLimit: true });
+
+        if (itemId && effectiveMyQuantity > 0) {
+          await FirebaseService.createAssignment(event.id, {
+            eventId: event.id,
+            menuItemId: itemId,
+            userId: authUser.uid,
+            userName: finalUserName,
+            quantity: effectiveMyQuantity,
+            status: 'confirmed' as const,
+            assignedAt: Date.now(),
+            notes: formData.notes
+          });
+        }
+
         toast.success(t('userItemForm.errors.success'));
-        onSuccess?.(formData.category);
+
       } else {
-        throw new Error(t('userItemForm.errors.generalError'));
+        // Regular item (not a ride)
+        const itemId = await FirebaseService.addMenuItem(event.id, baseItemData, { bypassLimit: shouldBypassLimit });
+
+        if (itemId && effectiveMyQuantity > 0) {
+          await FirebaseService.createAssignment(event.id, {
+            eventId: event.id,
+            menuItemId: itemId,
+            userId: authUser.uid,
+            userName: finalUserName,
+            quantity: effectiveMyQuantity,
+            status: 'confirmed' as const,
+            assignedAt: Date.now(),
+            notes: formData.notes
+          });
+        }
+
+        toast.success(t('userItemForm.errors.success'));
       }
 
+      onSuccess?.(formData.category);
       onClose();
     } catch (error: any) {
       console.error('❌ Error in form submission:', error);
@@ -373,96 +692,75 @@ export function UserMenuItemForm({
     <div role="presentation" onClick={onClose}>
       <FocusTrap>
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
           onClick={(e) => e.stopPropagation()}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="bg-white rounded-xl shadow-xl max-w-md w-full"
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 id={titleId} className="text-lg font-semibold text-gray-900">
-                {isRequest ? 'בקשת טרמפ חדשה' : (isOffersType ? 'הצעת טרמפ חדשה' : t('userItemForm.title'))}
-              </h2>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isSubmitting}
-                aria-label={t('common.close')}
-                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-              >
-                <X className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6">
-              {showNameInput && (
-                <div className="mb-4">
-                  <label htmlFor={participantNameId} className="block text-sm font-medium text-gray-700 mb-2">
-                    {isRequest ? 'שם הנוסע/ת' : (isOffersType ? 'שם הנהג' : t('userItemForm.fields.fullName'))}
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
-                    <input
-                      id={participantNameId}
-                      type="text"
-                      value={participantName}
-                      onChange={(e) => setParticipantName(e.target.value)}
-                      placeholder={t('userItemForm.fields.nameDisplayPlaceholder')}
-                      autoComplete="name"
-                      className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      disabled={isSubmitting}
-                      required
-                      aria-required="true"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1" id={`${participantNameId}-help`}>{t('userItemForm.fields.nameHelp')}</p>
+            {/* Header - Teal Theme */}
+            <div className="sticky top-0 z-10 bg-gradient-to-br from-teal-600 to-teal-700 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 id={titleId} className="text-xl font-bold mb-1">
+                    {isRequest ? 'בקש טרמפ' : (isOffersType ? 'הצע טרמפ' : t('userItemForm.title'))}
+                  </h2>
+                  <p className="text-sm text-teal-100">
+                    {event.details.title}
+                  </p>
                 </div>
-              )}
-              <div className="mb-4">
-                <label htmlFor={itemNameId} className="block text-sm font-medium text-gray-700 mb-2">
-                  {isRequest ? 'מאיפה ומתי?' : (isOffersType ? 'פרטי הנסיעה (מאיפה ומתי?)' : t('userItemForm.fields.name'))}
-                </label>
-                <div className="relative">
-                  <ChefHat className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  aria-label={t('common.close')}
+                  className="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2 transition-all disabled:opacity-50"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {/* User Name Input - if needed */}
+              {showNameInput && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <label htmlFor={participantNameId} className="block text-sm font-semibold text-gray-800 mb-2">
+                    {isRequest ? '👤 שם הנוסע/ת' : (isOffersType ? '👤 שם הנהג/ת' : t('userItemForm.fields.fullName'))}
+                  </label>
+
                   <input
-                    id={itemNameId}
+                    id={participantNameId}
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder={isRequest ? 'לדוגמה: מחפש טרמפ מירושלים ב-15:00' : (isOffersType ? 'לדוגמה: יציאה מחולון ב-16:00' : t('userItemForm.fields.namePlaceholder'))}
-                    className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    value={participantName}
+                    onChange={(e) => setParticipantName(e.target.value)}
+                    placeholder={t('userItemForm.fields.nameDisplayPlaceholder')}
+                    autoComplete="name"
+                    className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all"
                     disabled={isSubmitting}
                     required
-                    aria-required="true"
-                    aria-invalid={errors.name ? 'true' : 'false'}
-                    aria-describedby={errors.name ? nameErrorId : undefined}
                   />
-                </div>
-                {errors.name && (
-                  <p id={nameErrorId} role="alert" className="mt-1 text-sm text-red-600 flex items-center">
-                    <AlertCircle className="h-4 w-4 ml-1" aria-hidden="true" />
-                    {errors.name}
-                  </p>
-                )}
-              </div>
 
-              {/* Category Selection - Full Width Row */}
+                  <p className="text-xs text-gray-600 mt-2">{t('userItemForm.fields.nameHelp')}</p>
+                </div>
+              )}
+
+              {/* Category Selection - if not locked */}
               {!isLocked && (
-                <div className="mb-4">
-                  <label htmlFor={categoryId} className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <label htmlFor={categoryId} className="block text-sm font-semibold text-gray-800 mb-2">
                     {t('userItemForm.fields.category')}
                   </label>
                   <select
                     id={categoryId}
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all bg-white"
                     disabled={isSubmitting}
                     required
-                    aria-required="true"
                   >
                     {categoryOptions.map(option => (
                       <option key={option.value} value={option.value}>
@@ -473,164 +771,382 @@ export function UserMenuItemForm({
                 </div>
               )}
 
-              {/* Quantity Section - Separate Row */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Total Needed */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {isRequest ? 'כמה מקומות אתם?' : (isOffersType ? 'מספר מקומות פנויים' : t('userItemForm.fields.quantityTotal'))}
-                  </label>
-                  <Stepper
-                    value={formData.quantity}
-                    onChange={(val) => {
-                      handleInputChange('quantity', val);
-                      if (!isRequest) {
-                        const newMyQty = myQuantity > val ? val : myQuantity;
-                        if (myQuantity > val) setMyQuantity(val);
-                        if (val > newMyQty) handleInputChange('isSplittable', true);
-                      }
-                    }}
-                    label={isRequest ? 'מספר מקומות' : t('userItemForm.fields.quantityTotal')}
-                  />
-                </div>
-
-                {/* My Contribution */}
-                {!isRequest && (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-medium text-gray-700">
-                        {isOffersType ? 'שריין לעצמך/חברים' : t('userItemForm.fields.myContribution')}
-                      </label>
-                      {myQuantity < formData.quantity && (
-                        <button
-                          type="button"
-                          onClick={() => setMyQuantity(formData.quantity)}
-                          aria-label={t('userItemForm.fields.bringAll')}
-                          className="text-xs text-orange-600 hover:text-orange-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-orange-500 rounded"
-                        >
-                          {isOffersType ? 'מלא את הכל' : t('userItemForm.fields.bringAll')}
-                        </button>
-                      )}
-                    </div>
-                    <Stepper
-                      value={myQuantity}
-                      onChange={setMyQuantity}
-                      max={formData.quantity}
-                      min={0} // Allow 0 for rides specifically
-                      label={t('userItemForm.fields.myContribution')}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Status Message - Below Quantities */}
-              {!isRequest && (
-                <div className="text-xs text-gray-500 text-center -mt-2 mb-4">
-                  {myQuantity < formData.quantity ?
-                    (myQuantity === 0 ? (isOffersType ? "כל המקומות פנויים לאחרים" : "אתה לא מביא כלום (מנהל)") : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })) :
-                    (isOffersType ? "הרכב מלא (שריינת הכל)" : t('userItemForm.fields.youBringAllMsg'))}
-                </div>
-              )}
-              <div className="mb-6">
-                <label htmlFor={notesId} className="block text-sm font-medium text-gray-700 mb-2">
-                  {isRequest ? 'הערות (מסלול, נקודות איסוף...)' : (isOffersType ? 'הערות (מסלול, נקודות איסוף...)' : t('userItemForm.fields.notes'))}
-                </label>
-                <div className="relative">
-                  <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-gray-400" aria-hidden="true" />
-                  <textarea
-                    id={notesId}
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    placeholder={isRequest ? 'לדוגמה: מחכה ליד בית הכנסת הגדול' : (isOffersType ? 'לדוגמה: יוצאים מרכבת ארלוזורוב, אין מקום למזוודות גדולות' : t('userItemForm.fields.notesPlaceholder'))}
-                    rows={3}
-                    className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              </div>
-
-              {/* Phone Number - Only for Rides */}
+              {/* SECTION 1: Route (Origin) - For Rides */}
               {(isOffersType || isRequest) && (
-                <div className="mb-4">
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                    מספר טלפון (חובה ליצירת קשר) <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="phoneNumber"
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={formData.phoneNumber || ''}
-                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                      placeholder="050-0000000"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-right sm:text-left dir-ltr ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'}`}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  {errors.phoneNumber && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center" role="alert">
-                      <AlertCircle className="h-3 w-3 ml-1" aria-hidden="true" />
-                      {errors.phoneNumber}
+                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                  <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span>מאיפה אתה יוצא?</span>
+                  </h3>
+
+
+                  <input
+                    name="name"
+                    onBlur={handleBlur}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "name-error-ride" : undefined}
+                    id={itemNameId}
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder={isRequest ? 'לדוגמה: ירושלים - תחנה מרכזית' : 'לדוגמה: תל אביב - רכבת ארלוזורוב'}
+                    className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    disabled={isSubmitting}
+                    required
+                  />
+
+                  {errors.name && (
+                    <p id="name-error-ride" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.name}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-1">יוצג רק למי שלוקח/מצטרף לנסיעה</p>
+
+
+
+                  {/* Direction Toggle */}
+                  <div className="mt-5">
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRideDirection('to_event')}
+                        disabled={isSubmitting}
+                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'to_event'
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-md'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                          }`}
+                      >
+                        הלוך
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRideDirection('from_event')}
+                        disabled={isSubmitting}
+                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'from_event'
+                          ? 'bg-teal-600 text-white border-teal-600 shadow-md'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                          }`}
+                      >
+                        חזור
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRideDirection('both')}
+                        disabled={isSubmitting}
+                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'both'
+                          ? 'bg-yellow-500 text-white border-yellow-500 shadow-md'
+                          : 'bg-white text-gray-600 border-gray-200 hover:bg-yellow-50'
+                          }`}
+                      >
+                        הלוך וחזור
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Regular Item Name - For non-rides */}
+              {!isOffersType && !isRequest && (
+                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                  <label htmlFor={itemNameId} className="block text-sm font-semibold text-gray-800 mb-3">
+                    {t('userItemForm.fields.name')}
+                  </label>
+
+
+                  <input
+                    name="name"
+                    onBlur={handleBlur}
+                    aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? "name-error-item" : undefined}
+                    id={itemNameId}
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder={t('userItemForm.fields.namePlaceholder')}
+                    className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    disabled={isSubmitting}
+                    required
+                  />
+
+                  {errors.name && (
+                    <p id="name-error-item" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.name}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* SECTION 2: Times - For Rides */}
+              {(isOffersType || isRequest) && (
+                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-5">
+
+
+                  {/* Outbound Time */}
+                  {(rideDirection === 'to_event' || rideDirection === 'both') && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                        הלוך
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TimeSelect
+                          label="שעת יציאה"
+                          value={departureTimeTo}
+                          onChange={(e) => setDepartureTimeTo(e.target.value)}
+                          disabled={isSubmitting}
+                          required
+                          referenceTime={event.details.time}
+                          type="to"
+                        />
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
+                          <FlexibilitySelector
+                            selected={timeFlexibilityTo}
+                            onChange={(val) => setTimeFlexibilityTo(val as any)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Return Time */}
+                  {(rideDirection === 'from_event' || rideDirection === 'both') && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                        חזור
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <TimeSelect
+                          label="שעת יציאה"
+                          value={departureTimeFrom}
+                          onChange={(e) => setDepartureTimeFrom(e.target.value)}
+                          disabled={isSubmitting}
+                          required
+                          referenceTime={event.details.time}
+                          type="from"
+                        />
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
+                          <FlexibilitySelector
+                            selected={timeFlexibilityFrom}
+                            onChange={(val) => setTimeFlexibilityFrom(val as any)}
+                            disabled={isSubmitting}
+                          />
+                        </div>
+                      </div>
+                      {timeWarning && (
+                        <p className="text-sm text-orange-600 bg-orange-50 p-2 rounded-lg mt-2 flex items-center gap-2 border border-orange-200">
+                          <AlertCircle className="h-4 w-4" />
+                          {timeWarning}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SECTION 3: Details (Phone, Seats, Notes) - For Rides */}
+              {(isOffersType || isRequest) && (
+                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+
+
+                  {/* Phone Number */}
+                  <div>
+                    <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                      <Phone className="h-4 w-4 text-teal-600" />
+                      מספר טלפון
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <input
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        onBlur={handleBlur}
+                        aria-invalid={!!errors.phoneNumber}
+                        aria-describedby={errors.phoneNumber ? "phone-error" : undefined}
+                        type="tel"
+                        inputMode="numeric"
+                        value={formData.phoneNumber || ''}
+                        onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                        placeholder="050-0000000"
+                        className={`w-full pr-11 pl-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                          } ltr text-right`}
+                        disabled={isSubmitting}
+                        required
+                      />
+                    </div>
+                    {errors.phoneNumber && (
+                      <p id="phone-error" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.phoneNumber}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">יוצג רק למי שישובץ לנסיעה</p>
+                  </div>
+
+                  {/* Number of Seats */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      {isRequest ? 'כמה מקומות אתם צריכים?' : 'מספר מקומות פנויים'}
+                    </label>
+                    <Stepper
+                      value={formData.quantity}
+                      onChange={(val) => handleInputChange('quantity', val)}
+                      label=""
+                    />
+
+                  </div>
+
+                  {/* Collapsible Notes */}
+                  <CollapsibleNotes
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    disabled={isSubmitting}
+                    placeholder={isRequest
+                      ? 'לדוגמה: מחכה ליד בית הכנסת הגדול...'
+                      : 'לדוגמה: אין מקום למזוודות גדולות, רק תיקי גב...'}
+                  />
+                </div>
+              )}
+
+              {/* Quantity Section - For regular items */}
+              {!isOffersType && !isRequest && (
+                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                  <h3 className="text-base font-bold text-gray-800 mb-4">
+                    כמויות
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Total Needed */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        {t('userItemForm.fields.quantityTotal')}
+                      </label>
+                      <Stepper
+                        value={formData.quantity}
+                        onChange={(val) => {
+                          handleInputChange('quantity', val);
+                          const newMyQty = myQuantity > val ? val : myQuantity;
+                          if (myQuantity > val) setMyQuantity(val);
+                          if (val > newMyQty) handleInputChange('isSplittable', true);
+                        }}
+                        label={t('userItemForm.fields.quantityTotal')}
+                      />
+                    </div>
+
+                    {/* My Contribution */}
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-semibold text-gray-700">
+                          {t('userItemForm.fields.myContribution')}
+                        </label>
+                        {myQuantity < formData.quantity && (
+                          <button
+                            type="button"
+                            onClick={() => setMyQuantity(formData.quantity)}
+                            aria-label={t('userItemForm.fields.bringAll')}
+                            className="text-xs text-teal-600 hover:text-teal-700 font-bold underline"
+                          >
+                            {t('userItemForm.fields.bringAll')}
+                          </button>
+                        )}
+                      </div>
+                      <Stepper
+                        value={myQuantity}
+                        onChange={setMyQuantity}
+                        max={formData.quantity}
+                        min={0}
+                        label={t('userItemForm.fields.myContribution')}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status Message */}
+                  <div className="mt-4 text-center">
+                    <p className="text-sm font-medium text-gray-600 bg-gray-50 rounded-lg py-2 px-3">
+                      {myQuantity < formData.quantity
+                        ? myQuantity === 0
+                          ? "אתה רק יוצר את הפריט (מנהל)"
+                          : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })
+                        : t('userItemForm.fields.youBringAllMsg')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes for regular items */}
+              {!isOffersType && !isRequest && (
+                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                  <CollapsibleNotes
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange('notes', e.target.value)}
+                    disabled={isSubmitting}
+                    placeholder={t('userItemForm.fields.notesPlaceholder')}
+                  />
                 </div>
               )}
 
               {/* Admin: Is Required Checkbox */}
               {isOrganizer && !isOffersType && !isRequest && (
-                <div className="mb-6 flex items-center bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex items-center gap-3">
                   <input
                     id={isRequiredId}
                     type="checkbox"
                     checked={formData.isRequired}
                     onChange={(e) => handleInputChange('isRequired', e.target.checked)}
-                    className="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    className="h-5 w-5 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
                   />
-                  <label htmlFor={isRequiredId} className="mr-3 block text-sm font-semibold text-gray-800">
+                  <label htmlFor={isRequiredId} className="text-sm font-bold text-gray-800 flex items-center gap-2">
                     {t('userItemForm.fields.isRequired')}
                   </label>
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex space-x-3 rtl:space-x-reverse">
+              {/* Action Buttons - Teal Theme */}
+              <div className="sticky bottom-0 -mx-6 -mb-6 p-6 bg-white border-t-2 border-gray-100 rounded-b-2xl flex gap-3">
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   aria-busy={isSubmitting}
-                  className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                  className="flex-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 disabled:from-gray-300 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-[0.98]"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2" aria-hidden="true"></div>
-                      {t('userItemForm.submitting')}
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent ml-2"></div>
+                      <span>{t('userItemForm.submitting')}</span>
                     </>
                   ) : (
-                    // Dynamic button text based on context
-                    isRequest 
-                      ? 'בקש טרמפ' 
-                      : isOffersType 
-                        ? 'הצע טרמפ' 
-                        : myQuantity === 0 
-                          ? 'הוסף פריט' 
-                          : 'הוסף ושבץ אותי'
+                    <>
+
+                      <span>
+                        {isRequest
+                          ? 'בקש טרמפ'
+                          : isOffersType
+                            ? 'הצע טרמפ'
+                            : effectiveMyQuantity === 0
+                              ? 'הוסף פריט'
+                              : 'הוסף ושבץ אותי'}
+                      </span>
+                    </>
                   )}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className="px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all disabled:opacity-50 active:scale-[0.98]"
                 >
-                  {t('userItemForm.cancel')}
+                  ביטול
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      </FocusTrap>
-    </div>
+        </div >
+      </FocusTrap >
+    </div >
   );
 }

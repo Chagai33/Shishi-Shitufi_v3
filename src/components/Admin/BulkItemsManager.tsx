@@ -294,10 +294,12 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
     return getEventCategories(undefined);
   }, [event, filterEvent, realtimeEvents]);
 
-  const categoryOptions = activeCategories.map(cat => ({
-    value: cat.id,
-    label: cat.name
-  }));
+  const categoryOptions = activeCategories
+    .filter(cat => cat.id !== 'ride_offers' && cat.id !== 'ride_requests')
+    .map(cat => ({
+      value: cat.id,
+      label: cat.name
+    }));
 
   const assignedOptions = [
     { value: 'all', label: t('bulkEdit.filters.allOf') }, { value: 'assigned', label: t('bulkEdit.filters.assigned') },

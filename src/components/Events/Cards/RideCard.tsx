@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MenuItem, Assignment } from '../../../types';
 import { MessageCircle, Edit, Trash2 } from 'lucide-react';
+import { useStore } from '../../../store/useStore';
 
 import { BaseCard } from './BaseCard';
 
@@ -74,6 +75,34 @@ export const RideCard: React.FC<RideCardProps> = ({
   const isCreatorLogic = isOrganizer || (currentUserId && item.creatorId === currentUserId);
   const showCreatorPhoneToAssignee = hasMyAssignment && item.phoneNumber;
 
+  // Check if creator has opposite direction ride
+  const hasOppositeDirection = useMemo(() => {
+    if (!item.direction) return false;
+    
+    const oppositeDir = item.direction === 'to_event' ? 'from_event' : 'to_event';
+    const allItems = useStore.getState().currentEvent?.menuItems;
+    
+    if (!allItems) return false;
+    
+    return Object.values(allItems).some((i: any) => 
+      i.creatorId === item.creatorId &&
+      i.direction === oppositeDir &&
+      (i.category === 'ride_offers' || i.category === 'ride_requests')
+    );
+  }, [item.direction, item.creatorId]);
+
+  // Format time flexibility text
+  const getFlexibilityText = (flex?: string) => {
+    switch (flex) {
+      case 'exact': return 'מדויק';
+      case '15min': return '±15\'';
+      case '30min': return '±30\'';
+      case '1hour': return '±1שעה';
+      case 'flexible': return 'גמיש מאוד';
+      default: return '';
+    }
+  };
+
   const cardStyles = hasMyAssignment
     ? 'bg-blue-50/50 border-blue-200'
     : isFull
@@ -139,6 +168,43 @@ export const RideCard: React.FC<RideCardProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Direction, Time and Flexibility Info */}
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          {item.direction && (
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium text-xs">
+              {item.direction === 'to_event' ? '→ הלוך' : '← חזור'}
+            </span>
+          )}
+          
+          {item.departureTime && (
+            <span className="font-bold text-gray-700 text-xs flex items-center gap-1">
+              🕐 {item.departureTime}
+              {item.timeFlexibility && item.timeFlexibility !== 'exact' && (
+                <span className="text-[10px] text-gray-500">
+                  ({getFlexibilityText(item.timeFlexibility)})
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* Pickup Location */}
+        {item.pickupLocation && (
+          <div className="text-xs text-gray-600 flex items-center gap-1 mt-2 bg-gray-50 rounded-lg p-2">
+            <span>📍</span>
+            <span className="font-medium">{item.pickupLocation}</span>
+          </div>
+        )}
+
+        {/* Has Opposite Direction Badge */}
+        {hasOppositeDirection && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1.5 mt-2">
+            <span className="text-xs text-yellow-700 flex items-center gap-1 font-medium">
+              ⭐ גם {item.direction === 'to_event' ? 'חוזר' : 'הולך'}!
+            </span>
+          </div>
+        )}
 
         {/* Visibility Info & Phone (Creator's phone for Assignees) */}
         {(showCreatorPhoneToAssignee || item.notes) && (

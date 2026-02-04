@@ -42,6 +42,10 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
         quantity: item.quantity,
         notes: item.notes || '',
         phoneNumber: item.phoneNumber || '',
+        direction: item.direction || 'to_event',
+        departureTime: item.departureTime || '',
+        timeFlexibility: item.timeFlexibility || '30min',
+        pickupLocation: item.pickupLocation || '',
     });
 
     // Accessibility: Unique IDs for ARIA labeling
@@ -140,6 +144,14 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
             } else if (item.phoneNumber) {
                 // If it had a phone number but now it's empty, we should explicitly set it to null to delete it in Firebase
                 updates.phoneNumber = null as any;
+            }
+
+            // Add ride-specific fields if it's a ride
+            if (isRide) {
+                updates.direction = formData.direction as any;
+                updates.departureTime = formData.departureTime || undefined;
+                updates.timeFlexibility = formData.timeFlexibility as any;
+                updates.pickupLocation = formData.pickupLocation?.trim() || undefined;
             }
 
             await FirebaseService.updateMenuItem(eventId, item.id, updates);
@@ -335,6 +347,103 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                         {errors.phoneNumber}
                                     </p>
                                 )}
+                            </div>
+                        )}
+
+                        {/* Ride Direction and Time - Only for Rides */}
+                        {isRide && (
+                            <div className="mb-4 space-y-4 border-t pt-4">
+                                {/* Direction */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        כיוון הנסיעה
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleInputChange('direction', 'to_event')}
+                                            disabled={isSubmitting}
+                                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                formData.direction === 'to_event'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            → הלוך
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleInputChange('direction', 'from_event')}
+                                            disabled={isSubmitting}
+                                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                                                formData.direction === 'from_event'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            ← חזור
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Departure Time */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        שעת יציאה
+                                    </label>
+                                    <input
+                                        type="time"
+                                        value={formData.departureTime || ''}
+                                        onChange={(e) => handleInputChange('departureTime', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
+
+                                {/* Time Flexibility */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        גמישות בזמן
+                                    </label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {[
+                                            { value: 'exact', label: 'מדויק' },
+                                            { value: '15min', label: '±15\'' },
+                                            { value: '30min', label: '±30\'' },
+                                            { value: '1hour', label: '±1שעה' },
+                                            { value: 'flexible', label: 'גמיש מאוד' }
+                                        ].map(opt => (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                onClick={() => handleInputChange('timeFlexibility', opt.value)}
+                                                disabled={isSubmitting}
+                                                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                                    formData.timeFlexibility === opt.value
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Pickup Location */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        נקודת איסוף (אופציונלי)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.pickupLocation || ''}
+                                        onChange={(e) => handleInputChange('pickupLocation', e.target.value)}
+                                        placeholder="לדוגמה: תל אביב - תחנה מרכזית"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        disabled={isSubmitting}
+                                    />
+                                </div>
                             </div>
                         )}
 

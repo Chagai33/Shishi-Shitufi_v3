@@ -90,6 +90,12 @@ export interface MenuItem {
   assignedAt?: number;
   rowType?: 'needs' | 'offers';
   phoneNumber?: string; // Contact number (relevant for rides)
+  
+  // Ride-specific fields
+  direction?: 'to_event' | 'from_event'; // Direction of the ride
+  departureTime?: string; // Departure time in "HH:MM" format
+  timeFlexibility?: 'exact' | '15min' | '30min' | '1hour' | 'flexible'; // Time flexibility
+  pickupLocation?: string; // Pickup location (optional)
 }
 
 

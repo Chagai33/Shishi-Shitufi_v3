@@ -530,9 +530,9 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby={titleId}
-                    className="bg-white rounded-xl shadow-xl max-w-md w-full"
+                    className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] flex flex-col"
                 >
-                    <div className={`flex items-center justify-between p-6 border-b rounded-t-xl text-white ${isRide ? 'bg-rides-primary' : 'bg-accent'}`}>
+                    <div className={`flex items-center justify-between p-6 border-b rounded-t-xl text-white flex-none ${isRide ? 'bg-rides-primary' : 'bg-accent'}`}>
                         <h2 id={titleId} className="text-lg font-bold">
                             {isOffer ? 'עריכת הצעת טרמפ' : isRequest ? 'עריכת בקשת טרמפ' : t('editItemModal.title')}
                         </h2>
@@ -547,204 +547,206 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="p-6">
-                        {/* SECTION 1: Origin & Direction (Cards) */}
-                        {isRide && (
-                            <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
-                                <div>
-                                    <label htmlFor="item-name" className="block text-base font-bold text-gray-800 mb-3">
-                                        מאיפה אתה יוצא?
-                                    </label>
-                                    <input
-                                        id="item-name"
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => handleInputChange('name', e.target.value)}
-                                        placeholder="לדוגמה: תל אביב - רכבת ארלוזורוב"
-                                        className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-                                        disabled={isSubmitting}
-                                        required
-                                    />
-                                    {errors.name && (
-                                        <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                            <AlertCircle className="h-4 w-4" />
-                                            {errors.name}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Direction Buttons */}
-                                <div className="grid grid-cols-3 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setRideDirection('to_event')}
-                                        disabled={isSubmitting}
-                                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'to_event'
-                                            ? 'bg-rides-primary text-white border-rides-primary shadow-md'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        הלוך
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRideDirection('from_event')}
-                                        disabled={isSubmitting}
-                                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'from_event'
-                                            ? 'bg-rides-primary text-white border-rides-primary shadow-md'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        חזור
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRideDirection('both')}
-                                        disabled={isSubmitting}
-                                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'both'
-                                            ? 'bg-rides-primary text-white border-rides-primary shadow-md'
-                                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        הלוך וחזור
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* SECTION 2: Times */}
-                        {isRide && (
-                            <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
-                                {(rideDirection === 'to_event' || rideDirection === 'both') && (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <TimeSelect
-                                            label="שעת יציאה (הלוך)"
-                                            value={formData.departureTime || ''} // Normalized Outbound
-                                            onChange={(e) => handleInputChange('departureTime', e.target.value)}
-                                            disabled={isSubmitting}
-                                            required={rideDirection === 'to_event' || rideDirection === 'both'}
-                                            type="to"
-                                        />
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">גמישות (הלוך)</label>
-                                            <FlexibilitySelector
-                                                selected={formData.timeFlexibility as string}
-                                                onChange={(val) => handleInputChange('timeFlexibility', val)}
-                                                disabled={isSubmitting}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {(rideDirection === 'from_event' || rideDirection === 'both') && (
-                                    <div className={`grid grid-cols-2 gap-3 ${(rideDirection === 'both') ? 'border-t pt-3' : ''}`}>
-                                        <TimeSelect
-                                            label={rideDirection === 'both' ? "שעת חזור" : "שעת יציאה (חזור)"}
-                                            // Normalized: departureTimeFrom is ALWAYS Return time
-                                            value={formData.departureTimeFrom || ''}
-                                            onChange={(e) => handleInputChange('departureTimeFrom', e.target.value)}
-                                            disabled={isSubmitting}
-                                            required={rideDirection === 'from_event' || rideDirection === 'both'}
-                                            type="from"
-                                        />
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">גמישות {rideDirection === 'both' ? '(חזור)' : ''}</label>
-                                            <FlexibilitySelector
-                                                selected={formData.timeFlexibilityFrom as string}
-                                                onChange={(val) => handleInputChange('timeFlexibilityFrom', val)}
-                                                disabled={isSubmitting}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* SECTION 3: Contact & Details */}
-                        {isRide && (
-                            <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
-
-                                {/* Phone */}
-                                <div>
-                                    <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                                        <Phone className="h-4 w-4 text-teal-600" />
-                                        מספר טלפון
-                                        <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
+                    <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {/* SECTION 1: Origin & Direction (Cards) */}
+                            {isRide && (
+                                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+                                    <div>
+                                        <label htmlFor="item-name" className="block text-base font-bold text-gray-800 mb-3">
+                                            מאיפה אתה יוצא?
+                                        </label>
                                         <input
-                                            id="phoneNumber"
-                                            name="phoneNumber"
-                                            type="tel"
-                                            value={formData.phoneNumber || ''}
-                                            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                                            placeholder="050-0000000"
-                                            className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                                                } ltr text-right`}
+                                            id="item-name"
+                                            type="text"
+                                            value={formData.name}
+                                            onChange={(e) => handleInputChange('name', e.target.value)}
+                                            placeholder="לדוגמה: תל אביב - רכבת ארלוזורוב"
+                                            className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                                             disabled={isSubmitting}
                                             required
                                         />
-                                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                        {errors.name && (
+                                            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                                <AlertCircle className="h-4 w-4" />
+                                                {errors.name}
+                                            </p>
+                                        )}
                                     </div>
-                                    {errors.phoneNumber && (
-                                        <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                                            <AlertCircle className="h-4 w-4" />
-                                            {errors.phoneNumber}
-                                        </p>
+
+                                    {/* Direction Buttons */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setRideDirection('to_event')}
+                                            disabled={isSubmitting}
+                                            className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'to_event'
+                                                ? 'bg-rides-primary text-white border-rides-primary shadow-md'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            הלוך
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setRideDirection('from_event')}
+                                            disabled={isSubmitting}
+                                            className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'from_event'
+                                                ? 'bg-rides-primary text-white border-rides-primary shadow-md'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            חזור
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setRideDirection('both')}
+                                            disabled={isSubmitting}
+                                            className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'both'
+                                                ? 'bg-rides-primary text-white border-rides-primary shadow-md'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            הלוך וחזור
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* SECTION 2: Times */}
+                            {isRide && (
+                                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+                                    {(rideDirection === 'to_event' || rideDirection === 'both') && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <TimeSelect
+                                                label="שעת יציאה (הלוך)"
+                                                value={formData.departureTime || ''} // Normalized Outbound
+                                                onChange={(e) => handleInputChange('departureTime', e.target.value)}
+                                                disabled={isSubmitting}
+                                                required={rideDirection === 'to_event' || rideDirection === 'both'}
+                                                type="to"
+                                            />
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">גמישות (הלוך)</label>
+                                                <FlexibilitySelector
+                                                    selected={formData.timeFlexibility as string}
+                                                    onChange={(val) => handleInputChange('timeFlexibility', val)}
+                                                    disabled={isSubmitting}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(rideDirection === 'from_event' || rideDirection === 'both') && (
+                                        <div className={`grid grid-cols-2 gap-3 ${(rideDirection === 'both') ? 'border-t pt-3' : ''}`}>
+                                            <TimeSelect
+                                                label={rideDirection === 'both' ? "שעת חזור" : "שעת יציאה (חזור)"}
+                                                // Normalized: departureTimeFrom is ALWAYS Return time
+                                                value={formData.departureTimeFrom || ''}
+                                                onChange={(e) => handleInputChange('departureTimeFrom', e.target.value)}
+                                                disabled={isSubmitting}
+                                                required={rideDirection === 'from_event' || rideDirection === 'both'}
+                                                type="from"
+                                            />
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">גמישות {rideDirection === 'both' ? '(חזור)' : ''}</label>
+                                                <FlexibilitySelector
+                                                    selected={formData.timeFlexibilityFrom as string}
+                                                    onChange={(val) => handleInputChange('timeFlexibilityFrom', val)}
+                                                    disabled={isSubmitting}
+                                                />
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
+                            )}
 
-                                {/* Seats */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                        {isOffer ? 'מספר מקומות פנויים' : 'כמה מקומות צריכים?'}
-                                    </label>
-                                    <Stepper
-                                        value={formData.quantity}
-                                        onChange={(val) => handleInputChange('quantity', val)}
-                                        min={Math.max(1, totalAssigned)}
-                                        label=""
+                            {/* SECTION 3: Contact & Details */}
+                            {isRide && (
+                                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+
+                                    {/* Phone */}
+                                    <div>
+                                        <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                                            <Phone className="h-4 w-4 text-teal-600" />
+                                            מספר טלפון
+                                            <span className="text-red-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                id="phoneNumber"
+                                                name="phoneNumber"
+                                                type="tel"
+                                                value={formData.phoneNumber || ''}
+                                                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                                placeholder="050-0000000"
+                                                className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                                                    } ltr text-right`}
+                                                disabled={isSubmitting}
+                                                required
+                                            />
+                                            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                        </div>
+                                        {errors.phoneNumber && (
+                                            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                                                <AlertCircle className="h-4 w-4" />
+                                                {errors.phoneNumber}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Seats */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                            {isOffer ? 'מספר מקומות פנויים' : 'כמה מקומות צריכים?'}
+                                        </label>
+                                        <Stepper
+                                            value={formData.quantity}
+                                            onChange={(val) => handleInputChange('quantity', val)}
+                                            min={Math.max(1, totalAssigned)}
+                                            label=""
+                                        />
+                                        {totalAssigned > 0 && (
+                                            <p className="mt-1 text-xs text-gray-500">
+                                                {isOffer
+                                                    ? `שוריינו ${totalAssigned} מקומות`
+                                                    : `יש נהג`}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Notes */}
+                                    <CollapsibleNotes
+                                        value={formData.notes || ''}
+                                        onChange={(e) => handleInputChange('notes', e.target.value)}
+                                        disabled={isSubmitting}
+                                        placeholder={isRequest ? 'לדוגמה: מחכה ליד...' : 'לדוגמה: אין מקום למזוודות...'}
                                     />
-                                    {totalAssigned > 0 && (
-                                        <p className="mt-1 text-xs text-gray-500">
-                                            {isOffer
-                                                ? `שוריינו ${totalAssigned} מקומות`
-                                                : `יש נהג`}
-                                        </p>
-                                    )}
                                 </div>
+                            )}
 
-                                {/* Notes */}
-                                <CollapsibleNotes
-                                    value={formData.notes || ''}
-                                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                                    disabled={isSubmitting}
-                                    placeholder={isRequest ? 'לדוגמה: מחכה ליד...' : 'לדוגמה: אין מקום למזוודות...'}
-                                />
-                            </div>
-                        )}
+                            {/* Non-Ride Items Logic (Generic) */}
+                            {!isRide && (
+                                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+                                    <label className="block text-sm font-semibold text-gray-800 mb-1">{t('editItemModal.fields.name')}</label>
+                                    <input
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={(e) => handleInputChange('name', e.target.value)}
+                                        className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
 
-                        {/* Non-Ride Items Logic (Generic) */}
-                        {!isRide && (
-                            <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
-                                <label className="block text-sm font-semibold text-gray-800 mb-1">{t('editItemModal.fields.name')}</label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={(e) => handleInputChange('name', e.target.value)}
-                                    className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                                />
-                                {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+                                    <label className="block text-sm font-semibold text-gray-800 mb-1">{t('editItemModal.fields.quantity')}</label>
+                                    <Stepper value={formData.quantity} onChange={(val) => handleInputChange('quantity', val)} min={1} />
 
-                                <label className="block text-sm font-semibold text-gray-800 mb-1">{t('editItemModal.fields.quantity')}</label>
-                                <Stepper value={formData.quantity} onChange={(val) => handleInputChange('quantity', val)} min={1} />
+                                    <CollapsibleNotes value={formData.notes || ''} onChange={(e) => handleInputChange('notes', e.target.value)} />
+                                </div>
+                            )}
+                        </div>
 
-                                <CollapsibleNotes value={formData.notes || ''} onChange={(e) => handleInputChange('notes', e.target.value)} />
-                            </div>
-                        )}
-
-                        {/* Buttons */}
-                        <div className="flex space-x-3 rtl:space-x-reverse">
+                        {/* Buttons (Fixed Footer) */}
+                        <div className="flex space-x-3 rtl:space-x-reverse p-6 border-t bg-gray-50 flex-none rounded-b-xl">
                             <button
                                 type="submit"
                                 disabled={isSubmitting}

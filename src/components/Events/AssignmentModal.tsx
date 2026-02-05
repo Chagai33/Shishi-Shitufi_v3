@@ -340,22 +340,28 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <FocusTrap>
-        <div className="bg-white rounded-xl shadow-xl max-w-md w-full" role="dialog" aria-labelledby={titleId}>
-          <div className="flex items-center justify-between p-6 border-b">
-            <h2 id={titleId} className="text-lg font-semibold text-neutral-900">
+        <div className="bg-white rounded-xl shadow-xl max-w-md w-full flex flex-col max-h-[90vh]" role="dialog" aria-labelledby={titleId}>
+          {/* Dynamic Theme Header */}
+          <div className={`flex items-center justify-between p-6 border-b flex-none rounded-t-xl text-white ${isOffers ? 'bg-rides-primary' : 'bg-accent'}`}>
+            <h2 id={titleId} className="text-lg font-bold">
               {isAddMore
-                ? (isOffers ? 'הוספת נווסעים' : t('eventPage.assignment.addMoreTitle'))
+                ? (isOffers ? 'הוספת נוסעים' : t('eventPage.assignment.addMoreTitle'))
                 : isEdit
                   ? (isOffers ? 'עדכון נסיעה' : t('eventPage.assignment.editTitle'))
                   : (isOffers ? 'הצטרפות לנסיעה' : t('eventPage.assignment.addTitle'))}
             </h2>
-            <button onClick={onClose} className="text-neutral-500 hover:text-neutral-700"><X size={24} /></button>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
           </div>
 
-          <div className="p-6">
-            <div className="bg-accent/10 p-4 rounded-lg mb-6 text-center">
-              <p className="font-bold text-accent">{item.name}</p>
-              <p className="text-sm text-accent/80">
+          <div className="p-6 flex-1 overflow-y-auto">
+            <div className={`p-4 rounded-lg mb-6 text-center border ${isOffers ? 'bg-teal-50 border-teal-100 text-teal-800' : 'bg-orange-50 border-orange-100 text-orange-800'}`}>
+              <p className="font-bold">{item.name}</p>
+              <p className="text-sm opacity-80">
                 {isOffers ? 'מקומות:' : t('eventPage.assignment.suggestedQuantity')}: {item.quantity}
               </p>
             </div>
@@ -371,7 +377,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsEditingName(!isEditingName)}
-                      className="text-xs text-orange-600 hover:text-orange-700 underline flex items-center"
+                      className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center"
                     >
                       <Edit size={12} className="ml-1" />
                       {t('eventPage.assignment.changeName')}
@@ -385,7 +391,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                         type="text"
                         value={tempUserName}
                         onChange={(e) => setTempUserName(e.target.value)}
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder={t('eventPage.assignment.namePlaceholder')}
                         autoFocus
                       />
@@ -425,7 +431,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setQuantity(maxQuantity)}
-                        className="text-xs text-orange-600 hover:text-orange-700 font-medium underline"
+                        className={`text-xs font-medium underline ${isOffers ? 'text-teal-600 hover:text-teal-700' : 'text-orange-600 hover:text-orange-700'}`}
                       >
                         {isOffers ? 'שריין הכל' : t('eventPage.assignment.bringAll')}
                       </button>
@@ -505,7 +511,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="050-0000000"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-right sm:text-left dir-ltr"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-right sm:text-left dir-ltr"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">המספר יוצג לנהג בלבד לתיאום הנסיעה</p>
@@ -529,9 +535,13 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             </div>
           </div>
 
-          <div className="bg-neutral-50 px-6 py-4 flex justify-end space-x-3 rtl:space-x-reverse rounded-b-xl">
-            <button onClick={onClose} className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300 font-medium">{t('common.cancel')}</button>
-            <button onClick={handleSubmit} disabled={isLoading} className="px-4 py-2 rounded-lg bg-accent text-white hover:bg-accent/90 disabled:bg-neutral-300">
+          <div className="bg-neutral-50 px-6 py-4 flex justify-end space-x-3 rtl:space-x-reverse rounded-b-xl flex-none border-t">
+            <button onClick={onClose} className="px-5 py-3 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold transition-colors disabled:opacity-50">{t('common.cancel')}</button>
+            <button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className={`px-6 py-3 rounded-xl text-white font-bold shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none ${isOffers ? 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800' : 'bg-accent hover:bg-accent/90'}`}
+            >
               {isLoading
                 ? t('common.saving')
                 : isAddMore
@@ -545,9 +555,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       : t('eventPage.assignment.confirmAssignment'))}
             </button>
           </div>
-        </div >
+        </div>
       </FocusTrap>
-    </div >
+    </div>
   );
 };
 

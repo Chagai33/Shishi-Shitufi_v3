@@ -701,415 +701,395 @@ export function UserMenuItemForm({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col"
           >
             {/* Header - Dynamic Theme */}
-            <div className={`sticky top-0 z-10 p-6 rounded-t-2xl text-white ${isRideForm ? 'bg-rides-primary' : 'bg-accent'}`}>
-              <div className="flex items-center justify-between">
+            <div className={`p-6 rounded-t-2xl text-white flex-none ${isRideForm ? 'bg-rides-primary' : 'bg-accent'}`}>
+              <div className="flex justify-between items-start">
                 <div>
-                  <h2 id={titleId} className="text-xl font-bold mb-1">
-                    {isRequest ? 'בקש טרמפ' : (isOffersType ? 'הצע טרמפ' : t('userItemForm.title'))}
+                  <h2 id={titleId} className="text-2xl font-bold">
+                    {t('userItemForm.title')}
                   </h2>
-                  <p className="text-sm text-teal-100">
-                    {event.details.title}
+                  <p className="text-white/80 mt-1 text-sm">
+                    {t('userItemForm.subtitle')}
                   </p>
                 </div>
                 <button
-                  type="button"
                   onClick={onClose}
-                  disabled={isSubmitting}
+                  className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
                   aria-label={t('common.close')}
-                  className="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2 transition-all disabled:opacity-50"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* User Name Input - if needed */}
-              {showNameInput && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <label htmlFor={participantNameId} className="block text-sm font-semibold text-gray-800 mb-2">
-                    {isRequest ? '👤 שם הנוסע/ת' : (isOffersType ? '👤 שם הנהג/ת' : t('userItemForm.fields.fullName'))}
-                  </label>
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-                  <input
-                    id={participantNameId}
-                    type="text"
-                    value={participantName}
-                    onChange={(e) => setParticipantName(e.target.value)}
-                    placeholder={t('userItemForm.fields.nameDisplayPlaceholder')}
-                    autoComplete="name"
-                    className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all"
-                    disabled={isSubmitting}
-                    required
-                  />
+                {/* Category Selection */}
+                {!isLocked && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">
+                      {t('userItemForm.categorySelection')}
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {categoryOptions.map((opt) => {
+                        const originalCat = eventCategories.find(c => c.id === opt.value);
+                        // Simple icon mapping or use from config if available. 
+                        // eventCategories items have 'icon' property (e.g. 'car.gif').
+                        // If it's a file path/name, we might need a helper, but usually it's an emoji in this app context or a string.
+                        // Looking at line 505: icon: 'car.gif'. 
+                        // Looking at line 325: cat.name.replace emojis.
+                        // Let's assume the icon property is meaningful or fallback to generic.
+                        // Actually, looking at the previous broken code I wrote: <span className="text-2xl mb-2">{cat.icon}</span>
+                        // If 'icon' is a filename, this won't render well as text.
+                        // Use a helper or just render what we have. 
+                        // Safe fallback: generic icons based on ID if icon is weird.
 
-                  <p className="text-xs text-gray-600 mt-2">{t('userItemForm.fields.nameHelp')}</p>
-                </div>
-              )}
+                        let displayIcon = originalCat?.icon || '🍽️';
+                        if (displayIcon.includes('.')) {
+                          // If it's an image file (e.g. car.gif), render as img or fallback
+                          if (opt.value.includes('ride')) displayIcon = '🚗';
+                          else displayIcon = '🍽️';
+                        }
 
-              {/* Category Selection - if not locked */}
-              {!isLocked && (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                  <label htmlFor={categoryId} className="block text-sm font-semibold text-gray-800 mb-2">
-                    {t('userItemForm.fields.category')}
-                  </label>
-                  <select
-                    id={categoryId}
-                    value={formData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value as MenuCategory)}
-                    className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all bg-white"
-                    disabled={isSubmitting}
-                    required
-                  >
-                    {categoryOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* SECTION 1: Route (Origin) - For Rides */}
-              {(isOffersType || isRequest) && (
-                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
-                  <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>מאיפה אתה יוצא?</span>
-                  </h3>
-
-
-                  <input
-                    name="name"
-                    onBlur={handleBlur}
-                    aria-invalid={!!errors.name}
-                    aria-describedby={errors.name ? "name-error-ride" : undefined}
-                    id={itemNameId}
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder={isRequest ? 'לדוגמה: ירושלים - תחנה מרכזית' : 'לדוגמה: תל אביב - רכבת ארלוזורוב'}
-                    className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    disabled={isSubmitting}
-                    required
-                  />
-
-                  {errors.name && (
-                    <p id="name-error-ride" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.name}
-                    </p>
-                  )}
-
-
-
-                  {/* Direction Toggle */}
-                  <div className="mt-5">
-
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setRideDirection('to_event')}
-                        disabled={isSubmitting}
-                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'to_event'
-                          ? 'bg-teal-600 text-white border-teal-600 shadow-md'
-                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                          }`}
-                      >
-                        הלוך
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRideDirection('from_event')}
-                        disabled={isSubmitting}
-                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'from_event'
-                          ? 'bg-teal-600 text-white border-teal-600 shadow-md'
-                          : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                          }`}
-                      >
-                        חזור
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRideDirection('both')}
-                        disabled={isSubmitting}
-                        className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'both'
-                          ? 'bg-yellow-500 text-white border-yellow-500 shadow-md'
-                          : 'bg-white text-gray-600 border-gray-200 hover:bg-yellow-50'
-                          }`}
-                      >
-                        הלוך וחזור
-                      </button>
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => handleInputChange('category', opt.value)}
+                            className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 ${formData.category === opt.value
+                              ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm'
+                              : 'border-gray-100 bg-white text-gray-600 hover:border-gray-200 hover:bg-gray-50'
+                              }`}
+                          >
+                            <span className="text-2xl mb-2" role="img" aria-hidden="true">{displayIcon}</span>
+                            <span className="text-sm font-bold text-center">{opt.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Regular Item Name - For non-rides */}
-              {!isOffersType && !isRequest && (
-                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
-                  <label htmlFor={itemNameId} className="block text-sm font-semibold text-gray-800 mb-3">
-                    {t('userItemForm.fields.name')}
-                  </label>
-
-
-                  <input
-                    name="name"
-                    onBlur={handleBlur}
-                    aria-invalid={!!errors.name}
-                    aria-describedby={errors.name ? "name-error-item" : undefined}
-                    id={itemNameId}
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
-                    placeholder={t('userItemForm.fields.namePlaceholder')}
-                    className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    disabled={isSubmitting}
-                    required
-                  />
-
-                  {errors.name && (
-                    <p id="name-error-item" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.name}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* SECTION 2: Times - For Rides */}
-              {(isOffersType || isRequest) && (
-                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-5">
-
-
-                  {/* Outbound Time */}
-                  {(rideDirection === 'to_event' || rideDirection === 'both') && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                        הלוך
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <TimeSelect
-                          label="שעת יציאה"
-                          value={departureTimeTo}
-                          onChange={(e) => setDepartureTimeTo(e.target.value)}
-                          disabled={isSubmitting}
-                          required
-                          referenceTime={event.details.time}
-                          type="to"
-                        />
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
-                          <FlexibilitySelector
-                            selected={timeFlexibilityTo}
-                            onChange={(val) => setTimeFlexibilityTo(val as any)}
-                            disabled={isSubmitting}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Return Time */}
-                  {(rideDirection === 'from_event' || rideDirection === 'both') && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                        חזור
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <TimeSelect
-                          label="שעת יציאה"
-                          value={departureTimeFrom}
-                          onChange={(e) => setDepartureTimeFrom(e.target.value)}
-                          disabled={isSubmitting}
-                          required
-                          referenceTime={event.details.time}
-                          type="from"
-                        />
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
-                          <FlexibilitySelector
-                            selected={timeFlexibilityFrom}
-                            onChange={(val) => setTimeFlexibilityFrom(val as any)}
-                            disabled={isSubmitting}
-                          />
-                        </div>
-                      </div>
-                      {timeWarning && (
-                        <p className="text-sm text-orange-600 bg-orange-50 p-2 rounded-lg mt-2 flex items-center gap-2 border border-orange-200">
-                          <AlertCircle className="h-4 w-4" />
-                          {timeWarning}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* SECTION 3: Details (Phone, Seats, Notes) - For Rides */}
-              {(isOffersType || isRequest) && (
-                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
-
-
-                  {/* Phone Number */}
-                  <div>
-                    <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                      <Phone className="h-4 w-4 text-teal-600" />
-                      מספר טלפון
-                      <span className="text-red-500">*</span>
+                {isRideForm && (
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+                    <label htmlFor="name-ride" className="block text-sm font-semibold text-gray-800 mb-3">
+                      {isOffersType ? 'מאיפה אתם יוצאים?' : 'מאיפה לאסוף אתכם?'}
                     </label>
-                    <div className="relative">
-                      <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        id="phoneNumber"
-                        name="phoneNumber"
-                        onBlur={handleBlur}
-                        aria-invalid={!!errors.phoneNumber}
-                        aria-describedby={errors.phoneNumber ? "phone-error" : undefined}
-                        type="tel"
-                        inputMode="numeric"
-                        value={formData.phoneNumber || ''}
-                        onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                        placeholder="050-0000000"
-                        className={`w-full pr-11 pl-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                          } ltr text-right`}
-                        disabled={isSubmitting}
-                        required
-                      />
-                    </div>
-                    {errors.phoneNumber && (
-                      <p id="phone-error" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                    <input
+                      id="name-ride"
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="לדוגמה: ראש העין - סינמה סיטי"
+                      className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                      disabled={isSubmitting}
+                      required
+                    />
+                    {errors.name && (
+                      <p id="name-error-ride" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
                         <AlertCircle className="h-4 w-4" />
-                        {errors.phoneNumber}
+                        {errors.name}
                       </p>
                     )}
-                    <p className="text-xs text-gray-500 mt-2">יוצג רק למי שישובץ לנסיעה</p>
-                  </div>
 
-                  {/* Number of Seats */}
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      {isRequest ? 'כמה מקומות אתם צריכים?' : 'מספר מקומות פנויים'}
+                    {/* Direction Toggle */}
+                    <div className="mt-5">
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setRideDirection('to_event')}
+                          disabled={isSubmitting}
+                          className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'to_event'
+                            ? 'bg-teal-600 text-white border-teal-600 shadow-md'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                            }`}
+                        >
+                          הלוך
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRideDirection('from_event')}
+                          disabled={isSubmitting}
+                          className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'from_event'
+                            ? 'bg-teal-600 text-white border-teal-600 shadow-md'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                            }`}
+                        >
+                          חזור
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRideDirection('both')}
+                          disabled={isSubmitting}
+                          className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'both'
+                            ? 'bg-yellow-500 text-white border-yellow-500 shadow-md'
+                            : 'bg-white text-gray-600 border-gray-200 hover:bg-yellow-50'
+                            }`}
+                        >
+                          הלוך וחזור
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!isOffersType && !isRequest && (
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                    <label htmlFor={itemNameId} className="block text-sm font-semibold text-gray-800 mb-3">
+                      {t('userItemForm.fields.name')}
                     </label>
-                    <Stepper
-                      value={formData.quantity}
-                      onChange={(val) => handleInputChange('quantity', val)}
-                      label=""
+                    <input
+                      name="name"
+                      onBlur={handleBlur}
+                      aria-invalid={!!errors.name}
+                      aria-describedby={errors.name ? "name-error-item" : undefined}
+                      id={itemNameId}
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder={t('userItemForm.fields.namePlaceholder')}
+                      className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      disabled={isSubmitting}
+                      required
                     />
-
+                    {errors.name && (
+                      <p id="name-error-item" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.name}
+                      </p>
+                    )}
                   </div>
+                )}
 
-                  {/* Collapsible Notes */}
-                  <CollapsibleNotes
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    disabled={isSubmitting}
-                    placeholder={isRequest
-                      ? 'לדוגמה: מחכה ליד בית הכנסת הגדול...'
-                      : 'לדוגמה: אין מקום למזוודות גדולות, רק תיקי גב...'}
-                  />
-                </div>
-              )}
+                {/* SECTION 2: Times - For Rides */}
+                {(isOffersType || isRequest) && (
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-5">
+                    {/* Outbound Time */}
+                    {(rideDirection === 'to_event' || rideDirection === 'both') && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                          הלוך
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <TimeSelect
+                            label="שעת יציאה"
+                            value={departureTimeTo}
+                            onChange={(e) => setDepartureTimeTo(e.target.value)}
+                            disabled={isSubmitting}
+                            required
+                            referenceTime={event.details.time}
+                            type="to"
+                          />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
+                            <FlexibilitySelector
+                              selected={timeFlexibilityTo}
+                              onChange={(val) => setTimeFlexibilityTo(val as any)}
+                              disabled={isSubmitting}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-              {/* Quantity Section - For regular items */}
-              {!isOffersType && !isRequest && (
-                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
-                  <h3 className="text-base font-bold text-gray-800 mb-4">
-                    כמויות
-                  </h3>
+                    {/* Return Time */}
+                    {(rideDirection === 'from_event' || rideDirection === 'both') && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                          חזור
+                        </h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <TimeSelect
+                            label="שעת יציאה"
+                            value={departureTimeFrom}
+                            onChange={(e) => setDepartureTimeFrom(e.target.value)}
+                            disabled={isSubmitting}
+                            required
+                            referenceTime={event.details.time}
+                            type="from"
+                          />
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
+                            <FlexibilitySelector
+                              selected={timeFlexibilityFrom}
+                              onChange={(val) => setTimeFlexibilityFrom(val as any)}
+                              disabled={isSubmitting}
+                            />
+                          </div>
+                        </div>
+                        {timeWarning && (
+                          <p className="text-sm text-orange-600 bg-orange-50 p-2 rounded-lg mt-2 flex items-center gap-2 border border-orange-200">
+                            <AlertCircle className="h-4 w-4" />
+                            {timeWarning}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Total Needed */}
+                {/* SECTION 3: Details (Phone, Seats, Notes) - For Rides */}
+                {(isOffersType || isRequest) && (
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+                    {/* Phone Number */}
+                    <div>
+                      <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                        <Phone className="h-4 w-4 text-teal-600" />
+                        מספר טלפון
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          onBlur={handleBlur}
+                          aria-invalid={!!errors.phoneNumber}
+                          aria-describedby={errors.phoneNumber ? "phone-error" : undefined}
+                          type="tel"
+                          inputMode="numeric"
+                          value={formData.phoneNumber || ''}
+                          onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                          placeholder="050-0000000"
+                          className={`w-full pr-11 pl-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                            } ltr text-right`}
+                          disabled={isSubmitting}
+                          required
+                        />
+                      </div>
+                      {errors.phoneNumber && (
+                        <p id="phone-error" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.phoneNumber}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">יוצג רק למי שישובץ לנסיעה</p>
+                    </div>
+
+                    {/* Number of Seats */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        {t('userItemForm.fields.quantityTotal')}
+                        {isRequest ? 'כמה מקומות אתם צריכים?' : 'מספר מקומות פנויים'}
                       </label>
                       <Stepper
                         value={formData.quantity}
-                        onChange={(val) => {
-                          handleInputChange('quantity', val);
-                          const newMyQty = myQuantity > val ? val : myQuantity;
-                          if (myQuantity > val) setMyQuantity(val);
-                          if (val > newMyQty) handleInputChange('isSplittable', true);
-                        }}
-                        label={t('userItemForm.fields.quantityTotal')}
+                        onChange={(val) => handleInputChange('quantity', val)}
+                        label=""
                       />
                     </div>
 
-                    {/* My Contribution */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-semibold text-gray-700">
-                          {t('userItemForm.fields.myContribution')}
+                    {/* Collapsible Notes */}
+                    <CollapsibleNotes
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      disabled={isSubmitting}
+                      placeholder={isRequest
+                        ? 'לדוגמה: מחכה ליד בית הכנסת הגדול...'
+                        : 'לדוגמה: אין מקום למזוודות גדולות, רק תיקי גב...'}
+                    />
+                  </div>
+                )}
+
+                {/* Quantity Section - For regular items */}
+                {!isOffersType && !isRequest && (
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                    <h3 className="text-base font-bold text-gray-800 mb-4">
+                      כמויות
+                    </h3>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Total Needed */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          {t('userItemForm.fields.quantityTotal')}
                         </label>
-                        {myQuantity < formData.quantity && (
-                          <button
-                            type="button"
-                            onClick={() => setMyQuantity(formData.quantity)}
-                            aria-label={t('userItemForm.fields.bringAll')}
-                            className="text-xs text-orange-600 hover:text-orange-700 font-bold underline"
-                          >
-                            {t('userItemForm.fields.bringAll')}
-                          </button>
-                        )}
+                        <Stepper
+                          value={formData.quantity}
+                          onChange={(val) => {
+                            handleInputChange('quantity', val);
+                            const newMyQty = myQuantity > val ? val : myQuantity;
+                            if (myQuantity > val) setMyQuantity(val);
+                            if (val > newMyQty) handleInputChange('isSplittable', true);
+                          }}
+                          label={t('userItemForm.fields.quantityTotal')}
+                        />
                       </div>
-                      <Stepper
-                        value={myQuantity}
-                        onChange={setMyQuantity}
-                        max={formData.quantity}
-                        min={0}
-                        label={t('userItemForm.fields.myContribution')}
-                      />
+
+                      {/* My Contribution */}
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="block text-sm font-semibold text-gray-700">
+                            {t('userItemForm.fields.myContribution')}
+                          </label>
+                          {myQuantity < formData.quantity && (
+                            <button
+                              type="button"
+                              onClick={() => setMyQuantity(formData.quantity)}
+                              aria-label={t('userItemForm.fields.bringAll')}
+                              className="text-xs text-orange-600 hover:text-orange-700 font-bold underline"
+                            >
+                              {t('userItemForm.fields.bringAll')}
+                            </button>
+                          )}
+                        </div>
+                        <Stepper
+                          value={myQuantity}
+                          onChange={setMyQuantity}
+                          max={formData.quantity}
+                          min={0}
+                          label={t('userItemForm.fields.myContribution')}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Status Message */}
+                    <div className="mt-4 text-center">
+                      <p className="text-sm font-medium text-gray-600 bg-gray-50 rounded-lg py-2 px-3">
+                        {myQuantity < formData.quantity
+                          ? myQuantity === 0
+                            ? "אתה רק יוצר את הפריט (מנהל)"
+                            : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })
+                          : t('userItemForm.fields.youBringAllMsg')}
+                      </p>
                     </div>
                   </div>
+                )}
 
-                  {/* Status Message */}
-                  <div className="mt-4 text-center">
-                    <p className="text-sm font-medium text-gray-600 bg-gray-50 rounded-lg py-2 px-3">
-                      {myQuantity < formData.quantity
-                        ? myQuantity === 0
-                          ? "אתה רק יוצר את הפריט (מנהל)"
-                          : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })
-                        : t('userItemForm.fields.youBringAllMsg')}
-                    </p>
+                {/* Notes for regular items */}
+                {!isOffersType && !isRequest && (
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                    <CollapsibleNotes
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      disabled={isSubmitting}
+                      placeholder={t('userItemForm.fields.notesPlaceholder')}
+                    />
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Notes for regular items */}
-              {!isOffersType && !isRequest && (
-                <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
-                  <CollapsibleNotes
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                    disabled={isSubmitting}
-                    placeholder={t('userItemForm.fields.notesPlaceholder')}
-                  />
-                </div>
-              )}
+                {/* Admin: Is Required Checkbox */}
+                {isOrganizer && !isOffersType && !isRequest && (
+                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex items-center gap-3">
+                    <input
+                      id={isRequiredId}
+                      type="checkbox"
+                      checked={formData.isRequired}
+                      onChange={(e) => handleInputChange('isRequired', e.target.checked)}
+                      className="h-5 w-5 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor={isRequiredId} className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                      {t('userItemForm.fields.isRequired')}
+                    </label>
+                  </div>
+                )}
+              </div>
 
-              {/* Admin: Is Required Checkbox */}
-              {isOrganizer && !isOffersType && !isRequest && (
-                <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex items-center gap-3">
-                  <input
-                    id={isRequiredId}
-                    type="checkbox"
-                    checked={formData.isRequired}
-                    onChange={(e) => handleInputChange('isRequired', e.target.checked)}
-                    className="h-5 w-5 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor={isRequiredId} className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    {t('userItemForm.fields.isRequired')}
-                  </label>
-                </div>
-              )}
-
-              {/* Action Buttons - Teal Theme */}
-              <div className="sticky bottom-0 -mx-6 -mb-6 p-6 bg-white border-t-2 border-gray-100 rounded-b-2xl flex gap-3">
+              {/* Action Buttons - Teal Theme - Sticky Footer */}
+              <div className="flex-none p-6 bg-white border-t rounded-b-2xl flex gap-3">
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -1126,7 +1106,6 @@ export function UserMenuItemForm({
                     </>
                   ) : (
                     <>
-
                       <span>
                         {isRequest
                           ? 'בקש טרמפ'

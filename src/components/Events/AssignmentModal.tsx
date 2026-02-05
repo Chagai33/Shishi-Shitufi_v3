@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useStore, selectAssignments } from '../../store/useStore';
+import { useStore, selectAssignments, selectMenuItems, selectCurrentEvent } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { MenuItem, Assignment } from '../../types';
 import { User as FirebaseUser } from 'firebase/auth';
@@ -45,6 +45,75 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
   // Carpool / Smart Category Logic
   const isOffers = isCarpoolLogic(item.name, item.category, itemRowType);
+
+  // ============================================================================
+  // ROUND TRIP LOGIC (Twin Detection)
+  // ============================================================================
+  const allMenuItems = useStore(selectMenuItems);
+  const allAssignments = useStore(selectAssignments);
+
+  const twinItem = useMemo(() => {
+    // 1. Must be a "Ride"
+    if (!isOffers || !item.direction || (item.direction as string) === 'both') return null;
+
+    // 2. Determine Opposite Direction
+    const oppositeDir = item.direction === 'to_event' ? 'from_event' : 'to_event';
+
+    // 3. Find Twin
+    const twin = allMenuItems.find(i =>
+      i.id !== item.id &&
+      i.creatorId === item.creatorId &&
+      i.eventId === eventId &&
+      i.direction === oppositeDir &&
+      (i.category === 'ride_offers' || i.category === 'ride_requests' || i.category === 'trempim')
+    );
+
+    if (!twin) return null;
+
+    // 4. Time Validation (Don't offer past rides)
+    // Simple check: if ride has a time, and it's clearly passed (e.g. yesterday), ignore.
+    // Since we don't have full dates, we assume event context. 
+    // TODO: Ideally stick to future logic. For now, we trust the event list is current.
+    // If we wanted to be strict: 
+    // const now = new Date();
+    // if (isPast(twin.departureTime)) return null; 
+
+    // 5. Availability Check
+    const twinAssignments = allAssignments.filter(a => a.menuItemId === twin.id);
+    const twinTotal = twinAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+    const twinAvailable = twin.quantity - twinTotal;
+
+    // Check if I am already on it
+    const amIAssigned = user ? twinAssignments.some(a => a.userId === user.uid) : false;
+
+    // If I'm not assigned and it's full -> Hide
+    // If I AM assigned -> Show (so I can edit/update)
+    if (twinAvailable < 1 && !amIAssigned) return null;
+
+    return { item: twin, available: twinAvailable }; // available might be 0 or neg, but we handle it in submit
+  }, [item, allMenuItems, allAssignments, isOffers, eventId, user]);
+
+  // Check if I ALREADY have an assignment on the twin item (For Edit Mode)
+  const myTwinAssignment = useMemo(() => {
+    if (!twinItem || !user) return null;
+    return allAssignments.find(a => a.menuItemId === twinItem.item.id && a.userId === user.uid);
+  }, [twinItem, user, allAssignments]);
+
+  // State for joining the twin ride
+  const [joinTwinRide, setJoinTwinRide] = useState(false);
+
+  // Auto-select if available (User can opt-out)
+  useEffect(() => {
+    if (twinItem) {
+      if (!isEdit) {
+        setJoinTwinRide(true); // Default for new join
+      } else if (myTwinAssignment) {
+        setJoinTwinRide(true); // Default for edit (sync update)
+      }
+    }
+  }, [twinItem, isEdit, myTwinAssignment]);
+
+  // ============================================================================
 
   // Accessibility
   const titleId = useId();
@@ -100,6 +169,21 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
   }, [user.uid, user.isAnonymous, t]);
 
+  // Phone Auto-Fill Logic
+  useEffect(() => {
+    if (isOffers && !phoneNumber && !isEdit) {
+      // Priority 1: User Profile (Registered)
+      // Note: We don't have user.phoneNumber in the Auth object by default unless we use Phone Auth provider.
+      // We rely on our DB user profile if fetched - BUT 'user' prop is FirebaseUser (Auth).
+      // So for now, we rely on LocalStorage as the "Device Memory" which is perfect for this requirement.
+
+      const savedPhone = localStorage.getItem('user_last_phone');
+      if (savedPhone) {
+        setPhoneNumber(savedPhone);
+      }
+    }
+  }, [isOffers, isEdit, phoneNumber]); // Run once when "Offers" mode is active
+
   const handleSubmit = async () => {
     let finalUserName = tempUserName.trim();
 
@@ -111,6 +195,20 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     if (isOffers && !phoneNumber.trim()) {
       toast.error('חובה להזין מספר טלפון לתיאום הנסיעה');
       return;
+    }
+
+    // SAVE PHONE TO STORAGE (Convenience)
+    if (isOffers && phoneNumber.trim()) {
+      try {
+        localStorage.setItem('user_last_phone', phoneNumber.trim());
+
+        // If registered, sync to DB (nice to have)
+        // We can't easily access the DB user record here without a fetch, 
+        // but we can fire-and-forget an update if they are not anonymous
+        if (!user.isAnonymous) {
+          FirebaseService.updateUser(user.uid, { phoneNumber: phoneNumber.trim() } as any);
+        }
+      } catch (e) { /* ignore storage errors */ }
     }
 
     if (quantity <= 0) { toast.error(t('eventPage.assignment.quantityPositive')); return; }
@@ -145,6 +243,38 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
         assignmentData.quantity = finalQuantity;
 
         await FirebaseService.updateAssignment(eventId, existingAssignment.id, assignmentData);
+
+        // SMART UPDATE (Sync Edit)
+        if (joinTwinRide && myTwinAssignment && twinItem) {
+          // Check capacity first
+          // available = (total - used) + my_current_holding
+          // We want to update my_current_holding to 'quantity'
+          // So: if (available_without_me < quantity) fail
+
+          const twinUsed = allAssignments
+            .filter(a => a.menuItemId === twinItem.item.id && a.id !== myTwinAssignment.id)
+            .reduce((sum, a) => sum + (a.quantity || 0), 0);
+
+          const twinRealAvailable = twinItem.item.quantity - twinUsed;
+
+          if (quantity <= twinRealAvailable) {
+            try {
+              const twinUpdateData = { ...assignmentData }; // Clone same data
+              await FirebaseService.updateAssignment(eventId, myTwinAssignment.id, twinUpdateData);
+              toast.success('עודכנו שתי הנסיעות בהצלחה!');
+              onClose();
+              setIsLoading(false);
+              return; // Early return to avoid double toast
+            } catch (err) {
+              console.error("Failed to sync update twin", err);
+              toast.error("הנסיעה הראשונה עודכנה, אך הייתה שגיאה בעדכון הנסיעה השנייה.");
+            }
+          } else {
+            toast.error(`לא ניתן לעדכן את הנסיעה השנייה - אין מספיק מקום (${twinRealAvailable} פנויים)`);
+            // We continue to show success for the first one below, but user is warned.
+          }
+        }
+
         toast.success(isAddMore ? t('eventPage.assignment.addMoreSuccess') : (isOffers ? 'הנסיעה עודכנה בהצלחה!' : t('eventPage.assignment.updateSuccess')));
       } else {
         const newAssignment: any = {
@@ -162,8 +292,39 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
           newAssignment.phoneNumber = phoneNumber.trim();
         }
 
+        // 1. Create Primary Assignment
         await FirebaseService.createAssignment(eventId, newAssignment);
-        toast.success(isOffers ? 'הצטרפת לנסיעה בהצלחה!' : t('eventPage.assignment.assignSuccess', { itemName: item.name }));
+
+        // 2. Handle Twin Assignment (Round Trip)
+        if (joinTwinRide && twinItem) {
+          // Re-check capacity for Twin
+          const twinAssignments = allAssignments.filter(a => a.menuItemId === twinItem.item.id);
+          const twinUsed = twinAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+          const twinRealAvailable = twinItem.item.quantity - twinUsed;
+
+          if (quantity <= twinRealAvailable) {
+            try {
+              const twinAssignment = {
+                ...newAssignment,
+                menuItemId: twinItem.item.id,
+                notes: `Round Trip Link: ${notes.trim()}`,
+              };
+              await FirebaseService.createAssignment(eventId, twinAssignment);
+              toast.success(`נרשמת בהצלחה להלוך ולחזור! (${twinItem.item.departureTime || '?'})`);
+            } catch (err) {
+              console.error("Failed to join twin ride", err);
+              toast.error("נרשמת לנסיעה הראשונה, אך הייתה שגיאה ברישום לנסיעה הפוכה.");
+            }
+          } else {
+            // Partial Success (Capacity Mismatch)
+            toast('נרשמת להלוך בלבד. הסיבה: אין מספיק מקום בחזור.', {
+              icon: '⚠️',
+              duration: 5000,
+            });
+          }
+        } else {
+          toast.success(isOffers ? 'הצטרפת לנסיעה בהצלחה!' : t('eventPage.assignment.assignSuccess', { itemName: item.name }));
+        }
       }
       onClose();
     } catch (error: any) { toast.error(error.message || t('common.errorOccurred')); }
@@ -301,6 +462,35 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 </div>
               </div>
 
+              {/* ROUND TRIP SMART CARD */}
+              {isOffers && twinItem && (!isEdit || myTwinAssignment) && !isAddMore && (
+                <div className={`mt-4 border-2 rounded-xl p-3 transition-all cursor-pointer ${joinTwinRide ? 'border-teal-500 bg-teal-50' : 'border-gray-200 bg-white hover:border-teal-200'}`}
+                  onClick={() => setJoinTwinRide(!joinTwinRide)}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${joinTwinRide ? 'bg-teal-500 border-teal-500' : 'border-gray-300 bg-white'}`}>
+                      {joinTwinRide && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-900 text-sm">
+                        {isEdit
+                          ? (twinItem.item.direction === 'to_event' ? 'לעדכן גם את ההלוך?' : 'לעדכן גם את החזור?')
+                          : (twinItem.item.direction === 'to_event' ? 'הצטרף גם לנסיעה הלוך?' : 'הצטרף גם לנסיעה חזור?')}
+                      </h4>
+                      <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
+                        <span className="bg-gray-200 px-1.5 py-0.5 rounded text-gray-700 font-medium">
+                          {twinItem.item.direction === 'to_event' ? 'הלוך' : 'חזור'}
+                        </span>
+                        {twinItem.item.departureTime && (
+                          <span className="font-semibold">{twinItem.item.departureTime}</span>
+                        )}
+                        <span>•</span>
+                        <span>עם {twinItem.item.creatorName?.split(' ')[0] || 'הנהג'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Phone Number - Only for Rides */}
               {isOffers && (
                 <div>
@@ -348,7 +538,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   ? t('eventPage.assignment.add')
                   : isEdit
                     ? t('common.saveChanges')
-                    : (isOffers ? 'אשר הצטרפות' : t('eventPage.assignment.confirmAssignment'))}
+                    : (isOffers
+                      ? (joinTwinRide
+                        ? (isEdit ? `עדכן את 2 הנסיעות` : `הצטרף ל-2 הנסיעות (${quantity})`)
+                        : (isEdit ? t('common.saveChanges') : 'אשר הצטרפות'))
+                      : t('eventPage.assignment.confirmAssignment'))}
             </button>
           </div>
         </div >

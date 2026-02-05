@@ -29,7 +29,7 @@ const RideSplitCard: React.FC<{
       {showOffers && (
         <button
           onClick={() => onSelect('ride_offers')}
-          className={`relative flex-1 p-4 flex flex-col items-center justify-center transition-colors hover:bg-green-50/50 group/offer ${showRequests ? 'border-l border-gray-100' : ''}`}
+          className={`relative flex-1 p-4 flex flex-col items-center justify-center transition-colors hover:bg-rides-bg group/offer ${showRequests ? 'border-l border-gray-100' : ''}`}
           type="button"
         >
           <div className="relative z-10 flex flex-col items-center">
@@ -39,11 +39,11 @@ const RideSplitCard: React.FC<{
               className="w-14 h-14 mb-2 object-contain transition-transform group-hover/offer:scale-110"
             />
             <h3 className="text-base font-bold text-neutral-800">מציע טרמפ</h3>
-            <p className="text-[10px] text-neutral-500 mt-1 font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+            <p className="text-[10px] text-neutral-500 mt-1 font-medium bg-rides-bg text-rides-primary px-2 py-0.5 rounded-full">
               {offerProgress.total - offerProgress.assigned} מושבים פנויים
             </p>
           </div>
-          <div className="absolute inset-0 bg-green-50/20 opacity-0 group-hover/offer:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-rides-bg/20 opacity-0 group-hover/offer:opacity-100 transition-opacity" />
         </button>
       )}
 
@@ -51,7 +51,7 @@ const RideSplitCard: React.FC<{
       {showRequests && (
         <button
           onClick={() => onSelect('ride_requests')}
-          className="relative flex-1 p-4 flex flex-col items-center justify-center transition-colors hover:bg-purple-50/50 group/request"
+          className="relative flex-1 p-4 flex flex-col items-center justify-center transition-colors hover:bg-rides-bg group/request"
           type="button"
         >
           <div className="relative z-10 flex flex-col items-center">
@@ -62,11 +62,11 @@ const RideSplitCard: React.FC<{
               style={{ transform: 'scaleX(-1)' }}
             />
             <h3 className="text-base font-bold text-neutral-800">צריך טרמפ</h3>
-            <p className="text-[10px] text-neutral-500 mt-1 font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+            <p className="text-[10px] text-neutral-500 mt-1 font-medium bg-rides-bg text-rides-primary px-2 py-0.5 rounded-full">
               {requestProgress.total - requestProgress.assigned} נוסעים ללא טרמפ
             </p>
           </div>
-          <div className="absolute inset-0 bg-purple-50/20 opacity-0 group-hover/request:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-rides-bg/20 opacity-0 group-hover/request:opacity-100 transition-opacity" />
         </button>
       )}
     </div>
@@ -98,8 +98,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
     categories.forEach(category => {
       const itemsInCategory = menuItems.filter(item => item.category === category.id);
-      const isRide = category.id === 'ride_offers' || category.id === 'ride_requests' || 
-                     category.id === 'trempim' || category.rowType === 'offers';
+      const isRide = category.id === 'ride_offers' || category.id === 'ride_requests' ||
+        category.id === 'trempim' || category.rowType === 'offers';
 
       if (isRide) {
         let totalQuantity = 0;
@@ -214,7 +214,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           type="button"
           disabled={!canAddMoreItems}
           title={canAddMoreItems ? "הוסף פריט חדש" : "לא ניתן להוסיף פריטים נוספים"}
-          className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-green-500 bg-success hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 bg-accent hover:bg-accent/90 disabled:bg-neutral-400 disabled:cursor-not-allowed"
         >
           <Plus size={20} className="ml-2 flex-shrink-0" />
           <span className="truncate">הוסף פריט {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}</span>

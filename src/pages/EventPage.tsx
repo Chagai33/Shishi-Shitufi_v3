@@ -29,6 +29,8 @@ import { useDebounce } from '../hooks/useDebounce';
 
 import { ItemCard } from '../components/Events/Cards/ItemCard';
 import { RideCard } from '../components/Events/Cards/RideCard';
+import { UnifiedRideCard } from '../components/Events/Cards/UnifiedRideCard';
+import { groupItemsByDriver, DisplayItem } from '../utils/rideGroupingUtils';
 
 import AssignmentModal from '../components/Events/AssignmentModal';
 
@@ -149,13 +151,13 @@ const EventPage: React.FC = () => {
 
         // 🚀 OPTIMIZATION: Granular subscriptions instead of full event fetch
         // Each subscription updates only its relevant part, reducing bandwidth by ~90%
-        
+
         const unsubDetails = FirebaseService.subscribeToEventDetails(eventId, (baseData) => {
             if (baseData) {
                 // Always include eventId in the update
-                updateCurrentEventPartial({ 
-                    id: eventId, 
-                    ...baseData 
+                updateCurrentEventPartial({
+                    id: eventId,
+                    ...baseData
                 });
                 setIsEventLoading(false);
             } else {
@@ -165,23 +167,23 @@ const EventPage: React.FC = () => {
         });
 
         const unsubMenuItems = FirebaseService.subscribeToMenuItems(eventId, (menuItems) => {
-            updateCurrentEventPartial({ 
-                id: eventId, 
-                menuItems: menuItems || {} 
+            updateCurrentEventPartial({
+                id: eventId,
+                menuItems: menuItems || {}
             });
         });
 
         const unsubAssignments = FirebaseService.subscribeToAssignments(eventId, (assignments) => {
-            updateCurrentEventPartial({ 
-                id: eventId, 
-                assignments: assignments || {} 
+            updateCurrentEventPartial({
+                id: eventId,
+                assignments: assignments || {}
             });
         });
 
         const unsubParticipants = FirebaseService.subscribeToParticipants(eventId, (participants) => {
-            updateCurrentEventPartial({ 
-                id: eventId, 
-                participants: participants || {} 
+            updateCurrentEventPartial({
+                id: eventId,
+                participants: participants || {}
             });
         });
 
@@ -286,11 +288,52 @@ const EventPage: React.FC = () => {
                 }
             }
         } else {
-            // Regular user unassigning -> Standard confirm
+            // Regular user unassigning
+
+            // SMART CANCEL: Check for Twin Assignment
+            const isRide = item.category === 'ride_offers' || item.category === 'ride_requests' || item.category === 'trempim';
+            let twinAssignmentCancelled = false;
+
+            if (isRide && item.direction && (item.direction as string) !== 'both') {
+                const oppositeDir = item.direction === 'to_event' ? 'from_event' : 'to_event';
+
+                // Find Twin Item
+                const twinItem = menuItems.find(i =>
+                    i.id !== item.id &&
+                    i.creatorId === item.creatorId &&
+                    i.direction === oppositeDir &&
+                    (i.category === 'ride_offers' || i.category === 'ride_requests' || i.category === 'trempim')
+                );
+
+                if (twinItem) {
+                    // Find My Assignment on Twin
+                    const myTwinAssignment = assignments.find(a =>
+                        a.menuItemId === twinItem.id &&
+                        a.userId === localUser.uid
+                    );
+
+                    if (myTwinAssignment) {
+                        const dirText = oppositeDir === 'to_event' ? 'בהלוך' : 'בחזור';
+                        // Custom Confirm for Round Trip
+                        if (window.confirm(`שמנו לב שאתה רשום גם לנסיעה ${dirText}. האם תרצה לבטל גם אותה?\n\nאישור = בטל את שתי הנסיעות\nביטול = בטל רק את הנוכחית`)) {
+                            try {
+                                await FirebaseService.cancelAssignment(eventId, myTwinAssignment.id, myTwinAssignment.menuItemId);
+                                toast.success('הנסיעה המקבילה בוטלה בהצלחה');
+                                twinAssignmentCancelled = true;
+                            } catch (error) {
+                                console.error('Failed to cancel twin', error);
+                                toast.error('שגיאה בביטול הנסיעה המקבילה');
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Continue with Current Cancellation
             if (window.confirm(t('eventPage.messages.cancelAssignmentConfirm'))) {
                 try {
                     await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
-                    toast.success(t('eventPage.messages.assignmentCancelled'));
+                    toast.success(twinAssignmentCancelled ? 'שתי הנסיעות בוטלו בהצלחה' : t('eventPage.messages.assignmentCancelled'));
                 } catch (error) {
                     toast.error(t('eventPage.messages.cancelAssignmentError'));
                 }
@@ -700,7 +743,8 @@ const EventPage: React.FC = () => {
                                             toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
                                         }
                                     }}
-                                    className="bg-success text-white px-3 py-1.5 rounded-lg shadow-sm hover:bg-success/90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center"
+                                    className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center text-white ${selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-primary' : 'bg-accent'
+                                        }`}
                                     disabled={!canAddMoreItems}
                                     aria-label={`${t('eventPage.category.addItem')} ${(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
                                 >
@@ -718,6 +762,7 @@ const EventPage: React.FC = () => {
 
                                     const isRideContext = selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' || selectedCategory === 'trempim' || selectedCategory === 'rides' || (itemsInList.length > 0 && isAnyRide && searchTerm);
 
+                                    // Helper to check if item is completed
                                     const isItemCompleted = (item: MenuItemType) => {
                                         const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
                                         if (itemAssignments.length === 0) return false;
@@ -730,84 +775,93 @@ const EventPage: React.FC = () => {
                                         return true;
                                     };
 
-                                    const availableItems = itemsToDisplay.filter(item => !isItemCompleted(item));
-                                    const assignedItems = itemsToDisplay.filter(item => isItemCompleted(item));
+                                    // Group Items
+                                    const displayItems = groupItemsByDriver(itemsInList);
+
+                                    // Filter Groups based on Completion
+                                    const isGroupCompleted = (d: DisplayItem) => {
+                                        if (d.type === 'single') return isItemCompleted(d.item);
+
+                                        // For group, considered completed only if BOTH are completed (or non-existent)
+                                        const outDone = d.group.outbound ? isItemCompleted(d.group.outbound) : true;
+                                        const retDone = d.group.returnRide ? isItemCompleted(d.group.returnRide) : true;
+                                        return outDone && retDone;
+                                    };
+
+                                    const availableDisplay = displayItems.filter(d => !isGroupCompleted(d));
+                                    const assignedDisplay = displayItems.filter(d => isGroupCompleted(d));
+
+                                    const renderDisplayItem = (d: DisplayItem) => {
+                                        if (d.type === 'group') {
+                                            return (
+                                                <UnifiedRideCard
+                                                    key={d.group.id}
+                                                    group={d.group}
+                                                    assignments={assignments}
+                                                    isEventActive={isEventActive}
+                                                    isOrganizer={!!showAdminButton}
+                                                    currentUserId={localUser?.uid}
+                                                    onAssign={handleAssignClick}
+                                                    onCancel={handleCancelClick}
+                                                    onEditItem={handleEditItemClick}
+                                                    onDeleteItem={handleDeleteItem}
+                                                    onEditAssignment={(_, a) => handleEditClick(_, a)}
+                                                />
+                                            );
+                                        }
+
+                                        const item = d.item;
+                                        // 🚀 OPTIMIZATION: Use indexed map instead of filtering entire array
+                                        const itemAssignments = assignmentsByItemId.get(item.id) || [];
+                                        const assignment = itemAssignments.find(a => a.userId === localUser?.uid);
+                                        const commonProps = {
+                                            key: item.id,
+                                            item,
+                                            assignment,
+                                            assignments: itemAssignments,
+                                            onAssign: () => handleAssignClick(item),
+                                            onEdit: () => handleEditClick(item, assignment!),
+                                            onEditItem: () => handleEditItemClick(item),
+                                            onCancel: (a: AssignmentType) => handleCancelClick(a || assignment!),
+                                            onDeleteItem: () => handleDeleteItem(item),
+                                            isMyAssignment: localUser?.uid === assignment?.userId,
+                                            isEventActive,
+                                            isOrganizer: !!showAdminButton,
+                                            currentUserId: localUser?.uid,
+                                            categoryDisplayName: getCategoryName(item.category),
+                                            eventName: currentEvent.details.title,
+                                            onEditAssignment: (a: AssignmentType) => handleEditClick(item, a)
+                                        };
+
+                                        const isRide = isCarpoolLogic(item.name, item.category, item.rowType);
+                                        return isRide ? <RideCard {...commonProps} /> : <ItemCard {...commonProps} />;
+                                    };
 
                                     return (
                                         <>
-                                            {availableItems.length > 0 && (
+                                            {availableDisplay.length > 0 && (
                                                 <div>
-                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">
+                                                    <h3 className={`text-md font-semibold mb-3 ${isRideContext ? 'text-rides-primary' : 'text-neutral-700'}`}>
                                                         {isRideContext
                                                             ? (selectedCategory === 'ride_requests' ? 'בקשות פתוחות' : 'נסיעות פנויות')
                                                             : t('eventPage.list.available')}
                                                     </h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {availableItems.map(item => {
-                                                            // 🚀 OPTIMIZATION: Use indexed map instead of filtering entire array
-                                                            const itemAssignments = assignmentsByItemId.get(item.id) || [];
-                                                            const assignment = itemAssignments.find(a => a.userId === localUser?.uid);
-                                                            const commonProps = {
-                                                                key: item.id,
-                                                                item,
-                                                                assignment,
-                                                                assignments: itemAssignments,
-                                                                onAssign: () => handleAssignClick(item),
-                                                                onEdit: () => handleEditClick(item, assignment!),
-                                                                onEditItem: () => handleEditItemClick(item),
-                                                                onCancel: (a: AssignmentType) => handleCancelClick(a || assignment!),
-                                                                onDeleteItem: () => handleDeleteItem(item),
-                                                                isMyAssignment: localUser?.uid === assignment?.userId,
-                                                                isEventActive,
-                                                                isOrganizer: !!showAdminButton,
-                                                                currentUserId: localUser?.uid,
-                                                                categoryDisplayName: getCategoryName(item.category),
-                                                                eventName: currentEvent.details.title,
-                                                                onEditAssignment: (a: AssignmentType) => handleEditClick(item, a)
-                                                            };
-
-                                                            const isRide = isCarpoolLogic(item.name, item.category, item.rowType);
-
-                                                            return isRide ? <RideCard {...commonProps} /> : <ItemCard {...commonProps} />;
-                                                        })}
+                                                        {availableDisplay.map(renderDisplayItem)}
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {assignedItems.length > 0 && (
-                                                <div className={availableItems.length > 0 ? 'pt-6 border-t' : ''}>
-                                                    <h3 className="text-md font-semibold text-neutral-700 mb-3">
+                                            {assignedDisplay.length > 0 && (
+                                                <div className={availableDisplay.length > 0 ? 'pt-6 border-t' : ''}>
+                                                    <h3 className={`text-md font-semibold mb-3 ${isRideContext ? 'text-rides-primary' : 'text-neutral-700'}`}>
                                                         {isRideContext
                                                             ? (selectedCategory === 'ride_requests' ? 'בקשות שטופלו' : 'רכבים מלאים')
                                                             : t('eventPage.list.completed')}
                                                     </h3>
 
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        {assignedItems.map(item => {
-                                                            // 🚀 OPTIMIZATION: Use indexed map instead of filtering entire array
-                                                            const itemAssignments = assignmentsByItemId.get(item.id) || [];
-                                                            const assignment = itemAssignments.find(a => a.userId === localUser?.uid);
-                                                            const commonProps = {
-                                                                key: item.id,
-                                                                item,
-                                                                assignment,
-                                                                assignments: itemAssignments,
-                                                                onAssign: () => handleAssignClick(item),
-                                                                onEdit: () => handleEditClick(item, assignment!),
-                                                                onEditItem: () => handleEditItemClick(item),
-                                                                onCancel: (a: AssignmentType) => handleCancelClick(a || assignment!),
-                                                                onDeleteItem: () => handleDeleteItem(item),
-                                                                isMyAssignment: localUser?.uid === assignment?.userId,
-                                                                isEventActive,
-                                                                isOrganizer: !!showAdminButton,
-                                                                currentUserId: localUser?.uid,
-                                                                categoryDisplayName: getCategoryName(item.category),
-                                                                eventName: currentEvent.details.title,
-                                                                onEditAssignment: (a: AssignmentType) => handleEditClick(item, a)
-                                                            };
-                                                            const isRide = isCarpoolLogic(item.name, item.category, item.rowType);
-                                                            return isRide ? <RideCard {...commonProps} /> : <ItemCard {...commonProps} />;
-                                                        })}
+                                                        {assignedDisplay.map(renderDisplayItem)}
                                                     </div>
                                                 </div>
                                             )}

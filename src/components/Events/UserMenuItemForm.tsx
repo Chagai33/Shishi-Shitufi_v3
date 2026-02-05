@@ -1,7 +1,7 @@
 // src/components/Events/UserMenuItemForm.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
-import { X, ChefHat, User as UserIcon, AlertCircle, Plus, Minus, Clock, MapPin, ChevronDown, ChevronUp, Info, Phone } from 'lucide-react';
+import { X, AlertCircle, Plus, Minus, ChevronDown, ChevronUp, Phone } from 'lucide-react';
 import { useStore, selectMenuItems } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, MenuCategory, CategoryConfig } from '../../types';
@@ -263,6 +263,8 @@ export function UserMenuItemForm({
     phoneNumber: '',
     rowType: initialRowType || (defaultCat === 'ride_offers' || defaultCat === 'trempim' ? 'offers' : (defaultCat === 'ride_requests' ? 'needs' : undefined))
   });
+
+  const isRideForm = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim' || formData.category === 'rides';
 
   // Ride-specific state
   const [rideDirection, setRideDirection] = useState<'to_event' | 'from_event' | 'both'>('to_event');
@@ -701,8 +703,8 @@ export function UserMenuItemForm({
             aria-labelledby={titleId}
             className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
           >
-            {/* Header - Teal Theme */}
-            <div className="sticky top-0 z-10 bg-gradient-to-br from-teal-600 to-teal-700 text-white p-6 rounded-t-2xl">
+            {/* Header - Dynamic Theme */}
+            <div className={`sticky top-0 z-10 p-6 rounded-t-2xl text-white ${isRideForm ? 'bg-rides-primary' : 'bg-accent'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <h2 id={titleId} className="text-xl font-bold mb-1">
@@ -1049,7 +1051,7 @@ export function UserMenuItemForm({
                             type="button"
                             onClick={() => setMyQuantity(formData.quantity)}
                             aria-label={t('userItemForm.fields.bringAll')}
-                            className="text-xs text-teal-600 hover:text-teal-700 font-bold underline"
+                            className="text-xs text-orange-600 hover:text-orange-700 font-bold underline"
                           >
                             {t('userItemForm.fields.bringAll')}
                           </button>
@@ -1112,7 +1114,10 @@ export function UserMenuItemForm({
                   type="submit"
                   disabled={isSubmitting}
                   aria-busy={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 disabled:from-gray-300 disabled:to-gray-400 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-[0.98]"
+                  className={`flex-1 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center active:scale-[0.98] ${isRideForm
+                    ? 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 disabled:from-gray-300 disabled:to-gray-400'
+                    : 'bg-accent hover:bg-accent/90 disabled:bg-neutral-300'
+                    }`}
                 >
                   {isSubmitting ? (
                     <>

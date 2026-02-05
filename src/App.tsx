@@ -22,6 +22,8 @@ import { FirebaseService } from './services/firebaseService';
 
 import { useTranslation } from 'react-i18next';
 
+
+
 function App() {
   const { t } = useTranslation();
   const { isLoading: isAuthLoading } = useAuth();
@@ -79,6 +81,8 @@ function App() {
           {/* --- Adding routing to new pages --- */}
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
+
+
 
           <Route
             path="/"

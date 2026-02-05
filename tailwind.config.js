@@ -27,6 +27,11 @@ export default {
         },
         text: '#37474F',
         background: '#F5F7FA',
+        rides: {
+          primary: '#00897B', // Warm Teal
+          hover: '#00796B',
+          bg: '#E0F2F1',
+        },
       },
     },
   },

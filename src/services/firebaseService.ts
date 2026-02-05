@@ -98,6 +98,19 @@ export class FirebaseService {
     }
   }
 
+  /**
+   * Update user specific fields in Database (e.g. phone number)
+   */
+  static async updateUser(userId: string, updates: Partial<User>): Promise<void> {
+    try {
+      const userRef = ref(database, `users/${userId}`);
+      await update(userRef, updates);
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      // Fail silently or throw based on preference. We'll fail silent for "convenience features"
+    }
+  }
+
 
   // ===============================
   // Event management
@@ -208,13 +221,13 @@ export class FirebaseService {
     callback: (details: { organizerId: string; organizerName: string; createdAt: number; details: any; userItemCounts?: any } | null) => void
   ): () => void {
     const eventRef = ref(database, `events/${eventId}`);
-    
+
     // We need to listen to the full event once to get base fields,
     // but we'll exclude the heavy collections in the callback
     const onValueChange = (snapshot: any) => {
       if (snapshot.exists()) {
         const eventData = snapshot.val();
-        
+
         // Extract only base fields (no menuItems/assignments/participants)
         const baseData: any = {
           organizerId: eventData.organizerId,

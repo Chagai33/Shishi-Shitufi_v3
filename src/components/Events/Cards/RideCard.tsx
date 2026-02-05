@@ -77,19 +77,20 @@ export const RideCard: React.FC<RideCardProps> = ({
 
   // Check if creator has opposite direction ride
   const hasOppositeDirection = useMemo(() => {
-    if (!item.direction) return false;
-    
+    if (!item.direction || (item.direction as string) === 'both') return false;
+
     const oppositeDir = item.direction === 'to_event' ? 'from_event' : 'to_event';
     const allItems = useStore.getState().currentEvent?.menuItems;
-    
+
     if (!allItems) return false;
-    
-    return Object.values(allItems).some((i: any) => 
+
+    return Object.values(allItems).some((i: any) =>
+      i.id !== item.id && // Exclude self
       i.creatorId === item.creatorId &&
       i.direction === oppositeDir &&
       (i.category === 'ride_offers' || i.category === 'ride_requests')
     );
-  }, [item.direction, item.creatorId]);
+  }, [item.direction, item.creatorId, item.id]);
 
   // Format time flexibility text
   const getFlexibilityText = (flex?: string) => {
@@ -109,9 +110,7 @@ export const RideCard: React.FC<RideCardProps> = ({
       ? 'bg-gray-50/80 border-gray-200 grayscale-[0.8] opacity-75 shadow-none'
       : 'bg-white border-gray-200 hover:border-blue-200 transition-colors shadow-sm';
 
-  const tagColor = isRequest
-    ? 'bg-purple-100 text-purple-700 border-purple-200'
-    : 'bg-green-100 text-green-700 border-green-200';
+  const tagColor = 'bg-rides-bg text-rides-primary border-rides-bg';
 
   return (
     <BaseCard
@@ -130,10 +129,8 @@ export const RideCard: React.FC<RideCardProps> = ({
           {isEventActive && !isFull && !hasMyAssignment && currentUserId !== item.creatorId && (
             <button
               onClick={onAssign}
-              className={`w-full py-3 text-sm rounded-xl font-bold shadow-sm transition-all active:scale-[0.98] 
-                ${isRequest
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-200'
-                  : 'bg-green-600 hover:bg-green-700 text-white shadow-green-200'}`}
+              className="w-full py-3 text-sm rounded-xl font-bold shadow-sm transition-all active:scale-[0.98] 
+                bg-rides-primary hover:bg-rides-hover text-white shadow-rides-primary/50"
             >
               {isRequest ? 'אני יכול/ה לקחת' : 'אני אצטרף'}
             </button>
@@ -173,19 +170,32 @@ export const RideCard: React.FC<RideCardProps> = ({
         <div className="flex flex-wrap items-center gap-2 mt-2">
           {item.direction && (
             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium text-xs">
-              {item.direction === 'to_event' ? '→ הלוך' : '← חזור'}
+              {(item.direction as string) === 'both' ? '↔ הלוך וחזור' : (item.direction === 'to_event' ? '→ הלוך' : '← חזור')}
             </span>
           )}
-          
+
           {item.departureTime && (
-            <span className="font-bold text-gray-700 text-xs flex items-center gap-1">
-              🕐 {item.departureTime}
-              {item.timeFlexibility && item.timeFlexibility !== 'exact' && (
-                <span className="text-[10px] text-gray-500">
-                  ({getFlexibilityText(item.timeFlexibility)})
+            <div className="flex flex-col gap-0.5">
+              <span className="font-bold text-gray-700 text-xs flex items-center gap-1">
+                {item.departureTime} {(item.direction as string) === 'both' && '(הלוך)'}
+                {item.timeFlexibility && item.timeFlexibility !== 'exact' && (
+                  <span className="text-[10px] text-gray-500">
+                    ({getFlexibilityText(item.timeFlexibility)})
+                  </span>
+                )}
+              </span>
+              {/* Secondary Time for Round Trip */}
+              {(item.direction as string) === 'both' && (item as any).departureTimeFrom && (
+                <span className="font-bold text-gray-700 text-xs flex items-center gap-1">
+                  {(item as any).departureTimeFrom} (חזור)
+                  {(item as any).timeFlexibilityFrom && (item as any).timeFlexibilityFrom !== 'exact' && (
+                    <span className="text-[10px] text-gray-500">
+                      ({getFlexibilityText((item as any).timeFlexibilityFrom)})
+                    </span>
+                  )}
                 </span>
               )}
-            </span>
+            </div>
           )}
         </div>
 
@@ -243,7 +253,7 @@ export const RideCard: React.FC<RideCardProps> = ({
           </div>
           <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all duration-700 ${isFull ? 'bg-green-500' : isRequest ? 'bg-purple-500' : 'bg-green-500'}`}
+              className={`h-full rounded-full transition-all duration-700 bg-rides-primary`}
               style={{ width: `${progressPercent}%` }}
             />
           </div>

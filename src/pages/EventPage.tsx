@@ -68,7 +68,7 @@ const NameModal: React.FC<{ isLoading: boolean, onSave: (name: string) => void, 
                                 onSave(name);
                             }}
                             disabled={isLoading}
-                            className="flex-1 bg-accent text-white py-2 rounded-lg hover:bg-accent/90 disabled:bg-neutral-300"
+                            className="flex-1 bg-accent-dark text-white py-2 rounded-lg hover:bg-accent-dark/90 disabled:bg-neutral-300"
                         >
                             {isLoading ? t('common.saving') : t('eventPage.welcome.join')}
                         </button>
@@ -434,7 +434,7 @@ const EventPage: React.FC = () => {
                 <p className="mt-2 text-lg text-neutral-600">{t('eventPage.error.eventNotFound')}</p>
                 <Link
                     to="/"
-                    className="mt-8 inline-block bg-accent text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+                    className="mt-8 inline-block bg-accent-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent-dark/90 transition-colors"
                 >
                     {t('common.backToHome')}
                 </Link>
@@ -468,7 +468,7 @@ const EventPage: React.FC = () => {
                 <p className="mt-2 text-lg text-neutral-600">{t('eventPage.status.inactiveSubtitle')}</p>
                 <Link
                     to="/"
-                    className="mt-8 inline-block bg-accent text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+                    className="mt-8 inline-block bg-accent-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent-dark/90 transition-colors"
                 >
                     {t('common.backToHome')}
                 </Link>
@@ -483,7 +483,7 @@ const EventPage: React.FC = () => {
             {/* Skip Link for Accessibility */}
             <a
                 href="#main-content"
-                className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"
+                className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-accent-dark focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"
             >
                 {t('common.skipToContent') || 'דלג לתוכן הראשי'}
             </a>
@@ -599,7 +599,7 @@ const EventPage: React.FC = () => {
                             onClick={handleAllCategoriesClick}
                             type="button"
                             className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${!selectedCategory && view === 'categories'
-                                ? 'bg-accent text-white border-accent'
+                                ? 'bg-accent-dark text-white border-accent'
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 }`}
                         >
@@ -609,7 +609,7 @@ const EventPage: React.FC = () => {
                             onClick={handleMyAssignmentsClick}
                             type="button"
                             className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${selectedCategory === 'my-assignments'
-                                ? 'bg-accent text-white border-accent'
+                                ? 'bg-accent-dark text-white border-accent'
                                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 }`}
                         >
@@ -621,7 +621,7 @@ const EventPage: React.FC = () => {
                                     onClick={handleAssignedClick}
                                     type="button"
                                     className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${selectedCategory === 'assigned'
-                                        ? 'bg-accent text-white border-accent'
+                                        ? 'bg-accent-dark text-white border-accent'
                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                         }`}
                                 >
@@ -631,7 +631,7 @@ const EventPage: React.FC = () => {
                                     onClick={handleUnassignedClick}
                                     type="button"
                                     className={`px-3 py-1.5 text-sm font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap border ${selectedCategory === 'unassigned'
-                                        ? 'bg-accent text-white border-accent'
+                                        ? 'bg-accent-dark text-white border-accent'
                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                         }`}
                                 >
@@ -743,7 +743,7 @@ const EventPage: React.FC = () => {
                                             toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
                                         }
                                     }}
-                                    className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center text-white ${selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-primary' : 'bg-accent'
+                                    className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center text-white ${selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-dark' : 'bg-accent-dark'
                                         }`}
                                     disabled={!canAddMoreItems}
                                     aria-label={`${t('eventPage.category.addItem')} ${(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}

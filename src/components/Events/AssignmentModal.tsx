@@ -342,7 +342,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       <FocusTrap>
         <div className="bg-white rounded-xl shadow-xl max-w-md w-full flex flex-col max-h-[90vh]" role="dialog" aria-labelledby={titleId}>
           {/* Dynamic Theme Header */}
-          <div className={`flex items-center justify-between p-6 border-b flex-none rounded-t-xl text-white ${isOffers ? 'bg-rides-primary' : 'bg-accent'}`}>
+          <div className={`flex items-center justify-between p-6 border-b flex-none rounded-t-xl text-white ${isOffers ? 'bg-rides-dark' : 'bg-accent-dark'}`}>
             <h2 id={titleId} className="text-lg font-bold">
               {isAddMore
                 ? (isOffers ? 'הוספת נוסעים' : t('eventPage.assignment.addMoreTitle'))
@@ -511,7 +511,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="050-0000000"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent text-right sm:text-left dir-ltr"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rides focus:border-transparent text-right sm:text-left dir-ltr"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">המספר יוצג לנהג בלבד לתיאום הנסיעה</p>
@@ -540,7 +540,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className={`px-6 py-3 rounded-xl text-white font-bold shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none ${isOffers ? 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800' : 'bg-accent hover:bg-accent/90'}`}
+              className={`px-6 py-3 rounded-xl text-white font-bold shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none ${isOffers ? 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800' : 'bg-accent-dark hover:bg-accent-dark/90'}`}
             >
               {isLoading
                 ? t('common.saving')

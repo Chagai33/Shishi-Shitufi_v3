@@ -214,7 +214,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           type="button"
           disabled={!canAddMoreItems}
           title={canAddMoreItems ? "הוסף פריט חדש" : "לא ניתן להוסיף פריטים נוספים"}
-          className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 bg-accent hover:bg-accent/90 disabled:bg-neutral-400 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-accent bg-accent-dark hover:bg-accent-dark/90 disabled:bg-neutral-400 disabled:cursor-not-allowed"
         >
           <Plus size={20} className="ml-2 flex-shrink-0" />
           <span className="truncate">הוסף פריט {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}</span>

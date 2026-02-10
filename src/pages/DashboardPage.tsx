@@ -84,7 +84,7 @@ const EventCard: React.FC<{
                                 type="button"
                                 aria-label={`${t('dashboard.eventCard.actions.editDetails')}: ${event.details.title}`}
                                 title={t('dashboard.eventCard.actions.editDetails')}
-                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white shadow-sm border border-gray-100"
+                                className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-accent hover:bg-accent/10 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent bg-white shadow-sm border border-gray-100"
                             >
                                 <Edit size={18} aria-hidden="true" />
                             </button>
@@ -325,7 +325,7 @@ const DashboardPage: React.FC = () => {
                                 <ArrowRight className="h-4 w-4 ml-1" aria-hidden="true" />
                                 חזור לדאשבורד
                             </button>
-                            <ChefHat className="h-8 w-8 text-orange-500" aria-hidden="true" />
+                            <ChefHat className="h-8 w-8 text-accent" aria-hidden="true" />
                             <h1 className="ml-3 text-2xl font-bold text-gray-900">ניהול רשימות מוכנות</h1>
                         </div>
                     </div>
@@ -343,7 +343,7 @@ const DashboardPage: React.FC = () => {
     if (!user) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-50">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-accent"></div>
             </div>
         );
     }
@@ -383,7 +383,7 @@ const DashboardPage: React.FC = () => {
                             setShowCreateModal(true);
                         }}
                         type="button"
-                        className="flex items-center bg-orange-500 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-600 transition-colors"
+                        className="flex items-center bg-accent-dark text-white px-4 py-2 rounded-lg shadow hover:bg-accent-dark/90 transition-colors"
                     >
                         <Plus size={20} className="ml-2" aria-hidden="true" />
                         {t('dashboard.main.createButton')}
@@ -392,7 +392,7 @@ const DashboardPage: React.FC = () => {
 
                 {isLoadingEvents ? (
                     <div className="flex items-center justify-center h-64">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
                         <p className="ml-4 text-gray-600">{t('dashboard.main.loading')}</p>
                     </div>
                 ) : displayedEvents.length > 0 ? (

@@ -10,7 +10,7 @@ const LandingPage = () => {
       {/* Skip Link */}
       <a
         href="#main-content"
-        className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-orange-600 focus:text-white focus:rounded-md focus:shadow-lg"
+        className="skip-link sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-accent-dark focus:text-white focus:rounded-md focus:shadow-lg"
       >
         {t('common.skipToContent')}
       </a>
@@ -20,7 +20,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav aria-label={t('landing.nav.main')} className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <div className="bg-orange-500 rounded-lg p-1.5" aria-hidden="true">
+              <div className="bg-accent rounded-lg p-1.5" aria-hidden="true">
                 <Calendar className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               <span className="font-bold text-xl tracking-tight">{t('header.title')}</span>
@@ -29,7 +29,7 @@ const LandingPage = () => {
               <LanguageSwitcher />
               <Link
                 to="/login"
-                className="text-sm font-medium text-gray-600 hover:text-orange-600 transition-colors px-4 py-2 rounded-md hover:bg-orange-50"
+                className="text-sm font-medium text-gray-600 hover:text-accent transition-colors px-4 py-2 rounded-md hover:bg-accent/10"
               >
                 {t('landing.header.login')}
               </Link>
@@ -43,18 +43,18 @@ const LandingPage = () => {
         {/* CHANGED: Reduced bottom padding from pb-20 to pb-8 to fix wasted space */}
         <section aria-labelledby="hero-heading" className="pt-16 pb-8 px-4 text-center">
           <div className="max-w-4xl mx-auto">
-            <div className="inline-block px-3 py-1 mb-6 text-xs font-semibold tracking-wider text-orange-600 uppercase bg-orange-100 rounded-full">
+            <div className="inline-block px-3 py-1 mb-6 text-xs font-semibold tracking-wider text-accent uppercase bg-accent/10 rounded-full">
               {t('landing.hero.badge')}
             </div>
             <h1 id="hero-heading" className="text-4xl md:text-6xl font-extrabold text-gray-900 mb-6 leading-tight">
-              {t('landing.hero.title')} <span className="text-orange-500">{t('landing.hero.titleHighlight')}</span>
+              {t('landing.hero.title')} <span className="text-accent">{t('landing.hero.titleHighlight')}</span>
             </h1>
             <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
               {t('landing.hero.subtitle')}
             </p>
             <Link
               to="/login"
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-orange-600 rounded-full hover:bg-orange-700 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+              className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-accent-dark rounded-full hover:bg-accent-dark/90 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
             >
               {t('landing.hero.cta')}
               <ArrowLeft className="mr-2 w-5 h-5" aria-hidden="true" />
@@ -84,11 +84,11 @@ const LandingPage = () => {
               </div>
 
               {/* Differentiator Box */}
-              <div className="order-1 md:order-2 bg-gradient-to-br from-orange-50 to-white border border-orange-100 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-lg shadow-orange-100/50">
-                <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-orange-200 rounded-full opacity-30 blur-3xl" aria-hidden="true"></div>
+              <div className="order-1 md:order-2 bg-gradient-to-br from-accent/10 to-white border border-accent/20 rounded-3xl p-8 md:p-12 relative overflow-hidden shadow-lg shadow-accent/10">
+                <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-accent/40 rounded-full opacity-30 blur-3xl" aria-hidden="true"></div>
                 <div className="relative z-10">
                   <div className="inline-flex items-center justify-center p-3 bg-white rounded-xl shadow-sm mb-8" aria-hidden="true">
-                    <Users className="w-8 h-8 text-orange-600" aria-hidden="true" />
+                    <Users className="w-8 h-8 text-accent" aria-hidden="true" />
                   </div>
                   <h2 className="text-3xl font-bold text-gray-900 mb-6">
                     {t('landing.differentiator.title')}
@@ -96,7 +96,7 @@ const LandingPage = () => {
                   <p className="text-lg text-gray-700 leading-relaxed">
                     {t('landing.differentiator.text.part1')}
                     <br />
-                    <strong className="text-orange-700 text-xl block mt-4 mb-2">
+                    <strong className="text-accent/90 text-xl block mt-4 mb-2">
                       {t('landing.differentiator.text.highlight')}
                     </strong>
                     {t('landing.differentiator.text.part2')}
@@ -120,7 +120,7 @@ const LandingPage = () => {
                 <p>
                   {t('landing.story.p2')}
                 </p>
-                <p className="font-bold text-orange-600">
+                <p className="font-bold text-accent">
                   {t('landing.story.p3')}
                 </p>
               </div>

@@ -8,7 +8,7 @@ export const RIDE_OFFERS_CATEGORY: CategoryConfig = {
   id: 'ride_offers',
   name: 'הצעות טרמפ (נהגים)',
   icon: 'car.gif',
-  color: '#00897B',
+  color: '#88B39E',  // Sage green (was #00897B)
   order: 90,
   rowType: 'offers'
 };
@@ -17,7 +17,7 @@ export const RIDE_REQUESTS_CATEGORY: CategoryConfig = {
   id: 'ride_requests',
   name: 'בקשות טרמפ (נוסעים)',
   icon: 'car.gif',
-  color: '#00897B',
+  color: '#88B39E',  // Sage green (was #00897B)
   order: 91,
   rowType: 'needs'
 };

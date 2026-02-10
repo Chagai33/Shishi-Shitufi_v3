@@ -182,7 +182,6 @@ interface FormErrors {
 export function UserMenuItemForm({
   event,
   onClose,
-  category,
   isOrganizer,
   onSuccess,
   initialCategory,
@@ -196,8 +195,9 @@ export function UserMenuItemForm({
   const [showNameInput, setShowNameInput] = useState(false);
 
   // Decide initial category: prop > explicit category > 'main'
-  const isLocked = !!(initialCategory || category);
-  const defaultCat = initialCategory || category || 'main';
+  // Only lock if initialCategory is explicitly provided
+  const isLocked = !!initialCategory;
+  const defaultCat = initialCategory || 'main';
 
 
   // Default to 1 for regular users, 0 for organizers (so they can just add items)
@@ -206,9 +206,7 @@ export function UserMenuItemForm({
 
   // Accessibility: IDs and refs
   const titleId = useId();
-  const participantNameId = useId();
   const itemNameId = useId();
-  const categoryId = useId();
   const isRequiredId = useId();
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
@@ -302,11 +300,17 @@ export function UserMenuItemForm({
 
   // Get dynamic categories from the event
   const eventCategories = React.useMemo(() => {
+    console.log('📋 Event details:', event.details);
+    console.log('📋 Event categories:', event.details.categories);
+
     // Helper to get categories (can import getEventCategories but let's replicate or import)
     if (event.details.categories && event.details.categories.length > 0) {
-      return event.details.categories.sort((a, b) => a.order - b.order);
+      const sorted = event.details.categories.sort((a, b) => a.order - b.order);
+      console.log('✅ Using event categories:', sorted);
+      return sorted;
     }
     // Fallback import would be better, but let's define it here or assume imports
+    console.log('⚠️ Using fallback categories');
     return [
       { id: 'starter', name: t('categories.starter'), order: 1 },
       { id: 'main', name: t('categories.main'), order: 2 },
@@ -327,8 +331,23 @@ export function UserMenuItemForm({
 
     // Filter out ride categories from the dropdown options unless it's the currently selected one
     // This hides them from the "Add Item" form for admins/users
+    // Filter out ride categories from the dropdown options unless it's the currently selected one
+    // This hides them from the "Add Item" form for admins/users
     const rideIds = ['ride_offers', 'ride_requests', 'trempim'];
     opts = opts.filter(o => !rideIds.includes(o.value) || o.value === formData.category);
+
+    // FIX: If we ended up with no options (e.g. event only has ride categories defined in DB), 
+    // show default food categories so the user can actually add items.
+    if (opts.length === 0 && !isRideForm) {
+      return [
+        { value: 'starter', label: t('categories.starter') },
+        { value: 'main', label: t('categories.main') },
+        { value: 'dessert', label: t('categories.dessert') },
+        { value: 'drink', label: t('categories.drink') },
+        { value: 'equipment', label: t('categories.equipment') },
+        { value: 'other', label: t('categories.other') },
+      ];
+    }
 
     // For backwards compatibility or explicit locking (if editing an existing ride item)
     if (formData.category === 'trempim' && !opts.some(o => o.value === 'trempim')) {
@@ -361,10 +380,17 @@ export function UserMenuItemForm({
 
     switch (field) {
       case 'name':
-        if (!value || !value.toString().trim()) return t('userItemForm.errors.nameRequired');
-        const minLen = isRide ? 3 : 2;
-        if (value.toString().trim().length < minLen) {
-          return isRide ? 'נא להזין מיקום ברור (לפחות 3 תווים)' : t('userItemForm.errors.nameLength');
+        // Only validate name if it's actually being displayed/used
+        // For rides: always validate (shows location field)
+        // For regular items: only validate if NOT offers/requests type
+        const shouldValidateName = isRide || (!isOffersType && !isRequest);
+
+        if (shouldValidateName) {
+          if (!value || !value.toString().trim()) return t('userItemForm.errors.nameRequired');
+          const minLen = isRide ? 3 : 2;
+          if (value.toString().trim().length < minLen) {
+            return isRide ? 'נא להזין מיקום ברור (לפחות 3 תווים)' : t('userItemForm.errors.nameLength');
+          }
         }
         break;
 
@@ -495,29 +521,77 @@ export function UserMenuItemForm({
         finalUserName = existingParticipant?.name || authUser.displayName || t('header.guest');
       }
 
-      // Dynamic Category Creation (New System)
-      const rideCatIds = ['ride_offers', 'ride_requests'];
-      if (rideCatIds.includes(formData.category)) {
-        const existingCat = event.details.categories?.find(c => c.id === formData.category);
-        if (!existingCat) {
-          const currentCats = event.details.categories || [];
-          const catToAdd = formData.category === 'ride_offers'
-            ? { id: 'ride_offers', name: 'הצעות טרמפ', icon: 'car.gif', color: '#34495e', order: 90, rowType: 'offers' }
-            : { id: 'ride_requests', name: 'בקשות טרמפ', icon: 'car.gif', color: '#8e44ad', order: 91, rowType: 'needs' };
+      // Dynamic Category Creation & Repair
+      // We check if the category exists. If not, we create it.
+      // If it DOES exist but is missing properties (like icon) for a standard category, we repair it.
+      const currentCats = event.details.categories || [];
+      const existingCatIndex = currentCats.findIndex(c => c.id === formData.category);
 
-          const newCats = [...currentCats, catToAdd as any];
+      // Define standard categories configs
+      const standardCats: Record<string, any> = {
+        'starter': { id: 'starter', name: t('categories.starter'), icon: '2.gif', order: 1, color: '#3498db' },
+        'main': { id: 'main', name: t('categories.main'), icon: '1.gif', order: 2, color: '#009688' },
+        'dessert': { id: 'dessert', name: t('categories.dessert'), icon: '3.gif', order: 3, color: '#9b59b6' },
+        'drink': { id: 'drink', name: t('categories.drink'), icon: '4.gif', order: 4, color: '#2ecc71' },
+        'equipment': { id: 'equipment', name: t('categories.equipment'), icon: 'cutlery.gif', order: 5, color: '#f39c12' },
+        'other': { id: 'other', name: t('categories.other'), icon: '5.gif', order: 6, color: '#95a5a6' },
+
+        'ride_offers': { id: 'ride_offers', name: 'הצעות טרמפ', icon: 'car.gif', color: '#34495e', order: 90, rowType: 'offers' },
+        'ride_requests': { id: 'ride_requests', name: 'בקשות טרמפ', icon: 'car.gif', color: '#8e44ad', order: 91, rowType: 'needs' },
+        'trempim': { id: 'trempim', name: 'טרמפים', icon: 'car.gif', color: '#2c3e50', order: 92 }
+      };
+
+      if (existingCatIndex === -1) {
+        // --- CREATE NEW CATEGORY ---
+        let catToAdd;
+        if (standardCats[formData.category]) {
+          catToAdd = standardCats[formData.category];
+        } else {
+          catToAdd = {
+            id: formData.category,
+            name: formData.category,
+            order: 99,
+            color: '#95a5a6'
+          };
+        }
+
+        await FirebaseService.updateEvent(event.id, {
+          details: { ...event.details, categories: [...currentCats, catToAdd] }
+        });
+
+      } else {
+        // --- REPAIR EXISTING CATEGORY (If needed) ---
+        const existingCat = currentCats[existingCatIndex];
+        // Check if it's a standard category but missing its icon (fix for previous bug)
+        if (standardCats[existingCat.id] && !existingCat.icon) {
+          const updatedCats = [...currentCats];
+          updatedCats[existingCatIndex] = {
+            ...existingCat,
+            ...standardCats[existingCat.id] // Apply standard props (icon, color, etc.)
+          };
+
           await FirebaseService.updateEvent(event.id, {
-            details: { ...event.details, categories: newCats }
+            details: { ...event.details, categories: updatedCats }
           });
         }
       }
 
 
+
       const isRide = ['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(formData.category);
       const shouldBypassLimit = isOrganizer || isRide;
 
+      // For items where name field isn't shown (offers/requests that aren't rides),
+      // use a default name based on the category
+      let itemName = formData.name.trim();
+      if (!itemName && !isRide) {
+        // For non-ride items without a name (shouldn't happen with validation, but defensive)
+        const categoryName = eventCategories.find(c => c.id === formData.category)?.name || formData.category;
+        itemName = `${categoryName} - ${finalUserName}`;
+      }
+
       const baseItemData = {
-        name: formData.name.trim(),
+        name: itemName || 'פריט ללא שם', // Extra fallback
         category: formData.category,
         quantity: formData.quantity,
         notes: formData.notes.trim() || '',
@@ -862,6 +936,28 @@ export function UserMenuItemForm({
                         {errors.name}
                       </p>
                     )}
+                  </div>
+                )}
+
+                {/* User Name Input - For all items when anonymous */}
+                {showNameInput && (
+                  <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm">
+                    <label htmlFor="participant-name-item" className="block text-sm font-semibold text-gray-800 mb-3">
+                      {t('userItemForm.fields.fullName')}
+                    </label>
+                    <input
+                      id="participant-name-item"
+                      type="text"
+                      value={participantName}
+                      onChange={(e) => setParticipantName(e.target.value)}
+                      placeholder={t('userItemForm.fields.nameDisplayPlaceholder')}
+                      className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 transition-all border-gray-300"
+                      disabled={isSubmitting}
+                      required
+                    />
+                    <p className="mt-2 text-xs text-gray-500">
+                      {t('userItemForm.fields.nameHelp')}
+                    </p>
                   </div>
                 )}
 

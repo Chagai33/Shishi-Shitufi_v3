@@ -623,6 +623,8 @@
         },
         "userItemForm": {
             "title": "הוסף פריט משלך",
+            "subtitle": "בחר קטגוריה ומלא פרטים",
+            "categorySelection": "בחר קטגוריה",
             "fields": {
                 "name": "שם הפריט *",
                 "namePlaceholder": "לדוגמה: עוגת גבינה",

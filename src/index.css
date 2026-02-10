@@ -46,11 +46,11 @@ body,
 }
 
 .glow-main {
-  background-image: radial-gradient(circle at 50% 0%, #009688, transparent 70%);
+  background-image: radial-gradient(circle at 50% 0%, #FBBF95, transparent 70%);
 }
 
 .glow-starter {
-  background-image: radial-gradient(circle at 50% 0%, #3498db, transparent 70%);
+  background-image: radial-gradient(circle at 50% 0%, #88B39E, transparent 70%);
 }
 
 .glow-dessert {
@@ -66,7 +66,7 @@ body,
 }
 
 .glow-other {
-  background-image: radial-gradient(circle at 50% 0%, #95a5a6, transparent 70%);
+  background-image: radial-gradient(circle at 50% 0%, #FBBF95, transparent 70%);
 }
 
 /* Styles for legal pages (Terms, Privacy) */

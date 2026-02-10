@@ -86,7 +86,7 @@ const LoginPage: React.FC = () => {
       </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <ChefHat className="mx-auto h-12 w-12 text-orange-500" />
+          <ChefHat className="mx-auto h-12 w-12 text-accent" />
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
             {t('header.title')}
           </h1>
@@ -109,7 +109,7 @@ const LoginPage: React.FC = () => {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                 </div>
               </div>
@@ -127,7 +127,7 @@ const LoginPage: React.FC = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
             </div>
@@ -144,7 +144,7 @@ const LoginPage: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete={isLoginView ? "current-password" : "new-password"}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
                 />
                 <button
                   type="button"
@@ -164,15 +164,15 @@ const LoginPage: React.FC = () => {
                   type="checkbox"
                   checked={agreedToTerms}
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                  className="h-4 w-4 text-accent border-gray-300 rounded focus:ring-accent"
                 />
                 <label htmlFor="terms-agree" className="text-xs text-gray-600">
                   {t('login.terms.agree')}
-                  <Link to="/terms" target="_blank" className="text-orange-600 hover:underline mx-1">
+                  <Link to="/terms" target="_blank" className="text-accent hover:underline mx-1">
                     {t('login.terms.terms')}
                   </Link>
                   {t('login.terms.and')}
-                  <Link to="/privacy" target="_blank" className="text-orange-600 hover:underline mx-1">
+                  <Link to="/privacy" target="_blank" className="text-accent hover:underline mx-1">
                     {t('login.terms.privacy')}
                   </Link>
                   .
@@ -184,7 +184,7 @@ const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading || (!isLoginView && !agreedToTerms)}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:bg-orange-300 disabled:cursor-not-allowed"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-accent-dark hover:bg-accent-dark/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:bg-accent/40 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -201,7 +201,7 @@ const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsLoginView(!isLoginView)}
-              className="text-sm font-medium text-orange-600 hover:text-orange-500 focus:outline-none focus:underline"
+              className="text-sm font-medium text-accent hover:text-accent/80 focus:outline-none focus:underline"
             >
               {isLoginView ? t('login.toggle.toRegister') : t('login.toggle.toLogin')}
             </button>

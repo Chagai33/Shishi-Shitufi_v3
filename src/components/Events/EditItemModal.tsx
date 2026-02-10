@@ -66,7 +66,7 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
                     onChange={onChange}
                     disabled={disabled}
                     required={required}
-                    className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white appearance-none text-gray-700"
+                    className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rides focus:border-rides outline-none transition-all bg-white appearance-none text-gray-700"
                 >
                     <option value="" disabled>בחר שעה...</option>
                     {times.map((t) => (
@@ -105,7 +105,7 @@ const FlexibilitySelector: React.FC<FlexibilitySelectorProps> = ({ label, select
                 value={selected}
                 onChange={(e) => onChange(e.target.value)}
                 disabled={disabled}
-                className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all bg-white text-gray-700"
+                className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rides focus:border-rides outline-none transition-all bg-white text-gray-700"
             >
                 {options.map((opt) => (
                     <option key={opt.id} value={opt.id}>{opt.label}</option>
@@ -144,7 +144,7 @@ const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, di
                         value={value}
                         onChange={onChange}
                         disabled={disabled}
-                        className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none resize-none"
+                        className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rides outline-none resize-none"
                         rows={3}
                         placeholder={placeholder}
                     />
@@ -532,7 +532,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                     aria-labelledby={titleId}
                     className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] flex flex-col"
                 >
-                    <div className={`flex items-center justify-between p-6 border-b rounded-t-xl text-white flex-none ${isRide ? 'bg-rides-primary' : 'bg-accent'}`}>
+                    <div className={`flex items-center justify-between p-6 border-b rounded-t-xl text-white flex-none ${isRide ? 'bg-rides-dark' : 'bg-accent-dark'}`}>
                         <h2 id={titleId} className="text-lg font-bold">
                             {isOffer ? 'עריכת הצעת טרמפ' : isRequest ? 'עריכת בקשת טרמפ' : t('editItemModal.title')}
                         </h2>
@@ -562,7 +562,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                             value={formData.name}
                                             onChange={(e) => handleInputChange('name', e.target.value)}
                                             placeholder="לדוגמה: תל אביב - רכבת ארלוזורוב"
-                                            className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                                            className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-rides focus:border-rides transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                                             disabled={isSubmitting}
                                             required
                                         />
@@ -581,7 +581,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                             onClick={() => setRideDirection('to_event')}
                                             disabled={isSubmitting}
                                             className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'to_event'
-                                                ? 'bg-rides-primary text-white border-rides-primary shadow-md'
+                                                ? 'bg-rides-dark text-white border-rides-primary shadow-md'
                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
                                         >
@@ -592,7 +592,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                             onClick={() => setRideDirection('from_event')}
                                             disabled={isSubmitting}
                                             className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'from_event'
-                                                ? 'bg-rides-primary text-white border-rides-primary shadow-md'
+                                                ? 'bg-rides-dark text-white border-rides-primary shadow-md'
                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
                                         >
@@ -603,7 +603,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                             onClick={() => setRideDirection('both')}
                                             disabled={isSubmitting}
                                             className={`py-3 px-3 text-sm font-semibold rounded-xl border-2 transition-all ${rideDirection === 'both'
-                                                ? 'bg-rides-primary text-white border-rides-primary shadow-md'
+                                                ? 'bg-rides-dark text-white border-rides-primary shadow-md'
                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
                                         >
@@ -680,7 +680,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 value={formData.phoneNumber || ''}
                                                 onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                                                 placeholder="050-0000000"
-                                                className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                                                className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-rides focus:border-rides transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
                                                     } ltr text-right`}
                                                 disabled={isSubmitting}
                                                 required
@@ -752,7 +752,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                 disabled={isSubmitting}
                                 className={`flex-1 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center ${isRide
                                     ? 'bg-rides-primary hover:bg-rides-hover'
-                                    : 'bg-accent hover:bg-accent/90'
+                                    : 'bg-accent-dark hover:bg-accent-dark/90'
                                     } disabled:bg-gray-300`}
                             >
                                 {isSubmitting ? (

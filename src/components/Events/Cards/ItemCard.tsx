@@ -122,7 +122,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
             {isEventActive && !isFull && (
               <button
                 onClick={onAssign}
-                className="w-full bg-orange-600 text-white py-3 text-sm rounded-xl hover:bg-orange-700 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                className="w-full bg-accent-dark text-white py-3 text-sm rounded-xl hover:bg-accent-dark/90 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-accent focus:ring-offset-2"
                 aria-label={hasMyAssignment ? t('eventPage.item.addMore') : t('eventPage.item.iWillBringIt')}
               >
                 {hasMyAssignment ? t('eventPage.item.addMore') : t('eventPage.item.iWillBringIt')}
@@ -188,7 +188,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
                     (!isFull || (isSplittable && !isFull)) ? (
                       <button
                         onClick={onAssign}
-                        className="w-full bg-orange-600 text-white py-3 text-sm rounded-xl hover:bg-orange-700 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                        className="w-full bg-accent-dark text-white py-3 text-sm rounded-xl hover:bg-accent-dark/90 font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98] focus:ring-2 focus:ring-accent focus:ring-offset-2"
                         aria-label={t('eventPage.item.iWillBringIt')}
                       >
                         {isSplittable ? `${t('eventPage.item.iWillBringIt')} (${t('eventPage.item.addMore')})` : t('eventPage.item.iWillBringIt')}

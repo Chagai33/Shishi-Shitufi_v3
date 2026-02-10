@@ -597,6 +597,8 @@
         },
         "userItemForm": {
             "title": "Add Your Own Item",
+            "subtitle": "Select category and fill in details",
+            "categorySelection": "Select Category",
             "fields": {
                 "name": "Item Name *",
                 "namePlaceholder": "e.g. Cheesecake",

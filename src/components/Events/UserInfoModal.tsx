@@ -174,7 +174,7 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="הזן שם מלא"
                   autoComplete="name"
-                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'
                     }`}
                   disabled={isSubmitting}
                   required
@@ -206,7 +206,7 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
                   placeholder="050-1234567"
                   autoComplete="tel"
                   inputMode="tel"
-                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.phone ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent ${errors.phone ? 'border-red-500' : 'border-gray-300'
                     }`}
                   disabled={isSubmitting}
                   aria-invalid={!!errors.phone}
@@ -236,7 +236,7 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
                   placeholder="example@email.com"
                   autoComplete="email"
                   inputMode="email"
-                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'
                     }`}
                   disabled={isSubmitting}
                   aria-invalid={!!errors.email}
@@ -257,7 +257,7 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
                 onClick={handleSave}
                 disabled={!name.trim() || isSubmitting}
                 type="button"
-                className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
+                className="flex-1 bg-accent-dark hover:bg-accent-dark/90 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
               >
                 {isSubmitting ? (
                   <>

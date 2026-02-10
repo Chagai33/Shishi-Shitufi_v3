@@ -576,6 +576,8 @@
         },
         "userItemForm": {
             "title": "Agrega tu propio artículo",
+            "subtitle": "Selecciona categoría y completa detalles",
+            "categorySelection": "Seleccionar Categoría",
             "fields": {
                 "name": "Nombre del artículo *",
                 "namePlaceholder": "ej. Tarta de queso",

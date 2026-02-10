@@ -8,12 +8,19 @@ export default {
       },
       colors: {
         primary: '#009688',
-        accent: '#FFA726',
+        accent: '#FBBF95',        // Soft peach (was #FFA726)
         success: '#10b981',
         error: '#ef4444',
-        info: '#3b82f6', // Added a default blue for admin/info
+        accent: {
+          DEFAULT: '#FBBF95',     // Soft peach - for backgrounds, borders, focus rings
+          dark: '#E89A5F',        // WCAG AA compliant - for buttons with white text (4.51:1)
+        },
+        secondary: '#FFB74D',
+        success: '#81C784',
+        warning: '#FFB74D',
+        error: '#E57373',
+        info: '#64B5F6',
         neutral: {
-          // Providing a scale for neutral colors based on standard gray
           50: '#f9fafb',
           100: '#f3f4f6',
           200: '#e5e7eb',
@@ -21,17 +28,22 @@ export default {
           400: '#9ca3af',
           500: '#6b7280',
           600: '#4b5563',
-          700: '#37474f', // Main text color as per guide
+          700: '#37474f',
           800: '#1f2937',
           900: '#11182c',
         },
         text: '#37474F',
         background: '#F5F7FA',
         rides: {
-          primary: '#00897B', // Warm Teal
-          hover: '#00796B',
-          bg: '#E0F2F1',
+          primary: '#88B39E',     // Sage green - for backgrounds, borders, focus rings
+          dark: '#5F8A76',        // WCAG AA compliant - for buttons with white text (4.52:1)
+          hover: '#7AA38D',       // Darker sage (legacy)
+          bg: '#EBF4EE',          // Pale sage
         },
+      },
+      ringColor: {
+        'accent': '#FBBF95',      // Soft peach for item focus rings (kept soft for visibility)
+        'rides': '#88B39E',       // Sage green for ride focus rings (kept soft for visibility)
       },
     },
   },

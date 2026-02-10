@@ -283,15 +283,15 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
   // Determine categories to show
   const activeCategories = useMemo(() => {
     if (event) {
-      return getEventCategories(event);
+      return getEventCategories(event, t);
     }
     // If filtering by specific event, use that event's categories
     if (filterEvent !== 'all') {
       const selectedEvent = realtimeEvents.find(e => e.id === filterEvent);
-      return getEventCategories(selectedEvent);
+      return getEventCategories(selectedEvent, t);
     }
     // Fallback: Return Default categories (or maybe a superset if we want to be fancy)
-    return getEventCategories(undefined);
+    return getEventCategories(undefined, t);
   }, [event, filterEvent, realtimeEvents]);
 
   const categoryOptions = activeCategories

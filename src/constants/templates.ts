@@ -1,4 +1,5 @@
 import { CategoryConfig, ShishiEvent, EventType } from '../types';
+import { TFunction } from 'i18next';
 
 // ============================================================================
 // PRESET DEFINITIONS - ISRAELI EVENT TYPES
@@ -94,11 +95,11 @@ export const TEMPLATES = {
 };
 
 /**
- * Returns the categories for a specific event.
+ * Returns the categories for a specific event with translated names.
  * If the event has custom categories (New System), it returns them.
  * If not (Legacy Event), it returns the default Friday Dinner categories.
  */
-export const getEventCategories = (event: ShishiEvent | undefined): CategoryConfig[] => {
+export const getEventCategories = (event: ShishiEvent | undefined, t?: TFunction): CategoryConfig[] => {
   let categories: CategoryConfig[] = [];
 
   if (!event) {
@@ -117,6 +118,14 @@ export const getEventCategories = (event: ShishiEvent | undefined): CategoryConf
     if (event.details.allowRideRequests === true && !categories.some(c => c.id === 'ride_requests')) {
       categories.push({ ...RIDE_REQUESTS_CATEGORY, order: 21 });
     }
+  }
+
+  // Translate category names if translation function is provided
+  if (t) {
+    categories = categories.map(cat => ({
+      ...cat,
+      name: t(`categories.${cat.id}`, cat.name) // Fallback to original name if key doesn't exist
+    }));
   }
 
   return categories.sort((a, b) => (a.order || 0) - (b.order || 0));

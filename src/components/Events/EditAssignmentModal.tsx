@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useId } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, Hash, MessageSquare, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
 import { MenuItem, ShishiEvent, Assignment } from '../../types';
 import toast from 'react-hot-toast';
+import { isCarpoolLogic } from '../../utils/eventUtils';
 
 interface EditAssignmentModalProps {
   menuItem: MenuItem;
@@ -18,15 +20,15 @@ interface FormErrors {
   quantity?: string;
 }
 
-export function EditAssignmentModal({ menuItem, event, assignment, onClose, itemRowType = 'needs' }: EditAssignmentModalProps) {
+export function EditAssignmentModal({ menuItem, event, assignment, onClose, itemRowType }: EditAssignmentModalProps) {
+  const { t } = useTranslation();
   const { updateAssignment } = useStore();
   const [quantity, setQuantity] = useState(assignment.quantity);
   const [notes, setNotes] = useState(assignment.notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const isRideName = /טרמפ|הסעה|ride|carpool|יציאה|רכב|מקום|נהג/i.test(menuItem.name || '');
-  const isOffers = itemRowType === 'offers' || menuItem.category === 'rides' || isRideName;
+  const isOffers = isCarpoolLogic(menuItem.name, menuItem.category, itemRowType);
 
   // Accessibility: Unique IDs for ARIA labeling
   const titleId = useId();
@@ -39,9 +41,9 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
     const newErrors: FormErrors = {};
 
     if (quantity <= 0) {
-      newErrors.quantity = 'הכמות חייבת להיות לפחות 1';
+      newErrors.quantity = t('editAssignmentModal.errors.quantityMin');
     } else if (quantity > 100) {
-      newErrors.quantity = 'הכמות לא יכולה להיות יותר מ-100';
+      newErrors.quantity = t('editAssignmentModal.errors.quantityMax');
     }
 
     setErrors(newErrors);
@@ -50,7 +52,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
 
   const handleUpdate = async () => {
     if (!validateForm()) {
-      toast.error('יש לתקן את השגיאות בטופס');
+      toast.error(t('editItemModal.errors.fixErrors'));
       return;
     }
 
@@ -67,7 +69,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
 
       // Update local store immediately
       updateAssignment(assignment.id, updates);
-      toast.success(isOffers ? 'הנסיעה עודכנה בהצלחה!' : 'השיבוץ עודכן בהצלחה!');
+      toast.success(isOffers ? t('editAssignmentModal.rideSuccess') : t('editAssignmentModal.success'));
       onClose();
 
     } catch (error) {
@@ -132,7 +134,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b">
-            <h2 id={titleId} className="text-lg font-semibold text-gray-900">{isOffers ? 'עריכת נסיעה' : 'עריכת שיבוץ'}</h2>
+            <h2 id={titleId} className="text-lg font-semibold text-gray-900">{isOffers ? t('editAssignmentModal.rideTitle') : t('editAssignmentModal.title')}</h2>
             <button
               onClick={onClose}
               disabled={isSubmitting}
@@ -150,11 +152,11 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <h3 className="font-medium text-gray-900 mb-2">{menuItem.name}</h3>
               <p className="text-sm text-gray-600">עבור: {event.details.title}</p>
-              <p className="text-sm text-gray-600">{isOffers ? 'משוריין עבור' : 'משובץ ל'}: {assignment.userName}</p>
+              <p className="text-sm text-gray-600">{isOffers ? t('editAssignmentModal.reservedFor', { name: assignment.userName }) : t('editAssignmentModal.assignedTo', { name: assignment.userName })}</p>
               {menuItem.isRequired && (
                 <div className="flex items-center mt-2">
                   <AlertCircle className="h-4 w-4 text-red-500 ml-1" aria-hidden="true" />
-                  <span className="text-sm text-red-600 font-medium">פריט חובה</span>
+                  <span className="text-sm text-red-600 font-medium">{t('editAssignmentModal.requiredItem')}</span>
                 </div>
               )}
             </div>
@@ -162,7 +164,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
             {/* Quantity Input */}
             <div className="mb-6">
               <label htmlFor="quantity-input" className="block text-sm font-medium text-gray-700 mb-2">
-                {isOffers ? 'מספר מקומות' : 'כמות שאביא'} <span className="text-red-500" aria-label="שדה חובה">*</span>
+                {isOffers ? t('editAssignmentModal.seatsLabel') : t('editAssignmentModal.quantityLabel')} <span className="text-red-500" aria-label="שדה חובה">*</span>
               </label>
               <div className="relative">
                 <Hash className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -194,7 +196,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
             {/* Notes */}
             <div className="mb-6">
               <label htmlFor="notes-input" className="block text-sm font-medium text-gray-700 mb-2">
-                הערות (אופציונלי)
+                {t('editAssignmentModal.notesLabel')}
               </label>
               <div className="relative">
                 <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-gray-400" aria-hidden="true" />
@@ -202,7 +204,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
                   id="notes-input"
                   value={notes}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
-                  placeholder="הערות נוספות…"
+                  placeholder={t('editAssignmentModal.notesPlaceholder')}
                   rows={3}
                   autoComplete="off"
                   className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
@@ -222,10 +224,10 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
-                    מעדכן…
+                    {t('editAssignmentModal.updating')}
                   </>
                 ) : (
-                  isOffers ? 'עדכן נסיעה' : 'עדכן שיבוץ'
+                  isOffers ? t('editAssignmentModal.updateRideBtn') : t('editAssignmentModal.updateBtn')
                 )}
               </button>
               <button
@@ -234,7 +236,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
                 type="button"
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
               >
-                ביטול
+                {t('editAssignmentModal.cancelBtn')}
               </button>
             </div>
           </div>

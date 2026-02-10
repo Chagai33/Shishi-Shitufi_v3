@@ -30,6 +30,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { ItemCard } from '../components/Events/Cards/ItemCard';
 import { RideCard } from '../components/Events/Cards/RideCard';
 import { UnifiedRideCard } from '../components/Events/Cards/UnifiedRideCard';
+import { CancelRideModal } from '../components/Events/CancelRideModal';
 import { groupItemsByDriver, DisplayItem } from '../utils/rideGroupingUtils';
 
 import AssignmentModal from '../components/Events/AssignmentModal';
@@ -128,6 +129,7 @@ const EventPage: React.FC = () => {
     const [itemToAssignAfterJoin, setItemToAssignAfterJoin] = useState<MenuItemType | null>(null);
     const [showNameModal, setShowNameModal] = useState(false);
     const [showParticipantsList, setShowParticipantsList] = useState(false);
+    const [cancelModalData, setCancelModalData] = useState<{ assignment: AssignmentType, twinAssignment: AssignmentType | null, isOpen: boolean, direction: string } | null>(null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300); // 🚀 OPTIMIZATION: Debounced search
@@ -135,7 +137,7 @@ const EventPage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [lastManualCategory, setLastManualCategory] = useState<string>('main');
 
-    const eventCategories = useMemo(() => getEventCategories(currentEvent || undefined), [currentEvent]);
+    const eventCategories = useMemo(() => getEventCategories(currentEvent || undefined, t), [currentEvent, t]);
     const getCategoryName = useCallback((id: string) => {
         return resolveCategoryDisplayName(id, currentEvent || undefined, eventCategories, t);
     }, [eventCategories, t, currentEvent]);
@@ -291,53 +293,40 @@ const EventPage: React.FC = () => {
             // Regular user unassigning
 
             // SMART CANCEL: Check for Twin Assignment
-            const isRide = item.category === 'ride_offers' || item.category === 'ride_requests' || item.category === 'trempim';
-            let twinAssignmentCancelled = false;
+            const isRide = item.category === 'ride_offers' || item.category === 'ride_requests' || item.category === 'trempim' || isCarpoolLogic(item.name, item.category, item.rowType);
+            let twinAssignment: AssignmentType | null = null;
+            let direction = item.direction as string;
 
-            if (isRide && item.direction && (item.direction as string) !== 'both') {
-                const oppositeDir = item.direction === 'to_event' ? 'from_event' : 'to_event';
+            if (isRide && direction && direction !== 'both') {
+                const oppositeDir = direction === 'to_event' ? 'from_event' : 'to_event';
 
                 // Find Twin Item
                 const twinItem = menuItems.find(i =>
                     i.id !== item.id &&
                     i.creatorId === item.creatorId &&
                     i.direction === oppositeDir &&
-                    (i.category === 'ride_offers' || i.category === 'ride_requests' || i.category === 'trempim')
+                    (i.category === 'ride_offers' || i.category === 'ride_requests' || i.category === 'trempim' || isCarpoolLogic(i.name, i.category, i.rowType))
                 );
 
                 if (twinItem) {
                     // Find My Assignment on Twin
-                    const myTwinAssignment = assignments.find(a =>
+                    const myTwin = assignments.find(a =>
                         a.menuItemId === twinItem.id &&
                         a.userId === localUser.uid
                     );
-
-                    if (myTwinAssignment) {
-                        const dirText = oppositeDir === 'to_event' ? 'בהלוך' : 'בחזור';
-                        // Custom Confirm for Round Trip
-                        if (window.confirm(`שמנו לב שאתה רשום גם לנסיעה ${dirText}. האם תרצה לבטל גם אותה?\n\nאישור = בטל את שתי הנסיעות\nביטול = בטל רק את הנוכחית`)) {
-                            try {
-                                await FirebaseService.cancelAssignment(eventId, myTwinAssignment.id, myTwinAssignment.menuItemId);
-                                toast.success('הנסיעה המקבילה בוטלה בהצלחה');
-                                twinAssignmentCancelled = true;
-                            } catch (error) {
-                                console.error('Failed to cancel twin', error);
-                                toast.error('שגיאה בביטול הנסיעה המקבילה');
-                            }
-                        }
+                    if (myTwin) {
+                        twinAssignment = myTwin;
                     }
                 }
             }
 
-            // Continue with Current Cancellation
-            if (window.confirm(t('eventPage.messages.cancelAssignmentConfirm'))) {
-                try {
-                    await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
-                    toast.success(twinAssignmentCancelled ? 'שתי הנסיעות בוטלו בהצלחה' : t('eventPage.messages.assignmentCancelled'));
-                } catch (error) {
-                    toast.error(t('eventPage.messages.cancelAssignmentError'));
-                }
-            }
+            // Open Modal instead of Window Confirm
+            setCancelModalData({
+                assignment,
+                twinAssignment,
+                isOpen: true,
+                direction
+            });
         }
     };
 
@@ -360,6 +349,28 @@ const EventPage: React.FC = () => {
             }
         }
     }
+
+    const handleModalConfirmAction = async (cancelBoth: boolean) => {
+        if (!cancelModalData || !eventId) return;
+        const { assignment, twinAssignment } = cancelModalData;
+        setCancelModalData(null); // Close modal
+
+        try {
+            // 1. Cancel Primary
+            await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
+
+            // 2. Cancel Twin if requested
+            if (cancelBoth && twinAssignment) {
+                await FirebaseService.cancelAssignment(eventId, twinAssignment.id, twinAssignment.menuItemId);
+                toast.success('שתי הנסיעות בוטלו בהצלחה');
+            } else {
+                toast.success(t('eventPage.messages.assignmentCancelled'));
+            }
+        } catch (error) {
+            console.error("Cancellation error", error);
+            toast.error(t('eventPage.messages.cancelAssignmentError'));
+        }
+    };
 
     const handleEditClick = (item: MenuItemType, assignment: AssignmentType) => setModalState({ type: 'edit', item, assignment });
     const handleEditItemClick = (item: MenuItemType) => setModalState({ type: 'edit-item', item });
@@ -659,7 +670,7 @@ const EventPage: React.FC = () => {
                             userCreatedItemsCount={userCreatedItemsCount}
                             MAX_USER_ITEMS={MAX_USER_ITEMS}
                             showLimit={!showAdminButton}
-                            categories={getEventCategories(currentEvent || undefined)}
+                            categories={getEventCategories(currentEvent || undefined, t)}
                             onOfferRide={currentEvent?.details.allowRideOffers !== false ? () => {
                                 // Check if user already has a ride offer
                                 if (localUser) {
@@ -699,60 +710,72 @@ const EventPage: React.FC = () => {
                     </>
                 ) : (
                     <div>
-                        <button
-                            onClick={handleBackToCategories}
-                            type="button"
-                            className="flex items-center text-sm font-semibold text-accent hover:underline mb-4"
-                        >
-                            <ArrowRight size={16} className="ml-1" aria-hidden="true" />
-                            {t('eventPage.backToCategories')}
-                        </button>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold text-neutral-800">
-                                {searchTerm
-                                    ? t('eventPage.list.searchResults')
-                                    : (selectedCategory === 'my-assignments' || selectedCategory === 'assigned' || selectedCategory === 'unassigned')
-                                        ? t(`eventPage.filter.${selectedCategory}`)
-                                        : getCategoryName(selectedCategory!)}
-                            </h2>
-                            {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
-                                <button
-                                    onClick={() => {
-                                        if (localUser && (selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests')) {
-                                            const isRideOffer = selectedCategory === 'ride_offers';
-                                            const alreadyHasOne = menuItems.some(item =>
-                                                item.creatorId === localUser.uid &&
-                                                (isRideOffer
-                                                    ? (item.category === 'ride_offers' || item.category === 'trempim' || item.category === 'rides')
-                                                    : (item.category === 'ride_requests')
-                                                )
-                                            );
 
-                                            if (alreadyHasOne && !showAdminButton) {
-                                                toast.error(isRideOffer
-                                                    ? "כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת."
-                                                    : "כבר פרסמת בקשת טרמפ. ניתן לערוך את הבקשה הקיימת."
+                        <div className="sticky top-[57px] z-30 bg-background/95 backdrop-blur-md shadow-sm py-3 px-4 -mx-4 -mt-4 mb-4 border-b transition-all duration-200">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 overflow-hidden">
+                                    <button
+                                        onClick={handleBackToCategories}
+                                        type="button"
+                                        className="p-1.5 -ml-1.5 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 transition-colors flex-shrink-0"
+                                        aria-label={t('eventPage.backToCategories')}
+                                        title={t('eventPage.backToCategories')}
+                                    >
+                                        <ArrowRight size={20} className="rtl:rotate-180" />
+                                    </button>
+
+                                    <h2 className="text-lg font-bold text-neutral-800 truncate leading-tight">
+                                        {searchTerm
+                                            ? t('eventPage.list.searchResults')
+                                            : (selectedCategory === 'my-assignments' || selectedCategory === 'assigned' || selectedCategory === 'unassigned')
+                                                ? t(`eventPage.filter.${selectedCategory}`)
+                                                : getCategoryName(selectedCategory!)}
+                                    </h2>
+                                </div>
+
+                                {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
+                                    <button
+                                        onClick={() => {
+                                            if (localUser && (selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests')) {
+                                                const isRideOffer = selectedCategory === 'ride_offers';
+                                                const alreadyHasOne = menuItems.some(item =>
+                                                    item.creatorId === localUser.uid &&
+                                                    (isRideOffer
+                                                        ? (item.category === 'ride_offers' || item.category === 'trempim' || item.category === 'rides')
+                                                        : (item.category === 'ride_requests')
+                                                    )
                                                 );
-                                                return;
+
+                                                if (alreadyHasOne && !showAdminButton) {
+                                                    toast.error(isRideOffer
+                                                        ? "כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת."
+                                                        : "כבר פרסמת בקשת טרמפ. ניתן לערוך את הבקשה הקיימת."
+                                                    );
+                                                    return;
+                                                }
                                             }
-                                        }
 
-                                        if (canAddMoreItems) {
-                                            setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
-                                        } else {
-                                            toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
-                                        }
-                                    }}
-                                    className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center text-white ${selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-dark' : 'bg-accent-dark'
-                                        }`}
-                                    disabled={!canAddMoreItems}
-                                    aria-label={`${t('eventPage.category.addItem')} ${(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
-                                >
-                                    <Plus size={16} className="inline-block ml-1" aria-hidden="true" />
-                                    {selectedCategory === 'ride_offers' ? 'הצע טרמפ' : selectedCategory === 'ride_requests' ? 'בקש טרמפ' : t('eventPage.category.addItem')} {(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
-                                </button>
-                            )}
-
+                                            if (canAddMoreItems) {
+                                                setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
+                                            } else {
+                                                toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
+                                            }
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center text-white flex-shrink-0 ${selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-dark' : 'bg-accent-dark'
+                                            }`}
+                                        disabled={!canAddMoreItems}
+                                        aria-label={`${t('eventPage.category.addItem')} ${(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
+                                    >
+                                        <Plus size={16} className="inline-block ml-1" aria-hidden="true" />
+                                        <span className="hidden sm:inline">
+                                            {selectedCategory === 'ride_offers' ? t('eventPage.rides.offer') : selectedCategory === 'ride_requests' ? t('eventPage.rides.request') : t('eventPage.actions.addItem')} {(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}
+                                        </span>
+                                        <span className="sm:hidden">
+                                            {t('common.add')}
+                                        </span>
+                                    </button>
+                                )}
+                            </div>
                         </div>
                         {itemsToDisplay.length > 0 ? (
                             <div className="space-y-6">
@@ -843,7 +866,7 @@ const EventPage: React.FC = () => {
                                                 <div>
                                                     <h3 className={`text-md font-semibold mb-3 ${isRideContext ? 'text-rides-primary' : 'text-neutral-700'}`}>
                                                         {isRideContext
-                                                            ? (selectedCategory === 'ride_requests' ? 'בקשות פתוחות' : 'נסיעות פנויות')
+                                                            ? (selectedCategory === 'ride_requests' ? t('eventPage.rides.openRequests') : t('eventPage.rides.available'))
                                                             : t('eventPage.list.available')}
                                                     </h3>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -931,6 +954,17 @@ const EventPage: React.FC = () => {
                         await FirebaseService.cancelAssignment(eventId, assignmentId, menuItemId);
                     }}
                     isOrganizer={!!showAdminButton}
+                />
+            )}
+
+            {cancelModalData && (
+                <CancelRideModal
+                    isOpen={cancelModalData.isOpen}
+                    onClose={() => setCancelModalData(null)}
+                    onConfirmSingle={() => handleModalConfirmAction(false)}
+                    onConfirmBoth={() => handleModalConfirmAction(true)}
+                    isTwinAvailable={!!cancelModalData.twinAssignment}
+                    direction={cancelModalData.direction}
                 />
             )}
         </div>

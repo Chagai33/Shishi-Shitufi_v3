@@ -4,7 +4,8 @@ import React, { useState, useEffect, useRef, useId } from 'react';
 import { X, AlertCircle, Plus, Minus, ChevronDown, ChevronUp, Phone } from 'lucide-react';
 import { useStore, selectMenuItems } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
-import { ShishiEvent, MenuCategory, CategoryConfig } from '../../types';
+import { ShishiEvent, MenuCategory } from '../../types';
+import { getEventCategories } from '../../constants/templates';
 import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -129,6 +130,7 @@ interface CollapsibleNotesProps {
 }
 
 const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, disabled = false, placeholder = 'פרטים נוספים...' }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(!!value);
 
   return (
@@ -139,7 +141,7 @@ const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, di
         className="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
       >
         <div className="flex items-center gap-2">
-          <span>הערות (אופציונלי)</span>
+          <span>{t('editAssignmentModal.notesLabel')}</span>
           {value && !isOpen && <span className="text-xs text-teal-600">נוספו הערות</span>}
         </div>
         {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -298,28 +300,10 @@ export function UserMenuItemForm({
   const effectiveMyQuantity = isRideCategory ? 0 : myQuantity;
 
 
-  // Get dynamic categories from the event
+  // Get dynamic categories from the event using shared helper
   const eventCategories = React.useMemo(() => {
-    console.log('📋 Event details:', event.details);
-    console.log('📋 Event categories:', event.details.categories);
-
-    // Helper to get categories (can import getEventCategories but let's replicate or import)
-    if (event.details.categories && event.details.categories.length > 0) {
-      const sorted = event.details.categories.sort((a, b) => a.order - b.order);
-      console.log('✅ Using event categories:', sorted);
-      return sorted;
-    }
-    // Fallback import would be better, but let's define it here or assume imports
-    console.log('⚠️ Using fallback categories');
-    return [
-      { id: 'starter', name: t('categories.starter'), order: 1 },
-      { id: 'main', name: t('categories.main'), order: 2 },
-      { id: 'dessert', name: t('categories.dessert'), order: 3 },
-      { id: 'drink', name: t('categories.drink'), order: 4 },
-      { id: 'equipment', name: t('categories.equipment'), order: 5 },
-      { id: 'other', name: t('categories.other'), order: 6 },
-    ] as CategoryConfig[];
-  }, [event.details.categories, t]);
+    return getEventCategories(event, t);
+  }, [event]);
 
   // Ensure "trempim" and ride options are filtered out for manual selection unless active
   const categoryOptions = React.useMemo(() => {
@@ -331,23 +315,17 @@ export function UserMenuItemForm({
 
     // Filter out ride categories from the dropdown options unless it's the currently selected one
     // This hides them from the "Add Item" form for admins/users
-    // Filter out ride categories from the dropdown options unless it's the currently selected one
-    // This hides them from the "Add Item" form for admins/users
     const rideIds = ['ride_offers', 'ride_requests', 'trempim'];
     opts = opts.filter(o => !rideIds.includes(o.value) || o.value === formData.category);
 
-    // FIX: If we ended up with no options (e.g. event only has ride categories defined in DB), 
-    // show default food categories so the user can actually add items.
-    if (opts.length === 0 && !isRideForm) {
-      return [
-        { value: 'starter', label: t('categories.starter') },
-        { value: 'main', label: t('categories.main') },
-        { value: 'dessert', label: t('categories.dessert') },
-        { value: 'drink', label: t('categories.drink') },
-        { value: 'equipment', label: t('categories.equipment') },
-        { value: 'other', label: t('categories.other') },
-      ];
-    }
+    // If for some reason we have no options (e.g. event has ONLY ride categories),
+    // and we are NOT in a ride form, we still want to show something?
+    // User said: "Manager decides". If manager decided ONLY rides, then users shouldn't create items?
+    // But usually there is "Other". getEventCategories ensures "Other" if completely empty?
+    // No, getEventCategories returns defaults if empty.
+    // If manager SET categories to just [Ride], then opts is empty.
+    // In that case, maybe we should show "Other"?
+    // But let's stick to "Manager decides". If opts is empty, it's empty.
 
     // For backwards compatibility or explicit locking (if editing an existing ride item)
     if (formData.category === 'trempim' && !opts.some(o => o.value === 'trempim')) {
@@ -615,7 +593,7 @@ export function UserMenuItemForm({
         // Item 1: To Event (הלוך)
         const itemDataTo: any = {
           ...baseItemData,
-          name: `${formData.name.trim()} (הלוך)`,
+          name: `${formData.name.trim()} ${t('eventPage.assignment.toEventSuffix')}`,
           direction: 'to_event',
           departureTime: departureTimeTo,
           timeFlexibility: timeFlexibilityTo,
@@ -640,7 +618,7 @@ export function UserMenuItemForm({
         // Item 2: From Event (חזור)
         const itemDataFrom: any = {
           ...baseItemData,
-          name: `${formData.name.trim()} (חזור)`,
+          name: `${formData.name.trim()} ${t('eventPage.assignment.fromEventSuffix')}`,
           direction: 'from_event',
           departureTime: departureTimeFrom,
           timeFlexibility: timeFlexibilityFrom,
@@ -850,14 +828,14 @@ export function UserMenuItemForm({
                 {isRideForm && (
                   <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
                     <label htmlFor="name-ride" className="block text-sm font-semibold text-gray-800 mb-3">
-                      {isOffersType ? 'מאיפה אתם יוצאים?' : 'מאיפה לאסוף אתכם?'}
+                      {isOffersType ? t('userItemForm.pickupLabelOffer') : t('userItemForm.pickupLabelRequest')}
                     </label>
                     <input
                       id="name-ride"
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="לדוגמה: ראש העין - סינמה סיטי"
+                      placeholder={t('userItemForm.pickupPlaceholder')}
                       className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                       disabled={isSubmitting}
                       required
@@ -881,7 +859,7 @@ export function UserMenuItemForm({
                             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                             }`}
                         >
-                          הלוך
+                          {t('userItemForm.directions.to')}
                         </button>
                         <button
                           type="button"
@@ -892,7 +870,7 @@ export function UserMenuItemForm({
                             : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                             }`}
                         >
-                          חזור
+                          {t('userItemForm.directions.from')}
                         </button>
                         <button
                           type="button"
@@ -903,7 +881,7 @@ export function UserMenuItemForm({
                             : 'bg-white text-gray-600 border-gray-200 hover:bg-yellow-50'
                             }`}
                         >
-                          הלוך וחזור
+                          {t('userItemForm.directions.both')}
                         </button>
                       </div>
                     </div>
@@ -924,7 +902,12 @@ export function UserMenuItemForm({
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder={t('userItemForm.fields.namePlaceholder')}
+                      placeholder={t(`userItemForm.placeholders.${formData.category}`, {
+                        defaultValue: t('userItemForm.placeholders.pattern', {
+                          category: eventCategories.find(c => c.id === formData.category)?.name || formData.category,
+                          defaultValue: t('userItemForm.placeholders.default')
+                        })
+                      })}
                       className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
                         }`}
                       disabled={isSubmitting}
@@ -968,11 +951,11 @@ export function UserMenuItemForm({
                     {(rideDirection === 'to_event' || rideDirection === 'both') && (
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                          הלוך
+                          {t('userItemForm.timeHeaders.to')}
                         </h4>
                         <div className="grid grid-cols-2 gap-3">
                           <TimeSelect
-                            label="שעת יציאה"
+                            label={t('userItemForm.timeLabel')}
                             value={departureTimeTo}
                             onChange={(e) => setDepartureTimeTo(e.target.value)}
                             disabled={isSubmitting}
@@ -981,7 +964,7 @@ export function UserMenuItemForm({
                             type="to"
                           />
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('userItemForm.flexibilityLabel')}</label>
                             <FlexibilitySelector
                               selected={timeFlexibilityTo}
                               onChange={(val) => setTimeFlexibilityTo(val as any)}
@@ -996,11 +979,11 @@ export function UserMenuItemForm({
                     {(rideDirection === 'from_event' || rideDirection === 'both') && (
                       <div>
                         <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                          חזור
+                          {t('userItemForm.timeHeaders.from')}
                         </h4>
                         <div className="grid grid-cols-2 gap-3">
                           <TimeSelect
-                            label="שעת יציאה"
+                            label={t('userItemForm.timeLabel')}
                             value={departureTimeFrom}
                             onChange={(e) => setDepartureTimeFrom(e.target.value)}
                             disabled={isSubmitting}
@@ -1009,7 +992,7 @@ export function UserMenuItemForm({
                             type="from"
                           />
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">גמישות</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">{t('userItemForm.flexibilityLabel')}</label>
                             <FlexibilitySelector
                               selected={timeFlexibilityFrom}
                               onChange={(val) => setTimeFlexibilityFrom(val as any)}
@@ -1035,7 +1018,7 @@ export function UserMenuItemForm({
                     <div>
                       <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
                         <Phone className="h-4 w-4 text-teal-600" />
-                        מספר טלפון
+                        {t('userItemForm.fields.phone')}
                         <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
@@ -1063,13 +1046,13 @@ export function UserMenuItemForm({
                           {errors.phoneNumber}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500 mt-2">יוצג רק למי שישובץ לנסיעה</p>
+                      <p className="text-xs text-gray-500 mt-2">{t('userItemForm.fields.phonePrivacy')}</p>
                     </div>
 
                     {/* Number of Seats */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        {isRequest ? 'כמה מקומות אתם צריכים?' : 'מספר מקומות פנויים'}
+                        {isRequest ? t('userItemForm.seats.request') : t('userItemForm.seats.offer')}
                       </label>
                       <Stepper
                         value={formData.quantity}
@@ -1147,7 +1130,7 @@ export function UserMenuItemForm({
                       <p className="text-sm font-medium text-gray-600 bg-gray-50 rounded-lg py-2 px-3">
                         {myQuantity < formData.quantity
                           ? myQuantity === 0
-                            ? "אתה רק יוצר את הפריט (מנהל)"
+                            ? t('userItemForm.managerOnly')
                             : t('userItemForm.fields.remainingMsg', { count: formData.quantity - myQuantity })
                           : t('userItemForm.fields.youBringAllMsg')}
                       </p>
@@ -1204,12 +1187,12 @@ export function UserMenuItemForm({
                     <>
                       <span>
                         {isRequest
-                          ? 'בקש טרמפ'
+                          ? t('userItemForm.buttons.submitRequest')
                           : isOffersType
-                            ? 'הצע טרמפ'
+                            ? t('userItemForm.buttons.submitOffer')
                             : effectiveMyQuantity === 0
-                              ? 'הוסף פריט'
-                              : 'הוסף ושבץ אותי'}
+                              ? t('userItemForm.buttons.submitItem')
+                              : t('userItemForm.buttons.submitAndAssign')}
                       </span>
                     </>
                   )}
@@ -1220,7 +1203,7 @@ export function UserMenuItemForm({
                   disabled={isSubmitting}
                   className="px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all disabled:opacity-50 active:scale-[0.98]"
                 >
-                  ביטול
+                  {t('userItemForm.buttons.cancel')}
                 </button>
               </div>
             </form>

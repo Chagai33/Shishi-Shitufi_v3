@@ -92,10 +92,10 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
             .map(item => {
                 const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
                 const filledSeats = itemAssignments.reduce((acc, a) => acc + (a.quantity || 0), 0);
-                
+
                 // Check if creator has opposite direction
                 const oppositeDir = item.direction === 'to_event' ? 'from_event' : 'to_event';
-                const hasOppositeDirection = menuItems.some(i => 
+                const hasOppositeDirection = menuItems.some(i =>
                     i.creatorId === item.creatorId &&
                     i.direction === oppositeDir &&
                     i.category === 'ride_offers'
@@ -113,11 +113,11 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                 // Priority: has opposite direction first
                 if (a.hasOppositeDirection && !b.hasOppositeDirection) return -1;
                 if (!a.hasOppositeDirection && b.hasOppositeDirection) return 1;
-                
+
                 // Then by direction (to_event first)
                 if (a.item.direction === 'to_event' && b.item.direction === 'from_event') return -1;
                 if (a.item.direction === 'from_event' && b.item.direction === 'to_event') return 1;
-                
+
                 // Then by departure time
                 return (a.item.departureTime || '').localeCompare(b.item.departureTime || '');
             });
@@ -141,11 +141,11 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                 // Priority: without driver first (needs help)
                 if (!a.hasDriver && b.hasDriver) return -1;
                 if (a.hasDriver && !b.hasDriver) return 1;
-                
+
                 // Then by direction
                 if (a.item.direction === 'to_event' && b.item.direction === 'from_event') return -1;
                 if (a.item.direction === 'from_event' && b.item.direction === 'to_event') return 1;
-                
+
                 // Then by departure time
                 return (a.item.departureTime || '').localeCompare(b.item.departureTime || '');
             });
@@ -169,7 +169,7 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
             return;
         }
 
-        const confirmMessage = t('eventPage.participantsList.deleteConfirm', {
+        const confirmMessage = t('participantsList.deleteConfirm', {
             name: assignment.userName,
             item: assignment.itemName
         });
@@ -182,9 +182,9 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                     assignment.userName,
                     assignment.itemName
                 );
-                toast.success(t('eventPage.participantsList.assignmentDeleted'));
+                toast.success(t('participantsList.assignmentDeleted'));
             } catch (error) {
-                toast.error(t('eventPage.messages.cancelAssignmentError'));
+                toast.error(t('participantsList.assignmentDeleteError'));
             }
         }
     };
@@ -233,7 +233,7 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                                     <Users size={24} className="text-blue-600" aria-hidden="true" />
                                 </div>
                                 <h2 id={titleId} className="text-xl font-bold text-neutral-900">
-                                    {t('eventPage.participantsList.title')}
+                                    {t('participantsList.title')}
                                 </h2>
                             </div>
                             <button
@@ -250,36 +250,33 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                         <div className="flex border-t border-gray-200 px-6">
                             <button
                                 onClick={() => setActiveTab('participants')}
-                                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
-                                    activeTab === 'participants'
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
+                                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'participants'
+                                    ? 'border-blue-600 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
                             >
                                 <Users size={16} />
-                                משתתפים ({assignmentsList.length})
+                                {t('participantsList.tabs.participants')} ({assignmentsList.length})
                             </button>
                             <button
                                 onClick={() => setActiveTab('drivers')}
-                                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
-                                    activeTab === 'drivers'
-                                        ? 'border-green-600 text-green-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
+                                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'drivers'
+                                    ? 'border-green-600 text-green-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
                             >
                                 <Car size={16} />
-                                נהגים ({driversList.length})
+                                {t('participantsList.tabs.drivers')} ({driversList.length})
                             </button>
                             <button
                                 onClick={() => setActiveTab('passengers')}
-                                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${
-                                    activeTab === 'passengers'
-                                        ? 'border-purple-600 text-purple-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                                }`}
+                                className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'passengers'
+                                    ? 'border-purple-600 text-purple-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
                             >
                                 <UserSearch size={16} />
-                                מחפשי טרמפ ({passengersList.length})
+                                {t('participantsList.tabs.passengers')} ({passengersList.length})
                             </button>
                         </div>
                     </div>
@@ -291,7 +288,7 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                             assignmentsList.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Users size={48} className="mx-auto text-gray-300 mb-3" />
-                                    <p className="text-gray-500 text-lg">{t('eventPage.participantsList.empty')}</p>
+                                    <p className="text-gray-500 text-lg">{t('participantsList.empty')}</p>
                                 </div>
                             ) : (
                                 <div className="space-y-2">
@@ -335,7 +332,7 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                             driversList.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Car size={48} className="mx-auto text-gray-300 mb-3" />
-                                    <p className="text-gray-500 text-lg">אין נהגים רשומים</p>
+                                    <p className="text-gray-500 text-lg">{t('participantsList.driversEmpty')}</p>
                                 </div>
                             ) : (
                                 <div className="space-y-6">
@@ -347,7 +344,7 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                                         return (
                                             <div key={direction}>
                                                 <h3 className="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
-                                                    {direction === 'to_event' ? '→ הלוך לאירוע' : '← חזור מהאירוע'}
+                                                    {direction === 'to_event' ? t('participantsList.directions.to') : t('participantsList.directions.from')}
                                                 </h3>
                                                 <div className="space-y-3">
                                                     {driversInDirection.map(driver => (
@@ -359,11 +356,11 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                                                                         <p className="text-gray-900 font-bold">{driver.item.creatorName}</p>
                                                                         {driver.hasOppositeDirection && (
                                                                             <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                                                                                ⭐ גם {direction === 'to_event' ? 'חוזר' : 'הולך'}
+                                                                                {direction === 'to_event' ? t('participantsList.directions.alsoReturns') : t('participantsList.directions.alsoGoes')}
                                                                             </span>
                                                                         )}
                                                                     </div>
-                                                                    
+
                                                                     {/* Time and Flexibility */}
                                                                     <div className="flex items-center gap-2 mt-1 text-sm text-gray-600">
                                                                         <span className="font-semibold">🕐 {driver.item.departureTime || 'לא צוין'}</span>
@@ -382,17 +379,16 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
 
                                                                     {/* Seats Status */}
                                                                     <div className="mt-2 flex items-center gap-2">
-                                                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                                                            driver.availableSeats > 0
-                                                                                ? 'bg-green-100 text-green-700'
-                                                                                : 'bg-gray-100 text-gray-600'
-                                                                        }`}>
+                                                                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${driver.availableSeats > 0
+                                                                            ? 'bg-green-100 text-green-700'
+                                                                            : 'bg-gray-100 text-gray-600'
+                                                                            }`}>
                                                                             {driver.availableSeats > 0
-                                                                                ? `${driver.availableSeats} מקומות פנויים`
-                                                                                : 'רכב מלא'}
+                                                                                ? t('participantsList.status.available', { count: driver.availableSeats })
+                                                                                : t('participantsList.status.full')}
                                                                         </span>
                                                                         <span className="text-xs text-gray-500">
-                                                                            ({driver.item.quantity - driver.availableSeats}/{driver.item.quantity} תפוס)
+                                                                            {t('participantsList.status.taken', { taken: driver.item.quantity - driver.availableSeats, total: driver.item.quantity })}
                                                                         </span>
                                                                     </div>
                                                                 </div>
@@ -423,14 +419,14 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                                                             {/* Passengers */}
                                                             {driver.assignments.length > 0 && (
                                                                 <div className="border-t pt-3">
-                                                                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">נוסעים:</p>
+                                                                    <p className="text-xs font-bold text-gray-400 uppercase mb-2">{t('participantsList.passengersTitle')}</p>
                                                                     <div className="space-y-2">
                                                                         {driver.assignments.map(assignment => (
                                                                             <div key={assignment.id} className="flex items-center justify-between text-sm bg-blue-50 rounded-lg p-2">
                                                                                 <div className="flex-1">
                                                                                     <span className="text-gray-900 font-medium">{assignment.userName}</span>
                                                                                     {assignment.quantity > 1 && (
-                                                                                        <span className="text-xs text-gray-500 mr-1">({assignment.quantity} מקומות)</span>
+                                                                                        <span className="text-xs text-gray-500 mr-1">({assignment.quantity})</span>
                                                                                     )}
                                                                                     {assignment.phoneNumber && (
                                                                                         <div className="flex items-center gap-2 mt-1">
@@ -468,7 +464,7 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                             passengersList.length === 0 ? (
                                 <div className="text-center py-12">
                                     <UserSearch size={48} className="mx-auto text-gray-300 mb-3" />
-                                    <p className="text-gray-500 text-lg">אין מחפשי טרמפ</p>
+                                    <p className="text-gray-500 text-lg">{t('participantsList.passengersEmpty')}</p>
                                 </div>
                             ) : (
                                 <div className="space-y-6">
@@ -480,23 +476,21 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                                         return (
                                             <div key={direction}>
                                                 <h3 className="text-sm font-bold text-gray-500 mb-3">
-                                                    {direction === 'to_event' ? '→ הלוך' : '← חזור'}
+                                                    {direction === 'to_event' ? t('participantsList.directions.to') : t('participantsList.directions.from')}
                                                 </h3>
                                                 <div className="space-y-3">
                                                     {passengersInDirection.map(passenger => (
-                                                        <div key={passenger.item.id} className={`border rounded-lg p-4 ${
-                                                            passenger.hasDriver ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
-                                                        }`}>
+                                                        <div key={passenger.item.id} className={`border rounded-lg p-4 ${passenger.hasDriver ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+                                                            }`}>
                                                             <div className="flex items-start justify-between">
                                                                 <div className="flex-1">
                                                                     <div className="flex items-center gap-2">
                                                                         <p className="text-gray-900 font-bold">{passenger.item.creatorName}</p>
-                                                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                                                            passenger.hasDriver
-                                                                                ? 'bg-green-100 text-green-700'
-                                                                                : 'bg-yellow-100 text-yellow-700'
-                                                                        }`}>
-                                                                            {passenger.hasDriver ? '✓ מסודר' : '❌ עדיין מחפש'}
+                                                                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${passenger.hasDriver
+                                                                            ? 'bg-green-100 text-green-700'
+                                                                            : 'bg-yellow-100 text-yellow-700'
+                                                                            }`}>
+                                                                            {passenger.hasDriver ? t('participantsList.status.arranged') : t('participantsList.status.stillLooking')}
                                                                         </span>
                                                                     </div>
 
@@ -519,7 +513,7 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
                                                                     {/* Driver Info */}
                                                                     {passenger.driver && (
                                                                         <div className="mt-2 text-xs text-gray-600">
-                                                                            <span className="font-semibold">נהג/ת: </span>
+                                                                            <span className="font-semibold">{t('participantsList.driverTitle')} </span>
                                                                             <span>{passenger.driver.userName}</span>
                                                                         </div>
                                                                     )}
@@ -560,24 +554,24 @@ export const ParticipantsListModal: React.FC<ParticipantsListModalProps> = ({
 
                     {/* Footer */}
                     {((activeTab === 'participants' && assignmentsList.length > 0) ||
-                      (activeTab === 'drivers' && driversList.length > 0) ||
-                      (activeTab === 'passengers' && passengersList.length > 0)) && (
-                        <div className="border-t p-4 bg-gray-50">
-                            <p className="text-sm text-gray-600 text-center">
-                                {activeTab === 'participants' && t('eventPage.participantsList.total', { count: assignmentsList.length })}
-                                {activeTab === 'drivers' && `סה"כ ${driversList.length} נהגים`}
-                                {activeTab === 'passengers' && (
-                                    <>
-                                        סה"כ {passengersList.length} מחפשי טרמפ
-                                        {' • '}
-                                        <span className="text-yellow-600 font-semibold">
-                                            {passengersList.filter(p => !p.hasDriver).length} עדיין מחפשים
-                                        </span>
-                                    </>
-                                )}
-                            </p>
-                        </div>
-                    )}
+                        (activeTab === 'drivers' && driversList.length > 0) ||
+                        (activeTab === 'passengers' && passengersList.length > 0)) && (
+                            <div className="border-t p-4 bg-gray-50">
+                                <p className="text-sm text-gray-600 text-center">
+                                    {activeTab === 'participants' && t('participantsList.total', { count: assignmentsList.length })}
+                                    {activeTab === 'drivers' && t('participantsList.totalDrivers', { count: driversList.length })}
+                                    {activeTab === 'passengers' && (
+                                        <>
+                                            {t('participantsList.totalPassengers', { count: passengersList.length })}
+                                            {' • '}
+                                            <span className="text-yellow-600 font-semibold">
+                                                {passengersList.filter(p => !p.hasDriver).length} {t('participantsList.status.stillLooking')}
+                                            </span>
+                                        </>
+                                    )}
+                                </p>
+                            </div>
+                        )}
                 </div>
             </FocusTrap>
         </div>

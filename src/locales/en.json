@@ -384,8 +384,29 @@
             "main": "Main Course",
             "dessert": "Dessert",
             "drink": "Drinks",
+            "drinks": "Drinks",
             "other": "Other",
-            "equipment": "General Equipment"
+            "equipment": "General Equipment",
+            "side": "Side Dish",
+            "alcohol": "Alcohol",
+            "rides": "Rides",
+            "meat": "Meat",
+            "salads": "Salads",
+            "pitas": "Pitas/Bread",
+            "food": "Food",
+            "healthy": "Vegetables/Fruits",
+            "atmosphere": "Atmosphere",
+            "dairy": "Dairy/Pastries",
+            "sweets": "Sweets/Drinks",
+            "disposable": "Disposables",
+            "cleaning": "Cleaning",
+            "general": "General",
+            "finger_food": "Finger Food",
+            "unassigned": "Unassigned",
+            "assigned": "Assigned",
+            "null": "General",
+            "ride_offers": "Ride Offers",
+            "ride_requests": "Ride Requests"
         },
         "eventPage": {
             "assignment": {
@@ -413,7 +434,20 @@
                 "addMoreTitle": "Add More Items",
                 "quantityToAdd": "Quantity to Add",
                 "add": "Add",
-                "assignSuccess": "Successfully assigned to item: {{itemName}}"
+                "assignSuccess": "Successfully assigned to item: {{itemName}}",
+                "joinRideTitle": "Join Ride",
+                "updateRideTitle": "Update Ride",
+                "addPassengersTitle": "Add Passengers",
+                "howManySeats": "How many seats to reserve?",
+                "seatsToAdd": "Number of seats to add",
+                "confirmJoin": "Confirm Join",
+                "updateBothRides": "Update Both Rides",
+                "joinBothRides": "Join Both Rides ({{quantity}})",
+                "seats": "Seats:",
+                "phoneLabel": "Phone Number (Required for coordination)",
+                "phoneHelp": "Number will be shown to driver only for ride coordination",
+                "toEventSuffix": "(To)",
+                "fromEventSuffix": "(From)"
             },
             "adminPanelTooltip": "Admin Panel",
             "adminPanel": "Admin Panel",
@@ -492,11 +526,23 @@
                 "googleMaps": "Google Maps",
                 "appleMaps": "Apple Maps"
             },
+            "rides": {
+                "available": "Available Rides",
+                "openRequests": "Open Requests",
+                "completed": "Full Rides",
+                "handledRequests": "Handled Requests",
+                "offer": "Offer Ride",
+                "request": "Request Ride"
+            },
             "search": {
                 "placeholder": "Search item...",
                 "clear": "Clear search"
             },
             "filter": {
+                "all": "All",
+                "my-assignments": "My Assignments",
+                "assigned": "Assigned",
+                "unassigned": "Unassigned",
                 "myAssignments": "My Assignments",
                 "backToCategories": "Back to Categories",
                 "searchResults": "Search Results"
@@ -579,7 +625,9 @@
                 "quantity": "Required Quantity",
                 "assignedInfo": "Assigned quantity: {{assigned}} - cannot reduce below this",
                 "notes": "Notes (Optional)",
-                "notesPlaceholder": "e.g. Kosher, Gluten free, Vegan..."
+                "notesPlaceholder": "e.g. Kosher, Gluten free, Vegan...",
+                "requestNotesPlaceholder": "e.g. Waiting near the main synagogue...",
+                "offerNotesPlaceholder": "e.g. No room for large suitcases, backpacks only..."
             },
             "submit": "Save Changes",
             "submitting": "Saving...",
@@ -592,13 +640,93 @@
                 "quantityBelowAssigned": "Cannot reduce quantity below {{assigned}} (assigned quantity)",
                 "quantityMax": "Quantity cannot exceed 100",
                 "fixErrors": "Please fix form errors",
-                "generalError": "Error updating item"
+                "generalError": "Error updating item",
+                "phoneRequired": "Phone number is required",
+                "phoneInvalid": "Invalid phone number (10 digits, 05 prefix)",
+                "cannotCancelTwin": "Cannot cancel return ride because passengers are assigned"
+            },
+            "seats": {
+                "reserved": "{{count}} seats reserved",
+                "hasDriver": "Has driver"
+            },
+            "successRoundTrip": "Updated successfully (Round Trip)",
+            "helperComponents": {
+                "timeSelectDefault": "Select time...",
+                "notesOpen": "Notes added",
+                "notesPlaceholder": "More details...",
+                "flexibility": {
+                    "exact": "Exactly",
+                    "15min": "±15 min",
+                    "30min": "±30 min",
+                    "1hour": "±1 hour",
+                    "flexible": "Flexible"
+                }
+            }
+        },
+        "participantsList": {
+            "title": "Participants List",
+            "empty": "No participants",
+            "tabs": {
+                "participants": "Participants",
+                "drivers": "Drivers",
+                "passengers": "Passengers"
+            },
+            "driversEmpty": "No registered drivers",
+            "passengersEmpty": "No ride seekers",
+            "stillLooking": "Still looking",
+            "arranged": "Arranged",
+            "assignmentDeleted": "Assignment removed successfully",
+            "deleteConfirm": "Are you sure you want to remove {{name}} from {{item}}?",
+            "total": "Total {{count}} participants",
+            "totalPassengers": "Total {{count}} passengers",
+            "totalDrivers": "Total {{count}} drivers",
+            "driverTitle": "Driver",
+            "passengersTitle": "Passengers",
+            "assignmentDeleteError": "Error removing assignment",
+            "directions": {
+                "to": "→ Outbound",
+                "from": "← Return",
+                "alsoReturns": "⭐ Also Returns",
+                "alsoGoes": "⭐ Also Goes"
+            },
+            "status": {
+                "full": "Full",
+                "available": "{{count}} seats left",
+                "taken": "({{taken}}/{{total}} taken)",
+                "stillLooking": "❌ Still Looking",
+                "arranged": "✓ Arranged"
             }
         },
         "userItemForm": {
             "title": "Add Your Own Item",
             "subtitle": "Select category and fill in details",
             "categorySelection": "Select Category",
+            "pickupLabelOffer": "Where are you leaving from?",
+            "pickupLabelRequest": "Where to pick you up?",
+            "pickupPlaceholder": "e.g. Tel Aviv - Train Station",
+            "directions": {
+                "to": "Outbound",
+                "from": "Return",
+                "both": "Round Trip"
+            },
+            "timeHeaders": {
+                "to": "Outbound",
+                "from": "Return"
+            },
+            "timeLabel": "Departure Time",
+            "flexibilityLabel": "Flexibility",
+            "managerOnly": "You are just creating the item (Admin)",
+            "seats": {
+                "request": "How many seats do you need?",
+                "offer": "Number of available seats"
+            },
+            "buttons": {
+                "submitRequest": "Request Ride",
+                "submitOffer": "Offer Ride",
+                "submitItem": "Add Item",
+                "submitAndAssign": "Add & Assign Me",
+                "cancel": "Cancel"
+            },
             "fields": {
                 "name": "Item Name *",
                 "namePlaceholder": "e.g. Cheesecake",
@@ -611,8 +739,40 @@
                 "notes": "Notes (Optional)",
                 "notesPlaceholder": "e.g. Kosher, Gluten free, Vegan...",
                 "fullName": "Full Name *",
+                "phone": "Phone Number",
+                "phonePrivacy": "Will only be shown to assigned users",
                 "nameDisplayPlaceholder": "Display Name",
                 "nameHelp": "The name will be saved on this device for this event"
+            },
+            "rides": {
+                "offerTitle": "New Ride Offer",
+                "requestTitle": "New Ride Request",
+                "driverName": "Driver Name",
+                "passengerName": "Passenger Name",
+                "details": "Ride Details (From where and when?)",
+                "detailsRequest": "From where and when?",
+                "placeholderOffer": "e.g. Leaving Holon at 16:00",
+                "placeholderRequest": "e.g. Looking for a ride from Jerusalem at 15:00"
+            },
+            "placeholders": {
+                "starter": "e.g. Zucchini Quiche",
+                "main": "e.g. Beef Patties",
+                "side": "e.g. Rice, Potatoes",
+                "salads": "e.g. Cabbage Salad, Hummus",
+                "dessert": "e.g. Cheesecake, Fruit",
+                "drink": "e.g. Coke Zero, Water",
+                "alcohol": "e.g. Red Wine, Beer",
+                "equipment": "e.g. Grill, Cooler",
+                "cleaning": "e.g. Trash Bags, Wipes",
+                "disposable": "e.g. Disposable Plates",
+                "other": "e.g. Napkins, Candles",
+                "general": "e.g. General Item",
+                "finger_food": "e.g. Cut Vegetables",
+                "meat": "e.g. Beef Patties, Chicken",
+                "drinks": "e.g. Coke Zero, Water",
+                "beverages": "e.g. Orange Juice, Soda",
+                "default": "e.g. Item Name",
+                "pattern": "e.g. {{category}} Item"
             },
             "submit": "Add & Assign Me",
             "submitting": "Adding...",
@@ -630,6 +790,109 @@
                 "generalError": "Error adding item",
                 "permissionDenied": "Permission denied. Check Firebase settings"
             }
+        },
+        "rideCard": {
+            "driver": "Driver",
+            "passenger": "Passenger",
+            "offeredSeats": "Offered Seats",
+            "passengers": "Passengers",
+            "driverPhone": "Driver Phone:",
+            "passengerPhone": "Passenger Phone:",
+            "notes": "Notes:",
+            "status": "Assignment Status",
+            "occupancy": "Occupancy",
+            "foundDriver": "Driver Found",
+            "full": "Car Full",
+            "join": "I'll Join",
+            "take": "I Can Take",
+            "passengersInRide": "Passengers in Ride:",
+            "registeredDriver": "Registered Driver:",
+            "cancel": "Cancel Assignment",
+            "remove": "Remove Assignment",
+            "rideOffers": "Ride Offers",
+            "rideRequests": "Ride Requests",
+            "roundTrip": "↔ Round Trip",
+            "toEvent": "→ To Event",
+            "fromEvent": "← From Event",
+            "toEventLabel": "(To)",
+            "fromEventLabel": "(From)",
+            "alsoReturning": "Also returning!",
+            "alsoGoing": "Also going!",
+            "me": "(Me)",
+            "edit": "Edit",
+            "exact": "Exact",
+            "veryFlexible": "Very Flexible"
+        },
+        "eventDetails": {
+            "filters": {
+                "all": "All",
+                "myAssignments": "My Assignments",
+                "other": "Other"
+            },
+            "status": {
+                "active": "Active",
+                "finished": "Event Ended",
+                "inProgress": "In Progress",
+                "inactive": "Inactive",
+                "messages": {
+                    "active": "Event is active - items can be assigned",
+                    "finished": "Event ended - view details only",
+                    "inProgress": "Event in progress - items can still be assigned"
+                }
+            },
+            "buttons": {
+                "backToEvents": "Back to Events",
+                "addItem": "Add Item",
+                "adminManage": "Manage",
+                "refresh": "Refresh Data"
+            },
+            "itemsHeader": "Items",
+            "assignedCount": "({{assigned}}/{{total}} assigned)",
+            "noItems": {
+                "title": "No items in this category",
+                "subtitle": "No items have been added to this category yet"
+            },
+            "loading": "Loading data and syncing...",
+            "userLabel": "This name will be saved for future assignments"
+        },
+        "categorySelector": {
+            "rideOffers": {
+                "title": "Offering a Ride",
+                "seatsAvailable": "{{count}} seats available"
+            },
+            "rideRequests": {
+                "title": "Need a Ride",
+                "passengersWaiting": "{{count}} passengers waiting"
+            },
+            "stats": {
+                "seatsFree": "{{count}} seats available",
+                "passengersWaiting": "{{count}} passengers waiting",
+                "assigned": "{{assigned}} / {{total}} assigned"
+            },
+            "addItemBtn": "Add Item",
+            "limitReached": "You reached the limit of {{limit}} items",
+            "cantAdd": "Cannot add more items"
+        },
+        "editAssignmentModal": {
+            "title": "Edit Assignment",
+            "rideTitle": "Edit Ride",
+            "assignedTo": "Assigned to: {{name}}",
+            "reservedFor": "Reserved for: {{name}}",
+            "requiredItem": "Required Item",
+            "quantityLabel": "Quantity",
+            "seatsLabel": "Number of Seats",
+            "notesLabel": "Notes (Optional)",
+            "notesPlaceholder": "Additional notes...",
+            "updateBtn": "Update Assignment",
+            "updateRideBtn": "Update Ride",
+            "cancelBtn": "Cancel",
+            "errors": {
+                "quantityMin": "Quantity must be at least 1",
+                "quantityMax": "Quantity cannot exceed 100"
+            },
+            "success": "Assignment updated successfully!",
+            "rideSuccess": "Ride updated successfully!",
+            "updating": "Updating..."
         }
     }
 }

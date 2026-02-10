@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth'; // 1. Import
 import { getEventCategories } from '../../constants/templates';
 import FocusTrap from 'focus-trap-react';
+import { useTranslation } from 'react-i18next';
 
 interface MenuItemFormProps {
   event: ShishiEvent;
@@ -20,6 +21,7 @@ interface FormErrors {
 }
 
 export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
+  const { t } = useTranslation();
   const { menuItems, updateMenuItem } = useStore();
   const { user: authUser } = useAuth(); // 2. Getting the authenticated user
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +57,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
 
   const [formData, setFormData] = useState({
     name: item?.name || '',
-    category: item?.category || (getEventCategories(event)[0]?.id || 'main'),
+    category: item?.category || (getEventCategories(event, t)[0]?.id || 'main'),
     quantity: item?.quantity || 1,
     notes: item?.notes || '',
     isRequired: item?.isRequired || false,
@@ -63,7 +65,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
   });
 
   // Get dynamic categories from the event configuration
-  const eventCategories = getEventCategories(event);
+  const eventCategories = getEventCategories(event, t);
 
   const categoryOptions = eventCategories.map(cat => ({
     value: cat.id,

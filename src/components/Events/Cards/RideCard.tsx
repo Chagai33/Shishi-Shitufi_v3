@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { MenuItem, Assignment } from '../../../types';
 import { MessageCircle, Edit, Trash2 } from 'lucide-react';
 import { useStore } from '../../../store/useStore';
-
+import { useTranslation } from 'react-i18next';
 import { BaseCard } from './BaseCard';
 
 interface RideCardProps {
@@ -37,6 +37,7 @@ export const RideCard: React.FC<RideCardProps> = ({
   categoryDisplayName,
   eventName: _eventName,
 }) => {
+  const { t } = useTranslation();
   const isRequest = item.rowType === 'needs' || item.category === 'ride_requests';
   const totalQuantity = item.quantity;
   const filledQuantity = assignments.reduce((acc, curr) => acc + (curr.quantity || 0), 0);
@@ -95,11 +96,11 @@ export const RideCard: React.FC<RideCardProps> = ({
   // Format time flexibility text
   const getFlexibilityText = (flex?: string) => {
     switch (flex) {
-      case 'exact': return 'מדויק';
+      case 'exact': return t('rideCard.exact');
       case '15min': return '±15\'';
       case '30min': return '±30\'';
       case '1hour': return '±1שעה';
-      case 'flexible': return 'גמיש מאוד';
+      case 'flexible': return t('rideCard.veryFlexible');
       default: return '';
     }
   };
@@ -115,7 +116,7 @@ export const RideCard: React.FC<RideCardProps> = ({
   return (
     <BaseCard
       title={item.name}
-      categoryDisplayName={categoryDisplayName || (isRequest ? 'בקשות טרמפ' : 'הצעות טרמפ')}
+      categoryDisplayName={categoryDisplayName || (isRequest ? t('rideCard.rideRequests') : t('rideCard.rideOffers'))}
       cardStyles={cardStyles}
       tagColor={tagColor}
       onEdit={onEditItem}
@@ -132,14 +133,14 @@ export const RideCard: React.FC<RideCardProps> = ({
               className="w-full py-3 text-sm rounded-xl font-bold shadow-sm transition-all active:scale-[0.98] 
                 bg-rides-primary hover:bg-rides-hover text-white shadow-rides-primary/50"
             >
-              {isRequest ? 'אני יכול/ה לקחת' : 'אני אצטרף'}
+              {isRequest ? t('rideCard.take') : t('rideCard.join')}
             </button>
           )}
 
           {isFull && !hasMyAssignment && (
             <div className="text-center py-2 px-4 bg-gray-50 rounded-xl border border-gray-100">
               <span className="text-gray-500 text-sm font-bold flex items-center justify-center gap-2">
-                <span>{isRequest ? 'נמצא נהג' : 'הרכב מלא'}</span>
+                <span>{isRequest ? t('rideCard.foundDriver') : t('rideCard.full')}</span>
                 <span className="text-xs">✔️</span>
               </span>
             </div>
@@ -152,13 +153,13 @@ export const RideCard: React.FC<RideCardProps> = ({
         <div className="flex justify-between items-start gap-3">
           <div className="flex-1">
             <div className="flex items-center gap-2 text-xs font-semibold text-gray-500">
-              <span>{isRequest ? 'נוסעים' : 'מקומות מוצעים'}:</span>
+              <span>{isRequest ? t('rideCard.passengers') : t('rideCard.offeredSeats')}:</span>
               <span className="text-gray-900">{totalQuantity}</span>
             </div>
           </div>
           <div className="text-left flex flex-col items-end">
             <span className="text-[10px] font-bold text-gray-400 uppercase mb-0.5">
-              {isRequest ? 'נוסע/ת' : 'נהג/ת'}
+              {isRequest ? t('rideCard.passenger') : t('rideCard.driver')}
             </span>
             <span className="text-xs font-bold text-gray-700 truncate max-w-[100px]">
               {item.creatorName}
@@ -170,14 +171,14 @@ export const RideCard: React.FC<RideCardProps> = ({
         <div className="flex flex-wrap items-center gap-2 mt-2">
           {item.direction && (
             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium text-xs">
-              {(item.direction as string) === 'both' ? '↔ הלוך וחזור' : (item.direction === 'to_event' ? '→ הלוך' : '← חזור')}
+              {(item.direction as string) === 'both' ? t('rideCard.roundTrip') : (item.direction === 'to_event' ? t('rideCard.toEvent') : t('rideCard.fromEvent'))}
             </span>
           )}
 
           {item.departureTime && (
             <div className="flex flex-col gap-0.5">
               <span className="font-bold text-gray-700 text-xs flex items-center gap-1">
-                {item.departureTime} {(item.direction as string) === 'both' && '(הלוך)'}
+                {item.departureTime} {(item.direction as string) === 'both' && t('rideCard.toEventLabel')}
                 {item.timeFlexibility && item.timeFlexibility !== 'exact' && (
                   <span className="text-[10px] text-gray-500">
                     ({getFlexibilityText(item.timeFlexibility)})
@@ -187,7 +188,7 @@ export const RideCard: React.FC<RideCardProps> = ({
               {/* Secondary Time for Round Trip */}
               {(item.direction as string) === 'both' && (item as any).departureTimeFrom && (
                 <span className="font-bold text-gray-700 text-xs flex items-center gap-1">
-                  {(item as any).departureTimeFrom} (חזור)
+                  {(item as any).departureTimeFrom} {t('rideCard.fromEventLabel')}
                   {(item as any).timeFlexibilityFrom && (item as any).timeFlexibilityFrom !== 'exact' && (
                     <span className="text-[10px] text-gray-500">
                       ({getFlexibilityText((item as any).timeFlexibilityFrom)})
@@ -211,7 +212,7 @@ export const RideCard: React.FC<RideCardProps> = ({
         {hasOppositeDirection && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-2 py-1.5 mt-2">
             <span className="text-xs text-yellow-700 flex items-center gap-1 font-medium">
-              ⭐ גם {item.direction === 'to_event' ? 'חוזר' : 'הולך'}!
+              ⭐ {item.direction === 'to_event' ? t('rideCard.alsoReturning') : t('rideCard.alsoGoing')}
             </span>
           </div>
         )}
@@ -222,7 +223,7 @@ export const RideCard: React.FC<RideCardProps> = ({
             {showCreatorPhoneToAssignee && (
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold text-gray-400 uppercase">
-                  {isRequest ? 'טלפון הנוסע/ת:' : 'טלפון הנהג/ת:'}
+                  {isRequest ? t('rideCard.passengerPhone') : t('rideCard.driverPhone')}
                 </span>
                 <div className="flex items-center gap-2">
                   <a href={`tel:${item.phoneNumber}`} onClick={(e) => e.stopPropagation()} className="text-sm font-bold text-blue-600 hover:underline" dir="ltr">
@@ -234,7 +235,7 @@ export const RideCard: React.FC<RideCardProps> = ({
             )}
             {item.notes && (
               <div className="flex flex-col gap-1 pt-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase">הערות:</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">{t('rideCard.notes')}</span>
                 <p className="text-xs text-gray-600 leading-relaxed italic">"{item.notes}"</p>
               </div>
             )}
@@ -245,10 +246,10 @@ export const RideCard: React.FC<RideCardProps> = ({
         <div className="space-y-2">
           <div className="flex justify-between items-end">
             <span className="text-xs font-bold text-gray-500">
-              {isRequest ? 'מצב שיבוץ' : 'תפוסה'}
+              {isRequest ? t('rideCard.status') : t('rideCard.occupancy')}
             </span>
             <span className="text-[10px] font-bold text-gray-400">
-              {isRequest && isFull ? 'נמצא נהג/ת' : `${filledQuantity}/${totalQuantity}`}
+              {isRequest && isFull ? t('rideCard.foundDriver') : `${filledQuantity}/${totalQuantity}`}
             </span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
@@ -263,7 +264,7 @@ export const RideCard: React.FC<RideCardProps> = ({
         {assignments.length > 0 && (
           <div className="pt-2 border-t border-gray-50">
             <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">
-              {isRequest ? 'נהג/ת רשום:' : 'נוסעים בטרמפ:'}
+              {isRequest ? t('rideCard.registeredDriver') : t('rideCard.passengersInRide')}
             </p>
             <div className="space-y-2">
               {assignments.map(a => {
@@ -274,7 +275,7 @@ export const RideCard: React.FC<RideCardProps> = ({
                       <div className="flex items-center gap-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${isMyEntry ? 'bg-blue-400' : 'bg-gray-200'}`} />
                         <span className={`text-xs font-medium ${isMyEntry ? 'text-blue-900' : 'text-gray-700'}`}>
-                          {a.userName} {isMyEntry && <span className="text-[10px] font-bold text-blue-500 mr-1">(אני)</span>}
+                          {a.userName} {isMyEntry && <span className="text-[10px] font-bold text-blue-500 mr-1">{t('rideCard.me')}</span>}
                           {!isRequest && <span className="text-gray-400 mr-1">({a.quantity})</span>}
                         </span>
                       </div>
@@ -285,7 +286,7 @@ export const RideCard: React.FC<RideCardProps> = ({
                               <button
                                 onClick={() => onEditAssignment(a)}
                                 className="p-1 text-blue-400 hover:text-blue-600 hover:bg-white rounded-md transition-all"
-                                title="ערוך"
+                                title={t('rideCard.edit')}
                               >
                                 <Edit size={14} />
                               </button>
@@ -293,7 +294,7 @@ export const RideCard: React.FC<RideCardProps> = ({
                             <button
                               onClick={() => onCancel(a)}
                               className={`p-1 transition-all rounded-md ${isMyEntry ? 'text-blue-400 hover:text-red-500 hover:bg-white' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
-                              title={isMyEntry ? "בטל שיבוץ" : "הסר שיבוץ"}
+                              title={isMyEntry ? t('rideCard.cancel') : t('rideCard.remove')}
                             >
                               <Trash2 size={14} />
                             </button>

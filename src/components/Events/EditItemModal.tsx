@@ -41,8 +41,10 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
     label, value, onChange, disabled = false, required = false,
     referenceTime, type = 'to'
 }) => {
+    const { t } = useTranslation();
     const times: string[] = [];
     let startHour = 0;
+    // ... (omitted logic remains same, just need to change the return)
     if (referenceTime) {
         const [h] = referenceTime.split(':').map(Number);
         if (!isNaN(h)) {
@@ -68,7 +70,7 @@ const TimeSelect: React.FC<TimeSelectProps> = ({
                     required={required}
                     className="block w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-rides focus:border-rides outline-none transition-all bg-white appearance-none text-gray-700"
                 >
-                    <option value="" disabled>בחר שעה...</option>
+                    <option value="" disabled>{t('editItemModal.helperComponents.timeSelectDefault')}</option>
                     {times.map((t) => (
                         <option key={t} value={t}>{t}</option>
                     ))}
@@ -90,12 +92,13 @@ interface FlexibilitySelectorProps {
 }
 
 const FlexibilitySelector: React.FC<FlexibilitySelectorProps> = ({ label, selected, onChange, disabled = false }) => {
+    const { t } = useTranslation();
     const options = [
-        { id: 'exact', label: 'בדיוק' },
-        { id: '15min', label: '±15 דקות' },
-        { id: '30min', label: '±30 דקות' },
-        { id: '1hour', label: '±שעה' },
-        { id: 'flexible', label: 'גמיש' },
+        { id: 'exact', label: t('editItemModal.helperComponents.flexibility.exact') },
+        { id: '15min', label: t('editItemModal.helperComponents.flexibility.15min') },
+        { id: '30min', label: t('editItemModal.helperComponents.flexibility.30min') },
+        { id: '1hour', label: t('editItemModal.helperComponents.flexibility.1hour') },
+        { id: 'flexible', label: t('editItemModal.helperComponents.flexibility.flexible') },
     ];
 
     return (
@@ -123,7 +126,9 @@ interface CollapsibleNotesProps {
     placeholder?: string;
 }
 
-const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, disabled = false, placeholder = 'פרטים נוספים...' }) => {
+const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, disabled = false, placeholder }) => {
+    const { t } = useTranslation();
+    const finalPlaceholder = placeholder || t('editItemModal.helperComponents.notesPlaceholder');
     const [isOpen, setIsOpen] = useState(!!value);
     return (
         <div className="mt-4 border border-gray-200 rounded-xl overflow-hidden bg-gray-50 transition-all">
@@ -133,8 +138,8 @@ const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, di
                 className="w-full flex items-center justify-between p-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
             >
                 <div className="flex items-center gap-2">
-                    <span>הערות (אופציונלי)</span>
-                    {value && !isOpen && <span className="text-xs text-teal-600">נוספו הערות</span>}
+                    <span>{t('editItemModal.fields.notes')}</span>
+                    {value && !isOpen && <span className="text-xs text-teal-600">{t('editItemModal.helperComponents.notesOpen')}</span>}
                 </div>
                 {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
@@ -146,7 +151,7 @@ const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, di
                         disabled={disabled}
                         className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rides outline-none resize-none"
                         rows={3}
-                        placeholder={placeholder}
+                        placeholder={finalPlaceholder}
                     />
                 </div>
             )}
@@ -260,9 +265,9 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
             if (suffixRegex.test(newName)) {
                 const baseName = newName.replace(suffixRegex, '');
                 let newSuffix = '';
-                if (rideDirection === 'to_event') newSuffix = ' (הלוך)';
-                else if (rideDirection === 'from_event') newSuffix = ' (חזור)';
-                else if (rideDirection === 'both') newSuffix = ' (הלוך וחזור)';
+                if (rideDirection === 'to_event') newSuffix = ` ${t('eventPage.assignment.toEventSuffix')}`;
+                else if (rideDirection === 'from_event') newSuffix = ` ${t('eventPage.assignment.fromEventSuffix')}`;
+                else if (rideDirection === 'both') newSuffix = ` ${t('rideCard.roundTrip')}`;
 
                 newName = baseName + newSuffix;
             } else {
@@ -331,12 +336,12 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
             const raw = formData.phoneNumber?.toString().trim() || '';
             const clean = raw.replace(/\D/g, '').replace(/^972/, '0');
             if (!raw) {
-                newErrors.phoneNumber = 'חובה להזין מספר טלפון';
+                newErrors.phoneNumber = t('editItemModal.errors.phoneRequired');
             } else if (!/^05\d{8}$/.test(clean)) {
-                newErrors.phoneNumber = 'מספר טלפון לא תקין (10 ספרות, קידומת 05)';
+                newErrors.phoneNumber = t('editItemModal.errors.phoneInvalid');
             }
         } else if (isRide && !formData.phoneNumber?.trim()) {
-            newErrors.phoneNumber = 'חובה להזין מספר טלפון ליצירת קשר';
+            newErrors.phoneNumber = t('editItemModal.errors.phoneRequired');
         }
 
         setErrors(newErrors);
@@ -393,11 +398,11 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                 if (primaryDirection === 'to_event') {
                     updatesPrimary.departureTime = formData.departureTime; // Normalized Outbound
                     updatesPrimary.timeFlexibility = formData.timeFlexibility as any;
-                    updatesPrimary.name = `${baseName} (הלוך)`;
+                    updatesPrimary.name = `${baseName} ${t('eventPage.assignment.toEventSuffix')}`;
                 } else {
                     updatesPrimary.departureTime = formData.departureTimeFrom; // Normalized Return
                     updatesPrimary.timeFlexibility = formData.timeFlexibilityFrom as any;
-                    updatesPrimary.name = `${baseName} (חזור)`;
+                    updatesPrimary.name = `${baseName} ${t('eventPage.assignment.fromEventSuffix')}`;
                 }
 
                 await FirebaseService.updateMenuItem(eventId, item.id, updatesPrimary);
@@ -429,7 +434,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                     await FirebaseService.addMenuItem(eventId, newItem, { bypassLimit: true });
                 }
 
-                toast.success('עודכן בהצלחה (הלוך וחזור)');
+                toast.success(t('editItemModal.successRoundTrip'));
             }
 
             // === CASE B: SINGLE DIRECTION (To OR From) ===
@@ -441,11 +446,11 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                 if (targetDirection === 'to_event') {
                     updatesPrimary.departureTime = formData.departureTime;
                     updatesPrimary.timeFlexibility = formData.timeFlexibility as any;
-                    updatesPrimary.name = `${baseName} (הלוך)`;
+                    updatesPrimary.name = `${baseName} ${t('eventPage.assignment.toEventSuffix')}`;
                 } else {
                     updatesPrimary.departureTime = formData.departureTimeFrom;
                     updatesPrimary.timeFlexibility = formData.timeFlexibilityFrom as any;
-                    updatesPrimary.name = `${baseName} (חזור)`;
+                    updatesPrimary.name = `${baseName} ${t('eventPage.assignment.fromEventSuffix')}`;
                 }
 
                 await FirebaseService.updateMenuItem(eventId, item.id, updatesPrimary);
@@ -463,7 +468,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                         // Should we revert Primary update? Or just warn?
                         // Ideally we should have validated before. 
                         // But we can just NOT delete it and warn the user.
-                        toast.error('לא ניתן לבטל את הנסיעה השנייה כי רשומים אליה נוסעים.', { duration: 5000 });
+                        toast.error(t('editItemModal.errors.cannotCancelTwin'), { duration: 5000 });
                         // We essentially leave it as 'both' in the backend (two items exist), 
                         // even though user wanted one. 
                         // This is better than deleting data.
@@ -534,7 +539,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                 >
                     <div className={`flex items-center justify-between p-6 border-b rounded-t-xl text-white flex-none ${isRide ? 'bg-rides-dark' : 'bg-accent-dark'}`}>
                         <h2 id={titleId} className="text-lg font-bold">
-                            {isOffer ? 'עריכת הצעת טרמפ' : isRequest ? 'עריכת בקשת טרמפ' : t('editItemModal.title')}
+                            {isOffer ? t('userItemForm.rides.offerTitle') : isRequest ? t('userItemForm.rides.requestTitle') : t('editItemModal.title')}
                         </h2>
                         <button
                             onClick={onClose}
@@ -554,14 +559,14 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                 <div className="bg-white border-2 border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
                                     <div>
                                         <label htmlFor="item-name" className="block text-base font-bold text-gray-800 mb-3">
-                                            מאיפה אתה יוצא?
+                                            {t('userItemForm.pickupLabelOffer')}
                                         </label>
                                         <input
                                             id="item-name"
                                             type="text"
                                             value={formData.name}
                                             onChange={(e) => handleInputChange('name', e.target.value)}
-                                            placeholder="לדוגמה: תל אביב - רכבת ארלוזורוב"
+                                            placeholder={t('userItemForm.pickupPlaceholder')}
                                             className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-rides focus:border-rides transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
                                             disabled={isSubmitting}
                                             required
@@ -585,7 +590,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
                                         >
-                                            הלוך
+                                            {t('userItemForm.directions.to')}
                                         </button>
                                         <button
                                             type="button"
@@ -596,7 +601,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
                                         >
-                                            חזור
+                                            {t('userItemForm.directions.from')}
                                         </button>
                                         <button
                                             type="button"
@@ -607,7 +612,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                                                 }`}
                                         >
-                                            הלוך וחזור
+                                            {t('userItemForm.directions.both')}
                                         </button>
                                     </div>
                                 </div>
@@ -619,7 +624,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                     {(rideDirection === 'to_event' || rideDirection === 'both') && (
                                         <div className="grid grid-cols-2 gap-3">
                                             <TimeSelect
-                                                label="שעת יציאה (הלוך)"
+                                                label={t('userItemForm.timeHeaders.to')}
                                                 value={formData.departureTime || ''} // Normalized Outbound
                                                 onChange={(e) => handleInputChange('departureTime', e.target.value)}
                                                 disabled={isSubmitting}
@@ -627,7 +632,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 type="to"
                                             />
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">גמישות (הלוך)</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('userItemForm.flexibilityLabel')}</label>
                                                 <FlexibilitySelector
                                                     selected={formData.timeFlexibility as string}
                                                     onChange={(val) => handleInputChange('timeFlexibility', val)}
@@ -640,7 +645,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                     {(rideDirection === 'from_event' || rideDirection === 'both') && (
                                         <div className={`grid grid-cols-2 gap-3 ${(rideDirection === 'both') ? 'border-t pt-3' : ''}`}>
                                             <TimeSelect
-                                                label={rideDirection === 'both' ? "שעת חזור" : "שעת יציאה (חזור)"}
+                                                label={t('userItemForm.timeHeaders.from')}
                                                 // Normalized: departureTimeFrom is ALWAYS Return time
                                                 value={formData.departureTimeFrom || ''}
                                                 onChange={(e) => handleInputChange('departureTimeFrom', e.target.value)}
@@ -649,7 +654,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 type="from"
                                             />
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">גמישות {rideDirection === 'both' ? '(חזור)' : ''}</label>
+                                                <label className="block text-sm font-medium text-gray-700 mb-1">{t('userItemForm.flexibilityLabel')}</label>
                                                 <FlexibilitySelector
                                                     selected={formData.timeFlexibilityFrom as string}
                                                     onChange={(val) => handleInputChange('timeFlexibilityFrom', val)}
@@ -669,7 +674,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                     <div>
                                         <label htmlFor="phoneNumber" className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
                                             <Phone className="h-4 w-4 text-teal-600" />
-                                            מספר טלפון
+                                            {t('userItemForm.fields.phone')}
                                             <span className="text-red-500">*</span>
                                         </label>
                                         <div className="relative">
@@ -698,7 +703,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                     {/* Seats */}
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                            {isOffer ? 'מספר מקומות פנויים' : 'כמה מקומות צריכים?'}
+                                            {isOffer ? t('userItemForm.seats.offer') : t('userItemForm.seats.request')}
                                         </label>
                                         <Stepper
                                             value={formData.quantity}
@@ -709,8 +714,8 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                         {totalAssigned > 0 && (
                                             <p className="mt-1 text-xs text-gray-500">
                                                 {isOffer
-                                                    ? `שוריינו ${totalAssigned} מקומות`
-                                                    : `יש נהג`}
+                                                    ? t('editItemModal.seats.reserved', { count: totalAssigned })
+                                                    : t('editItemModal.seats.hasDriver')}
                                             </p>
                                         )}
                                     </div>
@@ -720,7 +725,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                         value={formData.notes || ''}
                                         onChange={(e) => handleInputChange('notes', e.target.value)}
                                         disabled={isSubmitting}
-                                        placeholder={isRequest ? 'לדוגמה: מחכה ליד...' : 'לדוגמה: אין מקום למזוודות...'}
+                                        placeholder={isRequest ? t('editItemModal.fields.requestNotesPlaceholder') : t('editItemModal.fields.offerNotesPlaceholder')}
                                     />
                                 </div>
                             )}

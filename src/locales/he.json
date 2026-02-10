@@ -21,7 +21,8 @@
             "confirm": "אישור",
             "back": "חזור",
             "moreActions": "פעולות נוספות",
-            "me": "(אני)"
+            "me": "(אני)",
+            "add": "הוסף"
         },
         "errors": {
             "auth": {
@@ -605,7 +606,9 @@
                 "quantity": "כמות נדרשת",
                 "assignedInfo": "כמות משובצת: {{assigned}} - לא ניתן להקטין מתחת לזה",
                 "notes": "הערות (אופציונלי)",
-                "notesPlaceholder": "לדוגמה: כשר, ללא גלוטן, טבעוני..."
+                "notesPlaceholder": "לדוגמה: כשר, ללא גלוטן, טבעוני...",
+                "requestNotesPlaceholder": "לדוגמה: מחכה ליד בית הכנסת הגדול...",
+                "offerNotesPlaceholder": "לדוגמה: אין מקום למזוודות גדולות, רק תיקי גב..."
             },
             "submit": "שמור שינויים",
             "submitting": "שומר...",
@@ -618,13 +621,59 @@
                 "quantityBelowAssigned": "לא ניתן להקטין את הכמות מתחת ל-{{assigned}} (כמות משובצת)",
                 "quantityMax": "הכמות לא יכולה להיות יותר מ-100",
                 "fixErrors": "יש לתקן את השגיאות בטופס",
-                "generalError": "שגיאה בעדכון הפריט"
+                "generalError": "שגיאה בעדכון הפריט",
+                "phoneRequired": "חובה להזין מספר טלפון",
+                "phoneInvalid": "מספר טלפון לא תקין (10 ספרות, קידומת 05)",
+                "cannotCancelTwin": "לא ניתן לבטל את הנסיעה השנייה כי רשומים אליה נוסעים"
+            },
+            "seats": {
+                "reserved": "שוריינו {{count}} מקומות",
+                "hasDriver": "יש נהג"
+            },
+            "successRoundTrip": "עודכן בהצלחה (הלוך וחזור)",
+            "helperComponents": {
+                "timeSelectDefault": "בחר שעה...",
+                "notesOpen": "נוספו הערות",
+                "notesPlaceholder": "פרטים נוספים...",
+                "flexibility": {
+                    "exact": "בדיוק",
+                    "15min": "±15 דקות",
+                    "30min": "±30 דקות",
+                    "1hour": "±שעה",
+                    "flexible": "גמיש"
+                }
             }
         },
         "userItemForm": {
             "title": "הוסף פריט משלך",
             "subtitle": "בחר קטגוריה ומלא פרטים",
             "categorySelection": "בחר קטגוריה",
+            "pickupLabelOffer": "מאיפה אתם יוצאים?",
+            "pickupLabelRequest": "מאיפה לאסוף אתכם?",
+            "pickupPlaceholder": "לדוגמה: ראש העין - סינמה סיטי",
+            "directions": {
+                "to": "הלוך",
+                "from": "חזור",
+                "both": "הלוך וחזור"
+            },
+            "timeHeaders": {
+                "to": "הלוך",
+                "from": "חזור"
+            },
+            "timeLabel": "שעת יציאה",
+            "flexibilityLabel": "גמישות",
+            "managerOnly": "אתה רק יוצר את הפריט (מנהל)",
+            "seats": {
+                "request": "כמה מקומות אתם צריכים?",
+                "offer": "מספר מקומות פנויים"
+            },
+            "buttons": {
+                "submitRequest": "בקש טרמפ",
+                "submitOffer": "הצע טרמפ",
+                "submitItem": "הוסף פריט",
+                "submitAndAssign": "הוסף ושבץ אותי",
+                "cancel": "ביטול"
+            },
             "fields": {
                 "name": "שם הפריט *",
                 "namePlaceholder": "לדוגמה: עוגת גבינה",
@@ -637,6 +686,8 @@
                 "notes": "הערות (אופציונלי)",
                 "notesPlaceholder": "לדוגמה: כשר, ללא גלוטן, טבעוני...",
                 "fullName": "שם מלא *",
+                "phone": "מספר טלפון",
+                "phonePrivacy": "יוצג רק למי שישובץ לנסיעה",
                 "nameDisplayPlaceholder": "השם שיוצג לכולם",
                 "nameHelp": "השם יישמר למכשיר זה עבור אירוע זה",
                 "isRequired": "פריט חובה"
@@ -667,6 +718,60 @@
                 "detailsRequest": "מאיפה ומתי?",
                 "placeholderOffer": "לדוגמה: יציאה מחולון ב-16:00",
                 "placeholderRequest": "לדוגמה: מחפש טרמפ מירושלים ב-15:00"
+            },
+            "placeholders": {
+                "starter": "לדוגמה: פשטידת קישואים",
+                "main": "לדוגמה: קציצות בקר",
+                "side": "לדוגמה: אורז, תפוחי אדמה",
+                "salads": "לדוגמה: סלט כרוב, חומוס",
+                "dessert": "לדוגמה: עוגת גבינה, פירות",
+                "drink": "לדוגמה: קולה זירו, מים",
+                "alcohol": "לדוגמה: יין אדום, בירה",
+                "equipment": "לדוגמה: מנגל, צידנית",
+                "cleaning": "לדוגמה: שקיות זבל, מגבונים",
+                "disposable": "לדוגמה: צלחות חד פעמיות",
+                "other": "לדוגמה: מפיונים, נרות",
+                "general": "לדוגמה: פריט כללי",
+                "finger_food": "לדוגמה: ירקות חתוכים",
+                "meat": "לדוגמה: קציצות בקר, חזה עוף",
+                "drinks": "לדוגמה: קולה זירו, מים",
+                "beverages": "לדוגמה: מיץ תפוזים, סודה",
+                "default": "לדוגמה: שם הפריט",
+                "pattern": "לדוגמה: פריט ל{{category}}"
+            }
+        },
+        "participantsList": {
+            "title": "רשימת משתתפים",
+            "empty": "אין משתתפים",
+            "tabs": {
+                "participants": "משתתפים",
+                "drivers": "נהגים",
+                "passengers": "מחפשי טרמפ"
+            },
+            "driversEmpty": "אין נהגים רשומים",
+            "passengersEmpty": "אין מחפשי טרמפ",
+            "stillLooking": "עדיין מחפשים",
+            "arranged": "מסודר",
+            "assignmentDeleted": "השיבוץ הוסר בהצלחה",
+            "deleteConfirm": "האם אתה בטוח שברצונך להסיר את {{name}} מ-{{item}}?",
+            "total": "סה\"כ {{count}} משתתפים",
+            "totalPassengers": "סה\"כ {{count}} מחפשי טרמפ",
+            "totalDrivers": "סה\"כ {{count}} נהגים",
+            "driverTitle": "נהג/ת",
+            "passengersTitle": "נוסעים",
+            "assignmentDeleteError": "שגיאה בביטול השיבוץ",
+            "directions": {
+                "to": "→ הלוך",
+                "from": "← חזור",
+                "alsoReturns": "⭐ גם חוזר",
+                "alsoGoes": "⭐ גם הולך"
+            },
+            "status": {
+                "full": "רכב מלא",
+                "available": "{{count}} מקומות פנויים",
+                "taken": "({{taken}}/{{total}} תפוס)",
+                "stillLooking": "❌ עדיין מחפש",
+                "arranged": "✓ מסודר"
             }
         },
         "rideCard": {
@@ -687,6 +792,77 @@
             "registeredDriver": "נהג/ת רשום:",
             "cancel": "בטל שיבוץ",
             "remove": "הסר שיבוץ"
+        },
+        "eventDetails": {
+            "filters": {
+                "all": "הכל",
+                "myAssignments": "השיבוצים שלי",
+                "other": "אחר"
+            },
+            "status": {
+                "active": "פעיל",
+                "finished": "האירוע הסתיים",
+                "inProgress": "בעיצומו",
+                "inactive": "לא פעיל",
+                "messages": {
+                    "active": "האירוע פעיל - ניתן לשבץ פריטים",
+                    "finished": "האירוע הסתיים - ניתן לצפות בפרטים בלבד",
+                    "inProgress": "האירוע בעיצומו - ניתן עדיין לשבץ פריטים"
+                }
+            },
+            "buttons": {
+                "backToEvents": "חזור לאירועים",
+                "addItem": "הוסף פריט",
+                "adminManage": "ניהול מתקדם",
+                "refresh": "רענן נתונים"
+            },
+            "itemsHeader": "פריטים לשיבוץ",
+            "assignedCount": "({{assigned}}/{{total}} משובצים)",
+            "noItems": {
+                "title": "אין פריטים בקטגוריה זו",
+                "subtitle": "עדיין לא נוספו פריטים לקטגוריה הנבחרת"
+            },
+            "loading": "טוען נתונים מהשרת ומסנכרן...",
+            "userLabel": "שם זה יישמר לשיבוצים הבאים"
+        },
+        "categorySelector": {
+            "rideOffers": {
+                "title": "מציע טרמפ",
+                "seatsAvailable": "{{count}} מושבים פנויים"
+            },
+            "rideRequests": {
+                "title": "צריך טרמפ",
+                "passengersWaiting": "{{count}} נוסעים ללא טרמפ"
+            },
+            "stats": {
+                "seatsFree": "{{count}} מושבים פנויים",
+                "passengersWaiting": "{{count}} נוסעים ללא טרמפ",
+                "assigned": "{{assigned}} / {{total}} שובצו"
+            },
+            "addItemBtn": "הוסף פריט",
+            "limitReached": "הגעת למכסת {{limit}} הפריטים",
+            "cantAdd": "לא ניתן להוסיף פריטים נוספים"
+        },
+        "editAssignmentModal": {
+            "title": "עריכת שיבוץ",
+            "rideTitle": "עריכת נסיעה",
+            "assignedTo": "משובץ ל: {{name}}",
+            "reservedFor": "משוריין עבור: {{name}}",
+            "requiredItem": "פריט חובה",
+            "quantityLabel": "כמות שאביא",
+            "seatsLabel": "מספר מקומות",
+            "notesLabel": "הערות (אופציונלי)",
+            "notesPlaceholder": "הערות נוספות...",
+            "updateBtn": "עדכן שיבוץ",
+            "updateRideBtn": "עדכן נסיעה",
+            "cancelBtn": "ביטול",
+            "errors": {
+                "quantityMin": "הכמות חייבת להיות לפחות 1",
+                "quantityMax": "הכמות לא יכולה להיות יותר מ-100"
+            },
+            "success": "השיבוץ עודכן בהצלחה!",
+            "rideSuccess": "הנסיעה עודכנה בהצלחה!",
+            "updating": "מעדכן..."
         }
     }
 }

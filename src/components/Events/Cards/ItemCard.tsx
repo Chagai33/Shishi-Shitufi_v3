@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MenuItem, Assignment } from '../../../types';
 import { Edit, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -43,9 +43,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   const isSplittable = item.isSplittable;
   const totalQuantity = item.quantity;
 
-  const filledQuantity = isSplittable
-    ? assignments.reduce((acc, curr) => acc + (curr.quantity || 0), 0)
-    : (assignment ? item.quantity : 0);
+  const filledQuantity = useMemo(() => {
+    return assignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+  }, [assignments]);
 
   const isFull = filledQuantity >= totalQuantity;
   const progressPercent = Math.min(100, (filledQuantity / totalQuantity) * 100);
@@ -77,7 +77,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       tagColor={tagColor}
       onEdit={onEditItem}
       onDelete={onDeleteItem}
-      showEdit={isCreatorLogic && isEventActive}
+      showEdit={!!(isCreatorLogic && isEventActive)}
       showDelete={isOrganizer && isEventActive}
       footer={
         isSplittable ? (
@@ -172,16 +172,31 @@ export const ItemCard: React.FC<ItemCardProps> = ({
               </div>
             ) : (
               <>
-                {!isSplittable && assignment ? (
+                {!isSplittable && assignments.length > 0 ? (
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-sm p-3 bg-green-50/80 border border-green-100 rounded-lg">
                       <span className="font-semibold text-green-800 flex items-center">
                         <div className="w-1.5 h-1.5 bg-green-600 rounded-full ml-2"></div>
-                        {t('eventPage.item.takenBy')} {assignment.userName}
+                        {t('eventPage.item.takenBy')} {assignments[0].userName}
                       </span>
-                      <span className="font-bold text-gray-900">{assignment.quantity}</span>
+                      <span className="font-bold text-gray-900 flex items-center gap-2">
+                        {assignments[0].quantity}
+                        {isOrganizer && isEventActive && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCancel(assignments[0]);
+                            }}
+                            className="text-red-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                            title={t('eventPage.item.cancel')}
+                            aria-label={t('eventPage.item.cancelAssignment')}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </span>
                     </div>
-                    {assignment.notes && <p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">{t('eventPage.assignment.notesOptional')}: {assignment.notes}</p>}
+                    {assignments[0].notes && <p className="text-xs text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">{t('eventPage.assignment.notesOptional')}: {assignments[0].notes}</p>}
                   </div>
                 ) : (
                   isEventActive ? (

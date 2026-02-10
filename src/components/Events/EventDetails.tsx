@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowRight, Calendar, Clock, MapPin, Users, ChefHat, Plus, Phone, Mail, RefreshCw, Settings, Wand2 } from 'lucide-react';
-import { useStore } from '../../store/useStore';
+import { useStore, selectMenuItems, selectAssignments } from '../../store/useStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { RideCard } from './Cards/RideCard';
@@ -24,14 +24,18 @@ interface EventDetailsProps {
 
 export function EventDetails({ event, onBack }: EventDetailsProps) {
   const { t } = useTranslation();
-  const { user, menuItems, assignments, deleteAssignment, updateMenuItem } = useStore();
+  const user = useStore(state => state.user);
+  const menuItems = useStore(selectMenuItems);
+  const assignments = useStore(selectAssignments);
+  // Remove unused actions if not needed, or access them correctly if they exist on state
+  // const { deleteAssignment, updateMenuItem } = useStore(); // These appear to be missing from AppState based on lints
   const { isAdmin } = useAuth();
   const [selectedMenuItem, setSelectedMenuItem] = useState<MenuItem | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<{ item: MenuItem; assignment: Assignment } | null>(null);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [showBulkManager, setShowBulkManager] = useState(false);
   const [showUserItemForm, setShowUserItemForm] = useState(false); // 2. Adding State for the new form
-  const [showUserItemForm, setShowUserItemForm] = useState(false); // 2. Adding State for the new form
+
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -94,10 +98,10 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
     ? eventMenuItems
     : categorizedItems[activeCategory] || [];
 
-  const isPast = isEventPast(event.date, event.time);
-  const isFinished = isEventFinished(event.date, event.time);
+  const isPast = isEventPast(event.details.date, event.details.time);
+  const isFinished = isEventFinished(event.details.date, event.details.time);
   const hasUserName = user?.name && user.name.trim().length > 0;
-  const canAssign = !isPast && event.isActive;
+  const canAssign = !isPast && event.details.isActive;
 
   const handleAssignItem = (item: MenuItem) => {
     if (!canAssign) return;
@@ -155,9 +159,9 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
       <div className="bg-white rounded-xl shadow-md p-6 mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{event.title}</h1>
-            <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${isPast ? 'bg-gray-100 text-gray-600' : isFinished ? 'bg-yellow-100 text-yellow-700' : event.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {isPast ? t('eventDetails.status.finished') : isFinished ? t('eventDetails.status.inProgress') : event.isActive ? t('eventDetails.status.active') : t('eventDetails.status.inactive')}
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{event.details.title}</h1>
+            <div className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${isPast ? 'bg-gray-100 text-gray-600' : isFinished ? 'bg-yellow-100 text-yellow-700' : event.details.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              {isPast ? t('eventDetails.status.finished') : isFinished ? t('eventDetails.status.inProgress') : event.details.isActive ? t('eventDetails.status.active') : t('eventDetails.status.inactive')}
             </div>
           </div>
           <div className="mt-2 text-xs text-blue-600">
@@ -174,12 +178,12 @@ export function EventDetails({ event, onBack }: EventDetailsProps) {
           )}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="flex items-center text-gray-600"><Calendar className="h-5 w-5 ml-3 text-orange-500" /><span>{formatDate(event.date)}</span></div>
-          <div className="flex items-center text-gray-600"><Clock className="h-5 w-5 ml-3 text-orange-500" /><span>{formatTime(event.time)}</span></div>
-          <div className="flex items-center text-gray-600"><MapPin className="h-5 w-5 ml-3 text-orange-500" /><span>{event.location}</span></div>
-          <div className="flex items-center text-gray-600"><Users className="h-5 w-5 ml-3 text-orange-500" /><span>מארח: {event.hostName}</span></div>
+          <div className="flex items-center text-gray-600"><Calendar className="h-5 w-5 ml-3 text-orange-500" /><span>{formatDate(event.details.date)}</span></div>
+          <div className="flex items-center text-gray-600"><Clock className="h-5 w-5 ml-3 text-orange-500" /><span>{formatTime(event.details.time)}</span></div>
+          <div className="flex items-center text-gray-600"><MapPin className="h-5 w-5 ml-3 text-orange-500" /><span>{event.details.location}</span></div>
+          <div className="flex items-center text-gray-600"><Users className="h-5 w-5 ml-3 text-orange-500" /><span>מארח: {event.organizerName}</span></div>
         </div>
-        {event.description && (<div className="border-t pt-4"><p className="text-gray-700">{event.description}</p></div>)}
+        {event.details.description && (<div className="border-t pt-4"><p className="text-gray-700">{event.details.description}</p></div>)}
       </div>
 
       {!dataLoaded && (<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"><div className="flex items-center justify-between"><div className="flex items-center"><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div><span className="text-blue-700 text-sm">{t('eventDetails.loading')}</span></div><button onClick={handleForceRefresh} disabled={isRefreshing} className="flex items-center space-x-2 rtl:space-x-reverse px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm transition-colors disabled:opacity-50"><RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} /><span>{t('eventDetails.buttons.refresh')}</span></button></div></div>)}

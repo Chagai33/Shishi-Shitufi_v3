@@ -129,7 +129,7 @@ const EventPage: React.FC = () => {
     const [itemToAssignAfterJoin, setItemToAssignAfterJoin] = useState<MenuItemType | null>(null);
     const [showNameModal, setShowNameModal] = useState(false);
     const [showParticipantsList, setShowParticipantsList] = useState(false);
-    const [cancelModalData, setCancelModalData] = useState<{ assignment: AssignmentType, twinAssignment: AssignmentType | null, isOpen: boolean, direction: string } | null>(null);
+    const [cancelModalData, setCancelModalData] = useState<{ assignment: AssignmentType, twinAssignment: AssignmentType | null, isOpen: boolean, direction: string, isRide: boolean } | null>(null);
 
     const [searchTerm, setSearchTerm] = useState('');
     const debouncedSearchTerm = useDebounce(searchTerm, 300); // 🚀 OPTIMIZATION: Debounced search
@@ -269,17 +269,7 @@ const EventPage: React.FC = () => {
         const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
         const hasOthers = itemAssignments.some(a => a.userId !== localUser.uid);
 
-        if (isCreator && !hasOthers) {
-            // I am Creator + Last One -> Ask to delete ITEM
-            if (window.confirm(t('eventPage.messages.confirmDeleteEmptyItem'))) {
-                try {
-                    await FirebaseService.deleteMenuItem(eventId, item.id);
-                    toast.success(t('eventPage.messages.itemDeleted'));
-                } catch (error) {
-                    toast.error(t('eventPage.messages.deleteItemError'));
-                }
-            }
-        } else if (isCreator && hasOthers) {
+        if (isCreator && hasOthers) {
             // I am Creator + Others Exist -> Warn item stays -> Unassign me
             if (window.confirm(t('eventPage.messages.confirmUnassignCreatorKeepItem'))) {
                 try {
@@ -325,7 +315,8 @@ const EventPage: React.FC = () => {
                 assignment,
                 twinAssignment,
                 isOpen: true,
-                direction
+                direction,
+                isRide
             });
         }
     };
@@ -965,6 +956,7 @@ const EventPage: React.FC = () => {
                     onConfirmBoth={() => handleModalConfirmAction(true)}
                     isTwinAvailable={!!cancelModalData.twinAssignment}
                     direction={cancelModalData.direction}
+                    isRide={cancelModalData.isRide}
                 />
             )}
         </div>

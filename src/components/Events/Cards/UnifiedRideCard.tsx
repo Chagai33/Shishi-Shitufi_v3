@@ -17,6 +17,8 @@ interface UnifiedRideCardProps {
   onEditAssignment?: (item: MenuItem, assignment: Assignment) => void;
 }
 
+import { useTranslation } from 'react-i18next';
+
 export const UnifiedRideCard: React.FC<UnifiedRideCardProps> = ({
   group,
   assignments,
@@ -29,12 +31,14 @@ export const UnifiedRideCard: React.FC<UnifiedRideCardProps> = ({
   onDeleteItem,
   onEditAssignment
 }) => {
+  const { t } = useTranslation();
   const { outbound, returnRide, creatorName } = group;
 
   // We assume at least one exists, logic guarantees it.
   const mainItem = outbound || returnRide!;
   const creatorId = mainItem.creatorId;
   const isCreator = isOrganizer || (currentUserId && creatorId === currentUserId);
+  const isRequest = mainItem.rowType === 'needs' || mainItem.category === 'ride_requests';
 
   const getWhatsAppLink = (phoneNumber: string) => {
     let cleanNum = phoneNumber.replace(/\D/g, '');
@@ -95,7 +99,7 @@ export const UnifiedRideCard: React.FC<UnifiedRideCardProps> = ({
                 onClick={() => onAssign(item)}
                 className="bg-rides-primary hover:bg-rides-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-colors"
               >
-                הצטרף
+                {isRequest ? t('rideCard.iWillTakeYou') : t('rideCard.join')}
               </button>
             )}
             {(isFull && !hasMyAssignment && !isMyItem) && (
@@ -122,18 +126,37 @@ export const UnifiedRideCard: React.FC<UnifiedRideCardProps> = ({
             {itemAssignments.map(a => {
               const isMe = a.userId === currentUserId;
               return (
-                <div key={a.id} className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isMe ? 'bg-blue-400' : 'bg-gray-300'}`} />
-                    <span className={isMe ? 'font-bold text-blue-800' : 'text-gray-600'}>{a.userName}</span>
-                    <span className="text-gray-400">({a.quantity})</span>
-                  </div>
-                  {/* Delete/Edit Assignment Actions */}
-                  {(isMe || isCreator) && (
-                    <div className="flex gap-1 opacity-60 hover:opacity-100">
-                      {isMe && onEditAssignment && <button onClick={() => onEditAssignment(item, a)}><Edit size={10} /></button>}
-                      <button onClick={() => onCancel(a)} className="hover:text-red-500"><Trash2 size={10} /></button>
+                <div key={a.id} className={`flex flex-col space-y-1 p-2 rounded-lg transition-colors ${isMe ? 'bg-blue-50/50 border border-blue-100' : ''}`}>
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-1">
+                      <div className={`w-1.5 h-1.5 rounded-full ${isMe ? 'bg-blue-400' : 'bg-gray-300'}`} />
+                      <span className={isMe ? 'font-bold text-blue-800' : 'text-gray-600'}>{a.userName}</span>
+                      <span className="text-gray-400">({a.quantity})</span>
                     </div>
+                    {/* Delete/Edit Assignment Actions */}
+                    {(isMe || isCreator) && (
+                      <div className="flex gap-1 opacity-60 hover:opacity-100">
+                        {isMe && onEditAssignment && <button onClick={() => onEditAssignment(item, a)}><Edit size={10} /></button>}
+                        <button onClick={() => onCancel(a)} className="hover:text-red-500"><Trash2 size={10} /></button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Phone visibility for mutual contact */}
+                  {(isCreator || isMe) && a.phoneNumber && (
+                    <div className="mr-3.5 flex items-center gap-2">
+                      <a href={`tel:${a.phoneNumber}`} onClick={(e) => e.stopPropagation()} className="text-[10px] font-bold text-blue-500 hover:underline" dir="ltr">
+                        {a.phoneNumber}
+                      </a>
+                      {renderWhatsApp(a.phoneNumber)}
+                    </div>
+                  )}
+
+                  {/* Personal Notes */}
+                  {a.notes && (
+                    <p className={`mr-3.5 text-[10px] italic ${isMe ? 'text-blue-600' : 'text-gray-500'}`}>
+                      "{a.notes}"
+                    </p>
                   )}
                 </div>
               );

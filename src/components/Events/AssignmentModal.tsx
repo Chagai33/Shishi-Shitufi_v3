@@ -34,7 +34,11 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState(existingAssignment?.quantity || item.quantity);
   const [notes, setNotes] = useState(existingAssignment?.notes || '');
-  const [phoneNumber, setPhoneNumber] = useState(existingAssignment?.phoneNumber || ''); // NEW
+  const [phoneNumber, setPhoneNumber] = useState(existingAssignment?.phoneNumber || '');
+  // Carpool / Smart Category Logic
+  const isOffers = isCarpoolLogic(item.name, item.category, itemRowType);
+  const isRequest = itemRowType === 'needs' || item.category === 'ride_requests';
+
   const [isLoading, setIsLoading] = useState(false);
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
@@ -43,8 +47,6 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
   const [tempUserName, setTempUserName] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
-  // Carpool / Smart Category Logic
-  const isOffers = isCarpoolLogic(item.name, item.category, itemRowType);
 
   // ============================================================================
   // ROUND TRIP LOGIC (Twin Detection)
@@ -368,7 +370,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 ? (isOffers ? t('eventPage.assignment.addPassengersTitle') : t('eventPage.assignment.addMoreTitle'))
                 : isEdit
                   ? (isOffers ? t('eventPage.assignment.updateRideTitle') : t('eventPage.assignment.editTitle'))
-                  : (isOffers ? t('eventPage.assignment.joinRideTitle') : t('eventPage.assignment.addTitle'))}
+                  : (isRequest
+                    ? t('eventPage.assignment.iWillDriver')
+                    : (isOffers ? t('eventPage.assignment.joinRideTitle') : t('eventPage.assignment.addTitle')))}
             </h2>
             <button
               onClick={onClose}
@@ -423,7 +427,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               {showNameInput && (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    {t('eventPage.assignment.fullName')}
+                    {isRequest ? t('eventPage.assignment.driverName') : t('eventPage.assignment.fullName')}
                   </label>
                   <div className="relative">
                     <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -444,7 +448,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   <label className="block text-sm font-medium text-neutral-700">
                     {isAddMore
                       ? (isOffers ? t('eventPage.assignment.seatsToAdd') : t('eventPage.assignment.quantityToAdd'))
-                      : (isOffers ? t('eventPage.assignment.howManySeats') : t('eventPage.assignment.quantityToBring'))}
+                      : (isRequest
+                        ? t('eventPage.assignment.seatsRequested')
+                        : (isOffers ? t('eventPage.assignment.howManySeats') : t('eventPage.assignment.quantityToBring')))}
                   </label>
                   <div className="flex gap-2 items-center">
                     {(item.isSplittable || item.quantity > 1) && quantity < maxQuantity && (
@@ -458,7 +464,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     )}
                     {(item.isSplittable || item.quantity > 1) && (
                       <span className="text-xs text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">
-                        {isOffers ? 'מקומות פנויים' : t('eventPage.assignment.remaining')}: {maxQuantity}
+                        {isRequest ? t('eventPage.assignment.seatsRequested') : (isOffers ? 'מקומות פנויים' : t('eventPage.assignment.remaining'))}: {maxQuantity}
                       </span>
                     )}
                   </div>
@@ -539,7 +545,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
               {isOffers && (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    {t('eventPage.assignment.phoneLabel')} <span className="text-red-500">*</span>
+                    {isRequest ? t('eventPage.assignment.driverPhone') : t('eventPage.assignment.phoneLabel')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -558,7 +564,9 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
               {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">{t('eventPage.assignment.notesOptional')}</label>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  {isRequest ? t('eventPage.assignment.carDetails') : t('eventPage.assignment.notesOptional')}
+                </label>
                 <div className="relative">
                   <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
                   <textarea
@@ -589,7 +597,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     : (isOffers
                       ? (joinTwinRide
                         ? (isEdit ? t('eventPage.assignment.updateBothRides') : t('eventPage.assignment.joinBothRides', { quantity }))
-                        : (isEdit ? t('common.saveChanges') : t('eventPage.assignment.confirmJoin')))
+                        : (isEdit ? t('common.saveChanges') : (isRequest ? t('eventPage.assignment.confirmDrive') : t('eventPage.assignment.confirmJoin'))))
                       : t('eventPage.assignment.confirmAssignment'))}
             </button>
           </div>

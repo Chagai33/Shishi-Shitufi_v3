@@ -433,7 +433,13 @@
                 "assignSuccess": "שובצת בהצלחה לפריט: {{itemName}}",
                 "joinRideTitle": "הצטרפות לנסיעה",
                 "updateRideTitle": "עדכון נסיעה",
-                "addPassengersTitle": "הוספת נוסעים",
+                "addPassengersTitle": "הוספת נוסעים לטרמפ",
+                "iWillDriver": "אני אקח את...",
+                "driverName": "שם הנהג/ת",
+                "carDetails": "פרטי רכב / איסוף",
+                "driverPhone": "טלפון הנהג/ת",
+                "seatsRequested": "מספר מקומות שאני לוקח/ת",
+                "confirmDrive": "אישור נסיעה",
                 "howManySeats": "כמה מקומות לשריין?",
                 "seatsToAdd": "מספר מקומות להוספה",
                 "confirmJoin": "אשר הצטרפות",
@@ -803,12 +809,26 @@
             "occupancy": "תפוסה",
             "foundDriver": "נמצא נהג/ת",
             "full": "הרכב מלא",
-            "join": "אני אצטרף",
-            "take": "אני יכול/ה לקחת",
+            "join": "הצטרף",
+            "take": "קח",
+            "iWillTakeYou": "אני אקח אותך",
             "passengersInRide": "נוסעים בטרמפ:",
             "registeredDriver": "נהג/ת רשום:",
             "cancel": "בטל שיבוץ",
-            "remove": "הסר שיבוץ"
+            "remove": "הסר שיבוץ",
+            "rideOffers": "הצעות טרמפ",
+            "rideRequests": "בקשות טרמפ",
+            "roundTrip": "↔ הלוך וחזור",
+            "toEvent": "→ הלוך",
+            "fromEvent": "← חזור",
+            "toEventLabel": "(הלוך)",
+            "fromEventLabel": "(חזור)",
+            "alsoReturning": "גם חוזר/ת!",
+            "alsoGoing": "גם הולך/ת!",
+            "me": "(אני)",
+            "edit": "ערוך",
+            "exact": "בדיוק",
+            "veryFlexible": "גמיש מאוד"
         },
         "eventDetails": {
             "filters": {
@@ -878,7 +898,6 @@
                 "quantityMax": "הכמות לא יכולה להיות יותר מ-100"
             },
             "success": "השיבוץ עודכן בהצלחה!",
-            "rideSuccess": "הנסיעה עודכנה בהצלחה!",
             "updating": "מעדכן..."
         }
     }

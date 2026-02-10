@@ -437,7 +437,13 @@
                 "assignSuccess": "Successfully assigned to item: {{itemName}}",
                 "joinRideTitle": "Join Ride",
                 "updateRideTitle": "Update Ride",
-                "addPassengersTitle": "Add Passengers",
+                "addPassengersTitle": "Add Passengers to Ride",
+                "iWillDriver": "I'll take...",
+                "driverName": "Driver Name",
+                "carDetails": "Car Details / Pickup Info",
+                "driverPhone": "Driver Phone",
+                "seatsRequested": "Seats I can take",
+                "confirmDrive": "Confirm Drive",
                 "howManySeats": "How many seats to reserve?",
                 "seatsToAdd": "Number of seats to add",
                 "confirmJoin": "Confirm Join",
@@ -803,8 +809,9 @@
             "occupancy": "Occupancy",
             "foundDriver": "Driver Found",
             "full": "Car Full",
-            "join": "I'll Join",
-            "take": "I Can Take",
+            "join": "Join",
+            "take": "Take",
+            "iWillTakeYou": "I'll take you",
             "passengersInRide": "Passengers in Ride:",
             "registeredDriver": "Registered Driver:",
             "cancel": "Cancel Assignment",
@@ -891,7 +898,6 @@
                 "quantityMax": "Quantity cannot exceed 100"
             },
             "success": "Assignment updated successfully!",
-            "rideSuccess": "Ride updated successfully!",
             "updating": "Updating..."
         }
     }

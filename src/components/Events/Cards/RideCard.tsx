@@ -133,7 +133,7 @@ export const RideCard: React.FC<RideCardProps> = ({
               className="w-full py-3 text-sm rounded-xl font-bold shadow-sm transition-all active:scale-[0.98] 
                 bg-rides-primary hover:bg-rides-hover text-white shadow-rides-primary/50"
             >
-              {isRequest ? t('rideCard.take') : t('rideCard.join')}
+              {isRequest ? t('rideCard.iWillTakeYou') : t('rideCard.join')}
             </button>
           )}
 

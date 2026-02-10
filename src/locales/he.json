@@ -400,7 +400,9 @@
             "finger_food": "פינגר פוד",
             "unassigned": "לא משויך",
             "assigned": "שובצו",
-            "null": "כללי"
+            "null": "כללי",
+            "ride_offers": "הצעות טרמפ",
+            "ride_requests": "בקשות טרמפ"
         },
         "eventPage": {
             "assignment": {
@@ -428,7 +430,20 @@
                 "addMoreTitle": "הוסף עוד פריטים",
                 "quantityToAdd": "כמות להוספה",
                 "add": "הוסף",
-                "assignSuccess": "שובצת בהצלחה לפריט: {{itemName}}"
+                "assignSuccess": "שובצת בהצלחה לפריט: {{itemName}}",
+                "joinRideTitle": "הצטרפות לנסיעה",
+                "updateRideTitle": "עדכון נסיעה",
+                "addPassengersTitle": "הוספת נוסעים",
+                "howManySeats": "כמה מקומות לשריין?",
+                "seatsToAdd": "מספר מקומות להוספה",
+                "confirmJoin": "אשר הצטרפות",
+                "updateBothRides": "עדכן את 2 הנסיעות",
+                "joinBothRides": "הצטרף ל-2 הנסיעות ({{quantity}})",
+                "seats": "מקומות:",
+                "phoneLabel": "מספר טלפון (חובה לתיאום הנסיעה)",
+                "phoneHelp": "המספר יוצג לנהג בלבד לתיאום הנסיעה",
+                "toEventSuffix": "(הלוך)",
+                "fromEventSuffix": "(חזור)"
             },
             "adminPanelTooltip": "פאנל ניהול",
             "adminPanel": "נהל אירועים",
@@ -527,6 +542,8 @@
                 "offer": "הצע טרמפ",
                 "request": "בקש טרמפ"
             },
+            "offer": "הצע טרמפ",
+            "request": "בקש טרמפ",
             "actions": {
                 "addItem": "הוסף פריט",
                 "bulkEdit": "מצב עריכה"

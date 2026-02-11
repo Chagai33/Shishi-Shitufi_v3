@@ -16,6 +16,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
   event: ShishiEvent;
@@ -203,7 +204,6 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
   // Accessibility: Unique IDs for ARIA labeling
   const titleId = useId();
-  const duplicateTitleId = useId();
 
   // Accessibility: Store reference to the element that opened the modal
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -417,6 +417,17 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   };
 
   const handleImport = async () => {
+    // If in migration mode (Atomic update), skip duplicate checks as we are replacing everything
+    if (migrationStartTime) {
+      const selectedItems = importItems.filter(item => item.selected && !item.error);
+      if (selectedItems.length === 0) {
+        toast.error(t('importModal.preview.noItems'));
+        return;
+      }
+      await executeImport(selectedItems);
+      return;
+    }
+
     const selectedItems = importItems.filter(item => item.selected && !item.error);
     if (selectedItems.length === 0) {
       toast.error(t('importModal.preview.noItems'));
@@ -494,50 +505,28 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
   if (showDuplicateConfirm) {
     return (
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]"
-        role="presentation"
-      >
-        <FocusTrap>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={duplicateTitleId}
-            className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6"
-          >
-            <h2 id={duplicateTitleId} className="text-lg font-semibold text-gray-900 mb-2">{t('importModal.duplicates.title')}</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              <Trans i18nKey="importModal.duplicates.desc" values={{ duplicates: itemsToImport.duplicateItems.length, new: itemsToImport.newItems.length }} components={{ strong: <strong />, br: <br /> }} />
-            </p>
-            <div className="space-y-3">
-              <button
-                onClick={() => executeImport([...itemsToImport.newItems, ...itemsToImport.duplicateItems])}
-                disabled={isImporting}
-                type="button"
-                className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-              >
-                {isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importAll', { count: itemsToImport.newItems.length + itemsToImport.duplicateItems.length })}
-              </button>
-              <button
-                onClick={() => executeImport(itemsToImport.newItems)}
-                disabled={isImporting || itemsToImport.newItems.length === 0}
-                type="button"
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-              >
-                {isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importNew', { count: itemsToImport.newItems.length })}
-              </button>
-              <button
-                onClick={() => setShowDuplicateConfirm(false)}
-                disabled={isImporting}
-                type="button"
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors"
-              >
-                {t('importModal.duplicates.cancel')}
-              </button>
-            </div>
-          </div>
-        </FocusTrap>
-      </div>
+      <ConfirmationModal
+        title={t('importModal.duplicates.title')}
+        message={t('importModal.duplicates.desc', { duplicates: itemsToImport.duplicateItems.length, new: itemsToImport.newItems.length }).replace(/<[^>]*>/g, '')}
+        onClose={() => setShowDuplicateConfirm(false)}
+        options={[
+          {
+            label: isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importAll', { count: itemsToImport.newItems.length + itemsToImport.duplicateItems.length }),
+            onClick: () => executeImport([...itemsToImport.newItems, ...itemsToImport.duplicateItems]),
+            className: 'bg-blue-500 text-white hover:bg-blue-600'
+          },
+          {
+            label: isImporting ? t('importModal.preview.importingBtn') : t('importModal.duplicates.importNew', { count: itemsToImport.newItems.length }),
+            onClick: () => executeImport(itemsToImport.newItems),
+            className: 'bg-green-500 text-white hover:bg-green-600'
+          },
+          {
+            label: t('importModal.duplicates.cancel'),
+            onClick: () => setShowDuplicateConfirm(false),
+            className: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }
+        ]}
+      />
     );
   }
 

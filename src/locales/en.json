@@ -75,6 +75,7 @@
                 "inputPlaceholder": "Example: 2 Milk, Bread and Cheese...",
                 "analyzeBtn": "Analyze with AI",
                 "analyzing": "AI is analyzing your list...",
+                "classifyBtn": "Smart Classify (AI)",
                 "autoDetect": "System will automatically detect items and quantities (including handwriting)."
             },
             "title": "Import Items",

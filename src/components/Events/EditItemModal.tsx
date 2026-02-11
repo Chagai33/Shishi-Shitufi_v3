@@ -8,6 +8,8 @@ import { useStore, selectMenuItems, selectAssignments } from '../../store/useSto
 import { MenuItem, Assignment } from '../../types';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../hooks/useAuth';
+import { getEventCategories } from '../../constants/templates';
 
 interface EditItemModalProps {
     item: MenuItem;
@@ -171,6 +173,20 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
     // Access Global State for Helper Logic
     const allMenuItems = useStore((state) => selectMenuItems(state));
     const allAssignments = useStore((state) => selectAssignments(state));
+
+    // Admin / Manager Check
+    const { user: authUser } = useAuth();
+    // Use currentEvent from store since EditItemModal is used in context of an active event
+    const event = useStore(state => state.currentEvent);
+    const isManager = authUser && event && (authUser.uid === event.organizerId || authUser.email === 'admin@admin.com');
+
+    // Get categories for manager edit
+    const availableCategories = React.useMemo(() => {
+        if (!event || !isManager) return [];
+        const cats = getEventCategories(event, t);
+        // exclude rides
+        return cats.filter(c => !['ride_offers', 'ride_requests', 'trempim'].includes(c.id));
+    }, [event, isManager, t]);
 
     // 1. Detect Twin Item (Round Trip Part)
     // Same creator, same event, opposite direction, same core category type
@@ -375,6 +391,19 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                 baseUpdates.phoneNumber = formData.phoneNumber.trim();
             } else if (item.phoneNumber) {
                 baseUpdates.phoneNumber = null as any;
+            }
+
+            // === CRITICAL FIX: If not a ride, just save and exit ===
+            // Prevents adding " (Outbound)" suffix to salads/regular items
+            if (!isRide) {
+                await FirebaseService.updateMenuItem(eventId, item.id, {
+                    ...baseUpdates,
+                    name: formData.name // Use the exact name from the input
+                });
+                toast.success(t('editItemModal.success'));
+                onClose();
+                setIsSubmitting(false);
+                return;
             }
 
             // Name handling: 
@@ -741,6 +770,23 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                         className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                                     />
                                     {errors.name && <p className="text-red-500 text-xs">{errors.name}</p>}
+
+                                    {/* Manager Category Edit */}
+                                    {isManager && availableCategories.length > 0 && (
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-800 mb-1">{t('editItemModal.fields.category')}</label>
+                                            <select
+                                                value={formData.category}
+                                                onChange={(e) => handleInputChange('category', e.target.value)}
+                                                disabled={isSubmitting}
+                                                className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                                            >
+                                                {availableCategories.map(cat => (
+                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
 
                                     <label className="block text-sm font-semibold text-gray-800 mb-1">{t('editItemModal.fields.quantity')}</label>
                                     <Stepper value={formData.quantity} onChange={(val) => handleInputChange('quantity', val)} min={1} />

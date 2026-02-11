@@ -4,13 +4,13 @@ import { X, Calendar, Clock, MapPin, User, FileText, AlertCircle, LayoutTemplate
 import { TEMPLATES, EVENT_PRESETS } from '../../constants/templates';
 import { useAuth } from '../../hooks/useAuth';
 import { FirebaseService } from '../../services/firebaseService';
-import { ShishiEvent, EventDetails, EventType } from '../../types';
+import { ShishiEvent, EventDetails, EventType, CategoryConfig } from '../../types';
 import { getNextFriday } from '../../utils/dateUtils';
 import toast from 'react-hot-toast';
 import FocusTrap from 'focus-trap-react';
-import { CategoryEditor } from './CategoryEditor'; // NEW Import
-import { ImportItemsModal } from './ImportItemsModal'; // NEW Import
-
+import { CategoryEditor } from './CategoryEditor';
+import { ImportItemsModal } from './ImportItemsModal';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface EventFormProps {
   event?: ShishiEvent;
@@ -45,7 +45,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
   const descriptionId = useId();
   const isActiveId = useId();
   const allowUserItemsId = useId();
-  const allowRideOffersId = useId(); // NEW
+  const allowRideOffersId = useId();
   const userItemLimitId = useId();
   const titleErrorId = useId();
   const dateErrorId = useId();
@@ -82,21 +82,15 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     isActive: event?.details.isActive ?? true,
     endDate: event?.details.endDate || '',
     endTime: event?.details.endTime || '',
-    allowUserItems: event?.details.allowUserItems ?? true, // Default: enabled
-    allowRideOffers: event?.details.allowRideOffers ?? true, // Default: enabled
-    allowRideRequests: event?.details.allowRideRequests ?? false, // Default: disabled (standard for now)
-    userItemLimit: event?.details.userItemLimit || 3, // Default: 3
+    allowUserItems: event?.details.allowUserItems ?? true,
+    allowRideOffers: event?.details.allowRideOffers ?? true,
+    allowRideRequests: event?.details.allowRideRequests ?? false,
+    userItemLimit: event?.details.userItemLimit || 3,
     categories: event?.details.categories || TEMPLATES['DEFAULT'].categories,
   });
 
   // Custom Templates State
   const [customTemplates, setCustomTemplates] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (authUser?.uid) {
-      loadCustomTemplates();
-    }
-  }, [authUser?.uid]);
 
   const loadCustomTemplates = async () => {
     if (!authUser?.uid) return;
@@ -108,33 +102,70 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     }
   };
 
-  const handleDeleteTemplate = async (templateId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent selection
-    if (!window.confirm('האם אתה בטוח שברצונך למחוק תבנית זו?')) return;
-
-    try {
-      if (authUser?.uid) {
-        await FirebaseService.deleteCustomTemplate(authUser.uid, templateId);
-        toast.success('התבנית נמחקה');
-        loadCustomTemplates();
-      }
-    } catch (error) {
-      toast.error('שגיאה במחיקת התבנית');
+  useEffect(() => {
+    if (authUser?.uid) {
+      loadCustomTemplates();
     }
+  }, [authUser?.uid]);
+
+  const handleDeleteTemplate = async (templateId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    setActiveModal({
+      type: 'confirm',
+      title: 'מחיקת תבנית',
+      message: 'האם אתה בטוח שברצונך למחוק תבנית זו?',
+      onConfirm: async () => {
+        try {
+          if (authUser?.uid) {
+            await FirebaseService.deleteCustomTemplate(authUser.uid, templateId);
+            toast.success('התבנית נמחקה');
+            loadCustomTemplates();
+          }
+        } catch (error) {
+          toast.error('שגיאה במחיקת התבנית');
+        } finally {
+          setActiveModal(null);
+        }
+      }
+    });
   };
 
   const [migrationData, setMigrationData] = useState<string | null>(null);
   const [showImportForMigration, setShowImportForMigration] = useState(false);
   const [migrationStartTime, setMigrationStartTime] = useState<number>(0);
 
+  // Confirmation Modal State
+  const [activeModal, setActiveModal] = useState<{
+    type: 'confirm' | 'prompt' | 'migration';
+    message: string;
+    onConfirm: (value?: string) => void;
+    title?: string;
+  } | null>(null);
+
+  const [templateName, setTemplateName] = useState('');
+
   // Template Selector UI State
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Helper to deeply compare categories, ignoring irrelevant fields or order issues
+  const areCategoriesEqual = (cats1: CategoryConfig[], cats2: CategoryConfig[]) => {
+    if (cats1.length !== cats2.length) return false;
+    const sorted1 = [...cats1].sort((a, b) => a.id.localeCompare(b.id));
+    const sorted2 = [...cats2].sort((a, b) => a.id.localeCompare(b.id));
 
-
+    return sorted1.every((c1, index) => {
+      const c2 = sorted2[index];
+      return c1.id === c2.id &&
+        c1.name === c2.name &&
+        c1.icon === c2.icon &&
+        c1.color === c2.color &&
+        c1.order === c2.order;
+    });
+  };
 
   const handleTemplateChange = (templateKey: string, isCustom = false) => {
-    let template;
+    let template: any;
 
     if (isCustom) {
       template = customTemplates.find(t => t.id === templateKey);
@@ -145,41 +176,43 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
 
     if (!template) return;
 
+    const applyTemplate = () => {
+      setFormData(prev => ({ ...prev, categories: template.categories }));
+      // Migration logic is now handled in handleSubmit
+    };
+
     // Check for unsaved changes (dirty) before switching
     const isModified = (() => {
-      for (const [, preset] of Object.entries(EVENT_PRESETS)) {
-        if (JSON.stringify(formData.categories) === JSON.stringify(preset.categories)) return false;
-      }
-      for (const tmpl of customTemplates) {
-        if (JSON.stringify(formData.categories) === JSON.stringify(tmpl.categories)) return false;
-      }
+      // Check against current template (if any)
+      const currentPreset = (Object.values(EVENT_PRESETS)).find(p =>
+        areCategoriesEqual(p.categories, formData.categories)
+      );
+
+      if (currentPreset) return false;
+
+      const currentCustom = customTemplates.find(t =>
+        areCategoriesEqual(t.categories, formData.categories)
+      );
+
+      if (currentCustom) return false;
+
       return true;
     })();
 
     if (isModified) {
-      if (!window.confirm('ביצעת שינויים בקטגוריות שלא נשמרו.\nהאם אתה בטוח שברצונך לעבור סוג אירוע? השינויים יאבדו.\n\nלחץ "אישור" כדי להמשיך ולאבד שינויים.\nלחץ "ביטול" כדי להישאר ולשמור תבנית חדשה.')) {
-        return;
-      }
+      setActiveModal({
+        type: 'confirm',
+        title: 'שינויים לא שמורים',
+        message: 'ביצעת שינויים בקטגוריות שלא נשמרו.\nהאם אתה בטוח שברצונך לעבור סוג אירוע? השינויים יאבדו.',
+        onConfirm: () => {
+          applyTemplate();
+          setActiveModal(null);
+        }
+      });
+      return;
     }
 
-    if (event && event.menuItems && Object.keys(event.menuItems).length > 0) {
-      // Confirm template switch for existing events with items
-      if (window.confirm('שינוי סוג האירוע ישנה את מבנה הקטגוריות. האם תרצה להשתמש ב"הגירה חכמה" (Smart Migration) כדי לסדר את הפריטים מחדש?\n\nאישור: מחיקת פריטים ופתיחת ייבוא חכם.\nביטול: שמירה על הפריטים (יעברו לקטגוריה "כללי").')) {
-        // Smart Migration Flow
-        const itemsList = Object.values(event.menuItems).map(item => `${item.name} ${item.quantity}`).join('\n');
-
-        setMigrationData(itemsList);
-        setMigrationStartTime(Date.now());
-        setShowImportForMigration(true); // Flag to open import modal after save (conceptually, or we handle it via onSuccess wrapper)
-
-        // In this specific flow, we are actually modifying the form state first.
-        // The actual "Action" needs to happen when the user clicks SAVE. 
-        // But the user expects the "Smart Migration" to be a distinct flow.
-        // Let's defer the action to handleSubmit by carrying the `migrationData` state.
-      }
-    }
-
-    setFormData(prev => ({ ...prev, categories: template.categories }));
+    applyTemplate();
   };
 
   const validateForm = (): boolean => {
@@ -197,7 +230,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
       const selectedDate = new Date(formData.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      if (selectedDate < today && !event) { // Allow editing past events, but not creating them
+      if (selectedDate < today && !event) {
         newErrors.date = 'לא ניתן ליצור אירוע בתאריך שעבר';
       }
     }
@@ -224,7 +257,6 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
       newErrors.endDate = 'שעת הסיום חייבת להיות אחרי שעת ההתחלה';
     }
 
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -245,16 +277,6 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     setIsSubmitting(true);
 
     try {
-      // 1. If Migration Logic is active: Delete ALL existing items first
-      // CORRECTION: With "Atomic Save", we DO NOT delete here. 
-      // We wait for the ImportItemsModal to call replaceAllMenuItems.
-      // So this block is removed or commented out.
-      /* 
-      if (migrationData && event) {
-        await FirebaseService.deleteAllEventItems(event.id);
-      } 
-      */
-
       const eventDetails: EventDetails = {
         title: formData.title.trim(),
         date: formData.date,
@@ -272,21 +294,35 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
       };
 
       if (event) {
-        // Update existing event
-        await FirebaseService.updateEventDetails(event.id, eventDetails);
-        toast.success(migrationData ? 'התבנית שונתה! פותח חלון ייבוא...' : 'האירוע עודכן בהצלחה!');
+        // Smart Migration Detection using areCategoriesEqual
+        // If we have items AND categories changed significantly
+        if (event.menuItems && Object.keys(event.menuItems).length > 0 && !areCategoriesEqual(formData.categories, event.details.categories || [])) {
+          setActiveModal({
+            type: 'confirm',
+            title: 'הגירה חכמה',
+            message: 'האם תרצה להשתמש ב"הגירה חכמה" (Smart Migration) כדי לסדר את הפריטים מחדש לפי הקטגוריות החדשות?\n\nאישור: ניתוח פריטים וסדר מחדש.\nביטול: שמירה רגילה (פריטים ללא קטגוריה תקינה עלולים להעלם מהתצוגה).',
+            onConfirm: async () => {
+              // 1. Save Event Details first
+              await FirebaseService.updateEventDetails(event.id, eventDetails);
+              toast.success('הגדרות האירוע עודכנו. פותח חלון מיגרציה...');
 
-        if (migrationData) {
-          // DO NOT close form. Open Import Modal instead.
-          // But validation: we need to trigger this AFTER the render update.
-          // Since we use 'showImportForMigration' state, it should handled in JSX.
-          onSuccess?.(); // Optional: refresh parent
-        } else {
-          onSuccess?.();
-          onClose();
+              // 2. Prepare Migration
+              const itemsList = Object.values(event.menuItems!).map(item => `${item.name} ${item.quantity}`).join('\n');
+              setMigrationData(itemsList);
+              setMigrationStartTime(Date.now());
+              setShowImportForMigration(true);
+              setActiveModal(null);
+            }
+          });
+          setIsSubmitting(false); // Stop submitting spinner while user decides
+          return;
         }
+
+        await FirebaseService.updateEventDetails(event.id, eventDetails);
+        toast.success('האירוע עודכן בהצלחה!');
+        onSuccess?.();
+        onClose();
       } else {
-        // Create new event
         const eventId = await FirebaseService.createEvent(authUser.uid, eventDetails);
         if (eventId) {
           toast.success('האירוע נוצר בהצלחה!');
@@ -304,7 +340,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     }
   };
 
-  const handleInputChange = (field: keyof typeof formData, value: string | number | boolean | undefined) => {
+  const handleInputChange = (field: keyof typeof formData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -371,15 +407,15 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
               {/* Import Modal Integration for Smart Migration */}
               {showImportForMigration && event && migrationData && (
                 <ImportItemsModal
-                  event={event} // Passed full event
+                  event={event}
                   onClose={() => {
                     setShowImportForMigration(false);
-                    onClose(); // Close the main form too when they are done
+                    onClose();
                   }}
-                  categoriesOverride={formData.categories} // Use the NEW categories
+                  categoriesOverride={formData.categories}
                   initialText={migrationData}
-                  autoRunAI={true} // Auto trigger AI
-                  migrationStartTime={migrationStartTime} // For concurrency handling
+                  autoRunAI={true}
+                  migrationStartTime={migrationStartTime}
                 />
               )}
 
@@ -394,13 +430,11 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                   {/* Save Template Button - Top Left */}
                   {authUser && (() => {
                     const isSaveDisabled = (() => {
-                      // Check against system presets
                       for (const [, preset] of Object.entries(EVENT_PRESETS)) {
-                        if (JSON.stringify(formData.categories) === JSON.stringify(preset.categories)) return true; // Matches system -> Disabled
+                        if (areCategoriesEqual(formData.categories, preset.categories)) return true;
                       }
-                      // Check against custom templates
                       for (const tmpl of customTemplates) {
-                        if (JSON.stringify(formData.categories) === JSON.stringify(tmpl.categories)) return true; // Matches custom -> Disabled
+                        if (areCategoriesEqual(formData.categories, tmpl.categories)) return true;
                       }
                       return false;
                     })();
@@ -409,18 +443,24 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                       <button
                         type="button"
                         disabled={isSaveDisabled}
-                        onClick={async () => {
-                          const name = window.prompt('הכנס שם לתבנית החדשה:');
-                          if (!name || !name.trim()) return;
-
-                          try {
-                            // @ts-ignore
-                            await FirebaseService.saveCustomTemplate(authUser.uid, name.trim(), formData.categories);
-                            toast.success('התבנית נשמרה!');
-                            loadCustomTemplates(); // Immediate refresh
-                          } catch (error: any) {
-                            toast.error(error.message || 'שגיאה בשמירה');
-                          }
+                        onClick={() => {
+                          setTemplateName('');
+                          setActiveModal({
+                            type: 'prompt',
+                            title: 'שמירת תבנית חדשה',
+                            message: 'הכנס שם לתבנית החדשה:',
+                            onConfirm: async (name) => {
+                              if (!name || !name.trim() || !authUser) return;
+                              try {
+                                await FirebaseService.saveCustomTemplate(authUser.uid, name.trim(), formData.categories);
+                                toast.success('התבנית נשמרה!');
+                                loadCustomTemplates();
+                                setActiveModal(null);
+                              } catch (error: any) {
+                                toast.error(error.message || 'שגיאה בשמירה');
+                              }
+                            }
+                          });
                         }}
                         className={`p-1 rounded transition-colors ${isSaveDisabled ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800 hover:bg-blue-100'}`}
                         title={isSaveDisabled ? 'אין שינויים לשמירה' : 'שמור תבנית אישית'}
@@ -432,43 +472,23 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 transition-all duration-300">
-                  {/* Logic: Show top 3 (Friday, BBQ, Picnic) + Expand Button */}
                   {(() => {
                     const allPresets = (Object.entries(EVENT_PRESETS) as [EventType, typeof EVENT_PRESETS[EventType]][]);
-                    // Top 3 common ones
                     const topPresets = allPresets.filter(([key]) =>
                       [EventType.FRIDAY_DINNER, EventType.BBQ, EventType.PICNIC].includes(key)
                     );
 
-                    // Determine if current categories match any system preset
-                    const currentMatchesSystem = allPresets.some(([_, p]) => JSON.stringify(formData.categories) === JSON.stringify(p.categories));
-                    // Also check custom
-                    const currentMatchesCustom = customTemplates.some(t => JSON.stringify(formData.categories) === JSON.stringify(t.categories));
-                    const isSaveDisabled = currentMatchesSystem || currentMatchesCustom;
-
-                    // If expanded, show everything. If not, show Top 3.
                     const visibleSystemTemplates = isExpanded ? allPresets : topPresets;
-
-                    // If we are selecting a template that is HIDDEN, we should probably auto-expand or show it.
-                    // But for simplicity, let's keep the user control.
 
                     return (
                       <>
-                        {/* HACK: Update button disabled state via ref or just rely on react render cycle? 
-                            The button is above this block. I need to move the variable definition up or inline the check.
-                            Since I can't easily move code blocks with replace_file_content without context, I will just update the button above using a separate block if needed.
-                            Actually, I can just update the button's disabled prop in the previous block if I could reach it.
-                            Wait, the button is lines 373-392. This block starts at 396.
-                            I should have updated the button in the previous step or done a larger replace.
-                            I will update the button now.
-                        */}
                         {visibleSystemTemplates.map(([key, template]) => (
                           <button
                             type="button"
                             key={key}
                             onClick={() => handleTemplateChange(key)}
                             className={`p-3 rounded-lg border text-right transition-all hover:shadow-md flex flex-col items-center gap-2
-                                ${JSON.stringify(formData.categories) === JSON.stringify(template.categories)
+                                  ${areCategoriesEqual(formData.categories, template.categories)
                                 ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
                                 : 'border-gray-200 hover:border-indigo-300'
                               }`}
@@ -486,13 +506,12 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                           </button>
                         ))}
 
-                        {/* Custom Templates (Only show if expanded OR if selected is custom) */}
                         {isExpanded && customTemplates.map((template) => (
                           <div
                             key={template.id}
                             onClick={() => handleTemplateChange(template.id, true)}
                             className={`cursor-pointer relative p-3 rounded-lg border text-right transition-all hover:shadow-md flex flex-col items-center gap-2 group
-                              ${JSON.stringify(formData.categories) === JSON.stringify(template.categories)
+                                ${areCategoriesEqual(formData.categories, template.categories)
                                 ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
                                 : 'border-gray-200 hover:border-indigo-300'
                               }`}
@@ -512,7 +531,6 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                           </div>
                         ))}
 
-                        {/* Expand/Collapse Button */}
                         <button
                           type="button"
                           onClick={() => setIsExpanded(!isExpanded)}
@@ -534,7 +552,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                 </p>
               </div>
 
-              {/* Custom Categories Editor - NEW */}
+              {/* Custom Categories Editor */}
               <div className="mb-6 border-b border-gray-200 pb-6">
                 <CategoryEditor
                   categories={formData.categories}
@@ -555,13 +573,9 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     placeholder="שישי שיתופי בקהילה"
-                    className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
                     disabled={isSubmitting}
                     required
-                    aria-required="true"
-                    aria-invalid={errors.title ? 'true' : 'false'}
-                    aria-describedby={errors.title ? titleErrorId : undefined}
                   />
                 </div>
                 {errors.title && (
@@ -585,13 +599,9 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                       type="date"
                       value={formData.date}
                       onChange={(e) => handleInputChange('date', e.target.value)}
-                      className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.date ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                      className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
                       disabled={isSubmitting}
                       required
-                      aria-required="true"
-                      aria-invalid={errors.date ? 'true' : 'false'}
-                      aria-describedby={errors.date ? dateErrorId : undefined}
                     />
                   </div>
                   {errors.date && (
@@ -613,13 +623,9 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                       type="time"
                       value={formData.time}
                       onChange={(e) => handleInputChange('time', e.target.value)}
-                      className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.time ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                      className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.time ? 'border-red-500' : 'border-gray-300'}`}
                       disabled={isSubmitting}
                       required
-                      aria-required="true"
-                      aria-invalid={errors.time ? 'true' : 'false'}
-                      aria-describedby={errors.time ? timeErrorId : undefined}
                     />
                   </div>
                   {errors.time && (
@@ -644,8 +650,6 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                       onChange={(e) => handleInputChange('endDate', e.target.value)}
                       className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.endDate ? 'border-red-500' : 'border-gray-300'}`}
                       disabled={isSubmitting}
-                      aria-invalid={errors.endDate ? 'true' : 'false'}
-                      aria-describedby={errors.endDate ? endDateErrorId : undefined}
                     />
                   </div>
                   {errors.endDate && (
@@ -684,13 +688,9 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     value={formData.location}
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     placeholder="כתובת או שם המקום"
-                    className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.location ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
                     disabled={isSubmitting}
                     required
-                    aria-required="true"
-                    aria-invalid={errors.location ? 'true' : 'false'}
-                    aria-describedby={errors.location ? locationErrorId : undefined}
                   />
                 </div>
                 {errors.location && (
@@ -714,13 +714,9 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     value={formData.hostName}
                     onChange={(e) => handleInputChange('hostName', e.target.value)}
                     placeholder="שם המארח"
-                    className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.hostName ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                    className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.hostName ? 'border-red-500' : 'border-gray-300'}`}
                     disabled={isSubmitting}
                     required
-                    aria-required="true"
-                    aria-invalid={errors.hostName ? 'true' : 'false'}
-                    aria-describedby={errors.hostName ? hostNameErrorId : undefined}
                   />
                 </div>
                 {errors.hostName && (
@@ -760,10 +756,11 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                   />
                   <span className="mr-2 text-sm text-gray-700">האירוע פעיל</span>
                 </label>
-                <p className="text-xs text-gray-500 mt-1" id={`${isActiveId}-help`}>
+                <p className="text-xs text-gray-500 mt-1">
                   רק אירועים פעילים מאפשרים שיבוצים חדשים
                 </p>
               </div>
+
               <div className="border-t pt-6 mb-6">
                 <label className="flex items-center">
                   <input
@@ -833,12 +830,11 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  aria-busy={isSubmitting}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2" aria-hidden="true"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
                       שומר...
                     </>
                   ) : (
@@ -849,7 +845,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
                   ביטול
                 </button>
@@ -858,6 +854,44 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
           </div>
         </div>
       </FocusTrap>
+
+      {/* Confirmation Modals */}
+      {activeModal && (
+        <ConfirmationModal
+          title={activeModal.title}
+          message={activeModal.message}
+          onClose={() => setActiveModal(null)}
+          options={activeModal.type === 'prompt' ? [
+            {
+              label: 'שמור',
+              onClick: () => {
+                if (activeModal.onConfirm) activeModal.onConfirm(templateName);
+              },
+              className: 'bg-blue-500 text-white hover:bg-blue-600'
+            }
+          ] : [
+            {
+              label: 'אישור',
+              onClick: () => activeModal.onConfirm(),
+              className: 'bg-blue-500 text-white hover:bg-blue-600'
+            }
+          ]}
+        >
+          {activeModal.type === 'prompt' && (
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="שם התבנית (π.ל. ארוחת מוצש)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') activeModal.onConfirm(templateName);
+              }}
+            />
+          )}
+        </ConfirmationModal>
+      )}
     </div>
   );
 }

@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useId } from 'react';
 import FocusTrap from 'focus-trap-react';
 
 interface ConfirmationModalProps {
+  title?: string;
   message: string;
+  children?: React.ReactNode;
   options: {
     label: string;
     onClick: () => void;
@@ -11,7 +13,7 @@ interface ConfirmationModalProps {
   onClose: () => void;
 }
 
-export function ConfirmationModal({ message, options, onClose }: ConfirmationModalProps) {
+export function ConfirmationModal({ title, message, children, options, onClose }: ConfirmationModalProps) {
   // Accessibility: Unique ID for ARIA labeling
   const titleId = useId();
 
@@ -53,10 +55,12 @@ export function ConfirmationModal({ message, options, onClose }: ConfirmationMod
           aria-modal="true"
           aria-labelledby={titleId}
           className="bg-white rounded-xl shadow-xl max-w-md w-full"
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6">
-            <h2 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">אישור פעולה</h2>
+            <h2 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">{title || 'אישור פעולה'}</h2>
             <p className="text-gray-700 whitespace-pre-wrap">{message}</p>
+            {children && <div className="mt-4">{children}</div>}
           </div>
           <div className="flex justify-end p-4 bg-gray-50 rounded-b-xl space-x-2 rtl:space-x-reverse">
             {options.map((option, index) => (

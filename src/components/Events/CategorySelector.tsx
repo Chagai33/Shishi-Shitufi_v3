@@ -124,10 +124,25 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
 
         map.set(category.id, { assigned: assignedQuantity, total: totalQuantity });
       } else {
-        const assignedItemsInCategory = itemsInCategory.filter(item =>
-          assignments.some(a => a.menuItemId === item.id)
-        );
-        map.set(category.id, { assigned: assignedItemsInCategory.length, total: itemsInCategory.length });
+        // PRODUCTION FIX V2: Count ITEMS (rows), but only mark as "assigned" if FULLY completed.
+
+        // 1. סך הכל פריטים בקטגוריה (ולא סכום הכמויות)
+        const totalItemsCount = itemsInCategory.length;
+
+        // 2. סופרים כמה פריטים הושלמו במלואם
+        const fullyCompletedItemsCount = itemsInCategory.reduce((count, item) => {
+          // חישוב כמה הובא עבור הפריט הזה ספציפית
+          const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
+          const totalBrought = itemAssignments.reduce((sum, a) => sum + (a.quantity || 0), 0);
+
+          // התנאי הקריטי: הפריט נחשב "הושלם" רק אם הביאו את כל הכמות הנדרשת (או יותר)
+          if (totalBrought >= item.quantity) {
+            return count + 1;
+          }
+          return count;
+        }, 0);
+
+        map.set(category.id, { assigned: fullyCompletedItemsCount, total: totalItemsCount });
       }
     });
 

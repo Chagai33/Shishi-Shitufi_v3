@@ -73,13 +73,19 @@ export const UnifiedRideCard: React.FC<UnifiedRideCardProps> = ({
       <div className={`p-3 rounded-xl border transition-all ${hasMyAssignment ? 'bg-blue-50/50 border-blue-200' : 'bg-white border-gray-100'}`}>
         {/* Leg Header: Time | Direction | Action */}
         <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${item.direction === 'to_event' ? 'bg-blue-100 text-blue-700' : 'bg-indigo-100 text-indigo-700'}`}>
               {item.direction === 'to_event' ? '→ הלוך' : '← חזור'}
             </span>
             <span className="font-bold text-gray-800 text-sm">{item.departureTime}</span>
+
+            {/* PRODUCTION FIX: Display Ride Name (Origin) explicitly */}
+            <span className="text-sm text-gray-700 font-medium truncate max-w-[150px] border-r border-gray-300 pr-2 mr-1">
+              {item.name}
+            </span>
+
             {item.pickupLocation && (
-              <span className="text-xs text-gray-500 hidden sm:inline-block">📍 {item.pickupLocation}</span>
+              <span className="text-xs text-gray-500">📍 {item.pickupLocation}</span>
             )}
           </div>
 

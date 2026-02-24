@@ -311,6 +311,21 @@
                     "part2": "Just send them a link, they choose what to bring, and that's it.\nNo passwords, no downloads, no headache."
                 }
             },
+            "features": {
+                "title": "Tools to Make Your Life Easier",
+                "smartImport": {
+                    "title": "Smart AI Import",
+                    "description": "Enter a list as text, voice message, or upload an image - our Artificial Intelligence will build the event item list for you in seconds."
+                },
+                "carpooling": {
+                    "title": "Smart Carpooling",
+                    "description": "No need for a separate WhatsApp group for rides. Participants can offer available seats or request a ride directly through the event page."
+                },
+                "noRegistration": {
+                    "title": "No Registration Required",
+                    "description": "Your guests do not need to create an account, remember passwords, or download an app. Simple entry via a link and they are in."
+                }
+            },
             "story": {
                 "title": "Why did we build this?",
                 "p1": "\"Sometimes the best ideas are born not in the office, but around a Shabbat table. As someone who participates in community meals, I experienced the magic of shared meals - but also the logistical headache.\"",

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Calendar, Users, CheckCircle, ArrowLeft, Bot, Car, Zap } from 'lucide-react';
 import LanguageSwitcher from '../components/Common/LanguageSwitcher';
 
 const LandingPage = () => {
@@ -59,6 +59,43 @@ const LandingPage = () => {
               {t('landing.hero.cta')}
               <ArrowLeft className="mr-2 w-5 h-5" aria-hidden="true" />
             </Link>
+          </div>
+        </section>
+
+        {/* Core Features Section */}
+        <section aria-labelledby="core-features-heading" className="py-16 px-4 bg-gray-50 border-t border-b border-gray-100">
+          <div className="max-w-6xl mx-auto">
+            <h2 id="core-features-heading" className="text-3xl font-bold text-gray-900 mb-12 text-center">
+              {t('landing.features.title')}
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* Smart Import */}
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-transform hover:-translate-y-1 hover:shadow-md duration-300">
+                <div className="bg-purple-100 p-4 rounded-full text-purple-600 mb-6">
+                  <Bot className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('landing.features.smartImport.title')}</h3>
+                <p className="text-gray-600 leading-relaxed">{t('landing.features.smartImport.description')}</p>
+              </div>
+
+              {/* Carpooling */}
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-transform hover:-translate-y-1 hover:shadow-md duration-300">
+                <div className="bg-blue-100 p-4 rounded-full text-blue-600 mb-6">
+                  <Car className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('landing.features.carpooling.title')}</h3>
+                <p className="text-gray-600 leading-relaxed">{t('landing.features.carpooling.description')}</p>
+              </div>
+
+              {/* No Registration */}
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-transform hover:-translate-y-1 hover:shadow-md duration-300">
+                <div className="bg-teal-100 p-4 rounded-full text-teal-600 mb-6">
+                  <Zap className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('landing.features.noRegistration.title')}</h3>
+                <p className="text-gray-600 leading-relaxed">{t('landing.features.noRegistration.description')}</p>
+              </div>
+            </div>
           </div>
         </section>
 

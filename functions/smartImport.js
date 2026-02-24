@@ -48,7 +48,7 @@ exports.parseShoppingList = onCall(
       // 3. Initialize Gemini
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-lite",
+        model: "gemini-2.0-flash",
         generationConfig: {
           responseMimeType: "application/json",
         },

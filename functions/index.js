@@ -65,7 +65,7 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
     });
   }
 
-  // 2. Find all assignments made by the user in other events
+  // 2. Find all assignments and menu items made by the user in other events
   const allEventsSnapshot = await eventsRef.once('value');
   if (allEventsSnapshot.exists()) {
     allEventsSnapshot.forEach(eventSnapshot => {
@@ -75,17 +75,41 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
         return;
       }
 
+      // Cleanup user's assignments
       const assignments = eventSnapshot.child('assignments').val();
       if (assignments) {
         for (const assignmentId in assignments) {
           if (assignments[assignmentId].userId === uid) {
             updates[`/events/${eventId}/assignments/${assignmentId}`] = null;
 
-            // Also un-assign the menu item
+            // Also un-assign the menu item if currently assigned to this user
             const menuItemId = assignments[assignmentId].menuItemId;
+            const menuItem = eventSnapshot.child(`menuItems/${menuItemId}`).val();
+
+            // Only unassign if the assignment actually points to this user's name or is unassigned
+            // (Just to be safe, but typically we can blindly set to null since we are deleting the assignment)
             updates[`/events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
             updates[`/events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
             updates[`/events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
+          }
+        }
+      }
+
+      // Cleanup user's created menu items (including ride offers with phone numbers)
+      const menuItems = eventSnapshot.child('menuItems').val();
+      if (menuItems) {
+        for (const menuItemId in menuItems) {
+          if (menuItems[menuItemId].creatorId === uid) {
+            updates[`/events/${eventId}/menuItems/${menuItemId}`] = null;
+
+            // Cascade delete any assignments tied to this menu item
+            if (assignments) {
+              for (const assignmentId in assignments) {
+                if (assignments[assignmentId].menuItemId === menuItemId) {
+                  updates[`/events/${eventId}/assignments/${assignmentId}`] = null;
+                }
+              }
+            }
           }
         }
       }

@@ -13,7 +13,7 @@ Built with a focus on seamless user experience, the app allows hundreds of commu
 
 ## 🎯 Live Demo
 
-**Try the app live:** [Sample Potluck Event](https://shishi-shitufiv3v3.netlify.app/event/-OXYfRjACov3f7espZVb)
+**Try the app live:** [Shishi-Shitufi](https://shishi-shitufi.netlify.app/)
 
 *Click the link above to join a sample potluck event and experience real-time collaboration!* 🚀
 

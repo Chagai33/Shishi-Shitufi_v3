@@ -809,92 +809,77 @@ export class FirebaseService {
     assignmentData: Omit<Assignment, 'id'>
   ): Promise<string> {
 
-
-    const eventRef = ref(database, `events/${eventId}`);
     const newAssignmentRef = push(ref(database, `events/${eventId}/assignments`));
     const newAssignmentId = newAssignmentRef.key!;
+    let claimedTheItem = false;
 
     try {
-      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (currentEventData === null) {
-          return currentEventData;
+      // Read only what the decision needs, instead of pulling the whole event
+      // in for a read-modify-write. The race the old transaction guarded is now
+      // guarded by the rule on the item's claim fields: claiming is allowed only
+      // while they are empty, so a second claimant is refused by the server and
+      // the update below fails as one.
+      const itemSnapshot = await get(ref(database, `events/${eventId}/menuItems/${assignmentData.menuItemId}`));
+      if (!itemSnapshot.exists()) {
+        throw new Error('הפריט לא נמצא.');
+      }
+      const item = itemSnapshot.val();
+
+      const sanitizedAssignmentData: any = { ...assignmentData };
+      // Remove undefined values to prevent "Data returned contains undefined"
+      Object.keys(sanitizedAssignmentData).forEach(key => {
+        if (sanitizedAssignmentData[key] === undefined) {
+          delete sanitizedAssignmentData[key];
         }
-
-        // --- 1. Basic Setup & Validation ---
-        if (!currentEventData.menuItems) currentEventData.menuItems = {};
-        if (!currentEventData.assignments) currentEventData.assignments = {};
-        if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
-
-        const item = currentEventData.menuItems[assignmentData.menuItemId];
-        if (!item) {
-          throw new Error('הפריט לא נמצא.');
-        }
-
-        // --- 2. User Item Limit Validation ---
-        // Count how many items this user has CREATED (not assigned to)
-        // Note: The original requirement was about CREATING items, but let's be safe.
-        // If the limit applies to ASSIGNMENTS too, we would check it here. 
-        // Current logic in addMenuItemAndAssign checks creation limit. 
-        // We will assume simply signing up for an existing item doesn't count towards the "Create Item" limit unless specified.
-        // For now, we proceed.
-
-        // --- 3. Splittable vs Non-Splittable Logic ---
-        if (item.isSplittable || item.quantity > 1) {
-          // --- Splittable Item Logic ---
-          let currentAssignedQuantity = 0;
-
-          // Calculate total assigned quantity from all assignments for this item
-          Object.values(currentEventData.assignments).forEach((assignment: any) => {
-            if (assignment.menuItemId === assignmentData.menuItemId) {
-              currentAssignedQuantity += (assignment.quantity || 0);
-            }
-          });
-
-          const newTotal = currentAssignedQuantity + assignmentData.quantity;
-
-          if (newTotal > item.quantity) {
-            const remaining = Math.max(0, item.quantity - currentAssignedQuantity);
-            throw new Error(`הכמות המבוקשת גדולה מהכמות הפנויה. נותרו: ${remaining}`);
-          }
-
-          // We do NOT update item.assignedTo for splittable items to keep it "open"
-          // unless we want to mark it fully complete visually, but logic-wise it stays open until full.
-
-        } else {
-          // --- Non-Splittable Item Logic (Original 1-to-1) ---
-          if (item.assignedTo) {
-            throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
-          }
-
-          // Lock the item
-          item.assignedTo = assignmentData.userId;
-          item.assignedToName = assignmentData.userName;
-          item.assignedAt = Date.now();
-        }
-
-        // --- 4. Finalize Assignment ---
-        const sanitizedAssignmentData: any = { ...assignmentData };
-        // Remove undefined values to prevent "Transaction failed: Data returned contains undefined"
-        Object.keys(sanitizedAssignmentData).forEach(key => {
-          if (sanitizedAssignmentData[key] === undefined) {
-            delete sanitizedAssignmentData[key];
-          }
-        });
-
-        const finalAssignmentData = {
-          ...sanitizedAssignmentData,
-          id: newAssignmentId,
-          assignedAt: Date.now()
-        };
-
-        currentEventData.assignments[newAssignmentId] = finalAssignmentData;
-
-        return currentEventData;
       });
+
+      const updates: { [key: string]: any } = {};
+      updates[`events/${eventId}/assignments/${newAssignmentId}`] = {
+        ...sanitizedAssignmentData,
+        id: newAssignmentId,
+        assignedAt: Date.now()
+      };
+
+      if (item.isSplittable || item.quantity > 1) {
+        // Splittable item: several people share it, so the item itself is never
+        // claimed and the cap is the only thing to check. It is checked here and
+        // nowhere else - the rules cannot add up sibling assignments. The
+        // residual race is recorded in DOCS/PLANING/14-events-write-cascade.md.
+        const assignmentsSnapshot = await get(ref(database, `events/${eventId}/assignments`));
+        const assignments = assignmentsSnapshot.val() || {};
+
+        const currentAssignedQuantity = Object.values(assignments)
+          .filter((a: any) => a.menuItemId === assignmentData.menuItemId)
+          .reduce((sum: number, a: any) => sum + (a.quantity || 0), 0);
+
+        if (currentAssignedQuantity + assignmentData.quantity > item.quantity) {
+          const remaining = Math.max(0, item.quantity - currentAssignedQuantity);
+          throw new Error(`הכמות המבוקשת גדולה מהכמות הפנויה. נותרו: ${remaining}`);
+        }
+
+      } else {
+        // Non-splittable item: one person takes it, so it carries the claim.
+        if (item.assignedTo) {
+          throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
+        }
+
+        const itemPath = `events/${eventId}/menuItems/${assignmentData.menuItemId}`;
+        updates[`${itemPath}/assignedTo`] = assignmentData.userId;
+        updates[`${itemPath}/assignedToName`] = assignmentData.userName;
+        updates[`${itemPath}/assignedAt`] = Date.now();
+        claimedTheItem = true;
+      }
+
+      await update(ref(database), updates);
 
       return newAssignmentId;
     } catch (error: any) {
-      console.error('❌ Error in createAssignment transaction:', error);
+      console.error('❌ Error in createAssignment:', error);
+      // A refusal while claiming means somebody got there between the read above
+      // and the write. Keep the wording the user already knows.
+      if (claimedTheItem && String(error?.code || error?.message).toUpperCase().includes('PERMISSION')) {
+        throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
+      }
       // Improve error message for known issues
       if (error.message && error.message.includes('contains undefined')) {
         throw new Error('שגיאת מערכת: נתונים לא תקינים (undefined). אנא נסה שנית או פנה לתמיכה.');
@@ -950,7 +935,10 @@ export class FirebaseService {
                   dbUpdates[`events/${eventId}/assignments/${anId}/userName`] = updates.userName;
 
                   const menuItemId = allAssignments[anId].menuItemId;
-                  if (menuItemId) {
+                  // Only touch the item's label when this user is the one the
+                  // item is actually claimed by. On a splittable item nobody is,
+                  // so the label describes no one and writing it is meaningless.
+                  if (menuItemId && allMenuItems[menuItemId]?.assignedTo === currentUserId) {
                     dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
                   }
                 }
@@ -968,7 +956,12 @@ export class FirebaseService {
             dbUpdates[`${assignmentPath}/userName`] = updates.userName;
             const menuItemId = assignmentData.menuItemId;
             if (menuItemId) {
-              dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
+              // Same restriction as above: the label belongs to whoever claimed
+              // the item, and only they may write it.
+              const claimSnapshot = await get(ref(database, `events/${eventId}/menuItems/${menuItemId}/assignedTo`));
+              if (claimSnapshot.val() === currentUserId) {
+                dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
+              }
             }
           }
         }

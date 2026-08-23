@@ -662,7 +662,7 @@ const EventPage: React.FC = () => {
                             MAX_USER_ITEMS={MAX_USER_ITEMS}
                             showLimit={!showAdminButton}
                             categories={getEventCategories(currentEvent || undefined, t)}
-                            onOfferRide={currentEvent?.details.allowRideOffers !== false ? () => {
+                            onOfferRide={currentEvent?.details.allowRideOffers === true ? () => {
                                 // Check if user already has a ride offer
                                 if (localUser) {
                                     const userHasRide = menuItems.some(item =>

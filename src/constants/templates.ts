@@ -112,7 +112,7 @@ export const getEventCategories = (event: ShishiEvent | undefined, t?: TFunction
 
   // Inject Ride Categories if enabled but missing (for Card display/Selector)
   if (event) {
-    if (event.details.allowRideOffers !== false && !categories.some(c => c.id === 'ride_offers')) {
+    if (event.details.allowRideOffers === true && !categories.some(c => c.id === 'ride_offers')) {
       categories.push({ ...RIDE_OFFERS_CATEGORY, order: 20 });
     }
     if (event.details.allowRideRequests === true && !categories.some(c => c.id === 'ride_requests')) {

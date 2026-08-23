@@ -2,7 +2,12 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 
 admin.initializeApp();
-const db = admin.database();
+
+// Resolved lazily rather than at module scope. The CLI loads this file during
+// function discovery and expects exports back within 10s; resolving the database
+// handle up front runs inside that window for no benefit, since every caller
+// below only needs it once a handler is actually invoked.
+const db = () => admin.database();
 
 // Super-admin UID definition from environment variable
 const SUPER_ADMIN_UID = process.env.SUPER_ADMIN_UID;
@@ -54,7 +59,7 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
   const eventsToDelete = [];
 
   // 1. Find all events organized by the user
-  const eventsRef = db.ref('/events');
+  const eventsRef = db().ref('/events');
   const snapshot = await eventsRef.orderByChild('organizerId').equalTo(uid).once('value');
 
   if (snapshot.exists()) {
@@ -122,7 +127,7 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
   // 4. Perform all database updates at once
   if (Object.keys(updates).length > 0) {
     try {
-      await db.ref().update(updates);
+      await db().ref().update(updates);
     } catch (error) {
       console.error(`Error during database cleanup for user ${uid}:`, error);
     }

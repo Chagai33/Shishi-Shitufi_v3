@@ -110,8 +110,13 @@ src/
    - Copy your Firebase config to `src/lib/firebase.ts`
 
 4. **Configure Security Rules**
-   - Copy contents of `firebase-rules.json` to your Firebase Realtime Database Rules
-   - Publish the security rules
+   - The rules live in `database.rules.json` and are wired into `firebase.json`
+   - Deploy them with:
+     ```bash
+     firebase deploy --only database
+     ```
+   - Editing the rules in the Firebase console instead will put the console and
+     the repository out of step, which is exactly what this pipeline exists to prevent
 
 5. **Start development server**
    ```bash

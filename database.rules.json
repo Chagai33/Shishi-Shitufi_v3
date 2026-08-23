@@ -16,7 +16,14 @@
     },
     "events": {
       ".indexOn": ["organizerId"],
-      ".read": "auth != null",
+      // Listing is allowed only for the query "events I organised". A plain
+      // read of the whole node is denied, so the event list can no longer be
+      // scanned. Both spellings are accepted because the client SDK sends
+      // equalTo() on the wire as a range whose bounds are equal.
+      ".read": "auth != null && query.orderByChild === 'organizerId' && ( query.equalTo === auth.uid || ( query.startAt === auth.uid && query.endAt === auth.uid ) )",
+      // Deliberately unchanged. Removing this breaks self-assignment and item
+      // creation for every non-organizer, because the client writes the whole
+      // event node in one transaction. See DOCS/PLANING/14-events-write-cascade.md.
       ".write": "auth != null",
       "$eventId": {
         ".read": "auth != null",
@@ -52,12 +59,19 @@
         // --- END: NEW RULE ---
       }
     },
+    // Legacy node. Live preset lists moved to users/$uid/presetLists; one
+    // abandoned record remains here. Restricted to its owner.
     "presetLists": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      "$listId": {
+        ".read": "auth != null && data.child('createdBy').val() === auth.uid",
+        ".write": "auth != null && ( !data.exists() || data.child('createdBy').val() === auth.uid ) && ( !newData.exists() || newData.child('createdBy').val() === auth.uid )"
+      }
     },
     "admins": {
-      ".read": true,
+      // Was ".read": true - readable by anyone on the internet, unauthenticated.
+      // The node is currently empty and has no reader in live code; the first
+      // admin is still added through the console, as before.
+      ".read": "auth != null && root.child('admins').child(auth.uid).exists()",
       "$uid": {
         ".write": "root.child('admins').child(auth.uid).exists()"
       }

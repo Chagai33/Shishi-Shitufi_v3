@@ -25,9 +25,12 @@
           ".write": "auth != null && ( !data.exists() || root.child('events').child($eventId).child('organizerId').val() === auth.uid )"
         },
         "menuItems": {
+          ".indexOn": ["creatorId"],
           ".write": "auth != null",
           "$itemId": {
-            ".write": "auth != null"
+            // --- START: MODIFIED RULE ---
+            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && (!root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() || root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < root.child('events').child($eventId).child('details').child('userItemLimit').val())))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || data.child('creatorId').val() === auth.uid)))"
+            // --- END: MODIFIED RULE ---
           }
         },
         "participants": {
@@ -39,7 +42,14 @@
           "$assignmentId": {
             ".write": "auth != null && ( (newData.exists() && newData.child('userId').val() === auth.uid) || (data.exists() && data.child('userId').val() === auth.uid) || (data.exists() && !newData.exists() && root.child('events').child($eventId).child('organizerId').val() === auth.uid) )"
           }
+        },
+        // --- START: NEW RULE ---
+        "userItemCounts": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1 || !data.exists() && newData.val() == 1)"
+          }
         }
+        // --- END: NEW RULE ---
       }
     },
     "presetLists": {

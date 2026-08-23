@@ -5,6 +5,11 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const googleAiKey = defineSecret("GOOGLE_AI_KEY");
 
+// Google retires Gemini models periodically, and a retired model fails at runtime
+// with a 404 rather than at deploy time. Keeping the name overridable means the next
+// retirement can be handled by setting GEMINI_MODEL instead of editing this file.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+
 exports.parseShoppingList = onCall(
   {
     secrets: [googleAiKey],
@@ -48,7 +53,7 @@ exports.parseShoppingList = onCall(
       // 3. Initialize Gemini
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: GEMINI_MODEL,
         generationConfig: {
           responseMimeType: "application/json",
         },
@@ -109,7 +114,12 @@ Rules:
         throw new HttpsError("failed-precondition", "The input was blocked by AI safety filters.", { originalError: "SAFETY_BLOCK" });
       }
 
-      // 3. Parsing Errors (JSON)
+      // 3. Retired / unknown model - surfaces as a 404 from the Gemini API
+      if (error.status === 404 || error.message?.includes("no longer available")) {
+        throw new HttpsError("unavailable", `AI model "${GEMINI_MODEL}" is unavailable. It has most likely been retired - update GEMINI_MODEL.`, { originalError: "MODEL_UNAVAILABLE" });
+      }
+
+      // 4. Parsing Errors (JSON)
       if (error.message?.includes("JSON")) {
         throw new HttpsError("data-loss", "Failed to parse AI response. Please try with clearer text/image.", { originalError: "JSON_PARSE_ERROR" });
       }

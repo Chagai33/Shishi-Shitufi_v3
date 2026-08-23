@@ -183,6 +183,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
           case 'functions/data-loss':
             userMessage = 'ה-AI התקשה להבין את הפלט. נסה לכתוב בצורה ברורה יותר.';
             break;
+          case 'functions/unavailable':
+            userMessage = 'שירות ה-AI אינו זמין כרגע. ניתן להוסיף פריטים ידנית.';
+            break;
           case 'functions/internal': // Often generic, check details if possible, otherwise default
             userMessage = 'שגיאה פנימית בשרת. נסה שוב מאוחר יותר.';
             break;

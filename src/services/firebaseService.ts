@@ -18,48 +18,6 @@ const functions = getFunctions(); // <-- Functions service initialization
 export class FirebaseService {
 
   // ===============================
-  // Internal helper functions
-  // ===============================
-
-  /**
-   * Ensures the event has all required structures
-   */
-  private static async ensureEventStructure(eventId: string): Promise<void> {
-    try {
-      const eventRef = ref(database, `events/${eventId}`);
-      const snapshot = await get(eventRef);
-
-      if (snapshot.exists()) {
-        const eventData = snapshot.val();
-        const updates: { [key: string]: any } = {};
-
-        // Ensure all required structures exist
-        if (!eventData.menuItems) {
-          updates[`events/${eventId}/menuItems`] = {};
-        }
-        if (!eventData.assignments) {
-          updates[`events/${eventId}/assignments`] = {};
-        }
-        if (!eventData.participants) {
-          updates[`events/${eventId}/participants`] = {};
-        }
-
-        if (Object.keys(updates).length > 0) {
-          await update(ref(database), updates);
-        }
-      } else {
-        console.warn('⚠️ Event does not exist:', `events/${eventId}`);
-      }
-
-      console.groupEnd();
-    } catch (error) {
-      console.error('❌ Error in ensureEventStructure:', error);
-      console.groupEnd();
-      throw error;
-    }
-  }
-
-  // ===============================
   // Organizer management
   // ===============================
 
@@ -186,9 +144,6 @@ export class FirebaseService {
 
     const onValueChange = async (snapshot: any) => {
       if (snapshot.exists()) {
-        // Ensure valid structure before returning data
-        await this.ensureEventStructure(eventId);
-
         const eventData = snapshot.val();
         const fullEvent: ShishiEvent = {
           id: eventId,
@@ -332,6 +287,10 @@ export class FirebaseService {
 
   /**
    * מוחק את כל הפריטים והשיבוצים של אירוע (עבור איתחול או הגירה)
+   *
+   * Unused: no screen calls this. It already writes scoped paths, and the
+   * organizer may write anywhere under their own event, so it needs no change
+   * for the tightened rules. See DOCS/PLANING/14-events-write-cascade.md.
    */
   static async deleteAllEventItems(eventId: string): Promise<void> {
     try {
@@ -350,6 +309,11 @@ export class FirebaseService {
   /**
    * Safe Migration: Replaces all event items with a new list in a single atomic update.
    * This ensures we don't lose data if the user refreshes mid-process.
+   *
+   * Deliberately still a whole-event transaction. Only the organizer runs it,
+   * and the organizer may write anywhere under their own event, so the
+   * tightened rules do not block it. Converting it would lose the protection
+   * against items added while the migration is running.
    */
   static async replaceAllMenuItems(
     eventId: string,
@@ -546,6 +510,10 @@ export class FirebaseService {
 
   /**
    * Adds a new item and assigns it to a user (optional)
+   *
+   * Unused: no screen calls this. It is still a whole-event transaction and
+   * would have to be converted like addMenuItem before anything calls it again.
+   * See DOCS/PLANING/14-events-write-cascade.md.
    */
   static async addMenuItemAndAssign(
     eventId: string,
@@ -765,8 +733,6 @@ export class FirebaseService {
   ): Promise<void> {
 
     try {
-      await this.ensureEventStructure(eventId);
-
       const participantRef = ref(database, `events/${eventId}/participants/${userId}`);
       const participantData = {
         name: userName,

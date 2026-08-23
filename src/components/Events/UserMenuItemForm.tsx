@@ -502,6 +502,14 @@ export function UserMenuItemForm({
       // Dynamic Category Creation & Repair
       // We check if the category exists. If not, we create it.
       // If it DOES exist but is missing properties (like icon) for a standard category, we repair it.
+      //
+      // Only the event's organizer may do this. The category list lives inside
+      // the event details, which belong to the organizer alone, and a
+      // participant writing there is what forced the database to grant everyone
+      // write access to every event. Skipping it costs nothing on screen:
+      // getEventCategories already falls back to the default list and already
+      // injects the ride categories when the event enables them.
+      const isEventOrganizer = !!authUser && event.organizerId === authUser.uid;
       const currentCats = event.details.categories || [];
       const existingCatIndex = currentCats.findIndex(c => c.id === formData.category);
 
@@ -519,7 +527,11 @@ export function UserMenuItemForm({
         'trempim': { id: 'trempim', name: 'טרמפים', icon: 'car.gif', color: '#2c3e50', order: 92 }
       };
 
-      if (existingCatIndex === -1) {
+      if (!isEventOrganizer) {
+        // Participants add items to the categories the organizer defined, and
+        // never edit the list itself.
+
+      } else if (existingCatIndex === -1) {
         // --- CREATE NEW CATEGORY ---
         let catToAdd;
         if (standardCats[formData.category]) {

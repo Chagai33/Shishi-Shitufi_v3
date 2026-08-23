@@ -478,71 +478,68 @@ export class FirebaseService {
     itemData: Omit<MenuItem, 'id'>,
     options?: { bypassLimit?: boolean }
   ): Promise<string> {
-    const eventRef = ref(database, `events/${eventId}`);
-    let newItemId: string | null = null;
-
     try {
-      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (currentEventData === null) {
-          // Firebase runTransaction can be called with null initially.
-          // Returning currentEventData (null) lets it retry once data is fetched.
-          return currentEventData;
-        }
+      // Read the two things the decision needs instead of the whole event.
+      const [detailsSnapshot, organizerSnapshot] = await Promise.all([
+        get(ref(database, `events/${eventId}/details`)),
+        get(ref(database, `events/${eventId}/organizerId`))
+      ]);
 
-        // --- Validation & Limit Check ---
-        const details = currentEventData.details;
-        const creatorId = itemData.creatorId;
-        const userItemCount = (creatorId && currentEventData.userItemCounts?.[creatorId]) || 0;
+      if (!detailsSnapshot.exists()) {
+        throw new Error('האירוע לא נמצא.');
+      }
 
-        const isOrganizer = creatorId === currentEventData.organizerId;
-        const shouldBypassLimit = isOrganizer || options?.bypassLimit;
+      const details = detailsSnapshot.val();
+      const creatorId = itemData.creatorId;
+      const isOrganizer = creatorId === organizerSnapshot.val();
+      const shouldBypassLimit = isOrganizer || options?.bypassLimit;
 
-        // Check 1: Is adding allowed?
-        if (details.allowUserItems === false && !isOrganizer) {
-          throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
-        }
+      const countSnapshot = creatorId
+        ? await get(ref(database, `events/${eventId}/userItemCounts/${creatorId}`))
+        : null;
+      const userItemCount = countSnapshot?.val() || 0;
 
-        // Check 2: Limit reached? (Skip if Admin/Organizer)
-        if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
-          throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
-        }
+      // Check 1: Is adding allowed?
+      if (details.allowUserItems === false && !isOrganizer) {
+        throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
+      }
 
-        // --- Prepare Data ---
-        const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
-        newItemId = newItemRef.key!;
+      // Check 2: Limit reached? (Skip if Admin/Organizer)
+      if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
+        throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
+      }
 
-        if (!currentEventData.menuItems) currentEventData.menuItems = {};
-        if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
+      // --- Prepare Data ---
+      const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
+      const newItemId = newItemRef.key!;
 
-        // Sanitize item data
-        const finalItemData: any = {
-          ...itemData,
-          id: newItemId,
-          notes: itemData.notes || null
-        };
-        Object.keys(finalItemData).forEach(key => {
-          if (finalItemData[key] === undefined) delete finalItemData[key];
-        });
-
-        // --- Update State ---
-        currentEventData.menuItems[newItemId] = finalItemData;
-
-        // Increment counter if we have a creatorId
-        if (creatorId) {
-          currentEventData.userItemCounts[creatorId] = userItemCount + 1;
-        }
-
-        return currentEventData;
+      // Sanitize item data
+      const finalItemData: any = {
+        ...itemData,
+        id: newItemId,
+        notes: itemData.notes || null
+      };
+      Object.keys(finalItemData).forEach(key => {
+        if (finalItemData[key] === undefined) delete finalItemData[key];
       });
 
-      if (!newItemId) {
-        throw new Error("Failed to generate item ID.");
+      // The item and the counter go up together in one atomic update. The
+      // counter rule accepts a step of exactly one, which makes it a
+      // compare-and-set: a second addition racing this one is refused by the
+      // server rather than overwriting the count, and the item is not created
+      // either. That is why no transaction is needed here.
+      const updates: { [key: string]: any } = {};
+      updates[`events/${eventId}/menuItems/${newItemId}`] = finalItemData;
+      if (creatorId) {
+        updates[`events/${eventId}/userItemCounts/${creatorId}`] = userItemCount + 1;
       }
+
+      await update(ref(database), updates);
+
       return newItemId;
 
     } catch (error) {
       console.error('❌ Error in addMenuItem:', error);
-      console.groupEnd();
       throw error;
     }
   }
@@ -693,63 +690,63 @@ export class FirebaseService {
    * מוחק פריט תפריט
    */
   static async deleteMenuItem(eventId: string, itemId: string): Promise<void> {
-    console.group('🗑️ FirebaseService.deleteMenuItem (Transactional)');
+    console.group('🗑️ FirebaseService.deleteMenuItem');
     console.log('📥 Input parameters:', { eventId, itemId });
 
-    const eventRef = ref(database, `events/${eventId}`);
-
     try {
-      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (currentEventData === null) return currentEventData;
+      const [itemSnapshot, assignmentsSnapshot] = await Promise.all([
+        get(ref(database, `events/${eventId}/menuItems/${itemId}`)),
+        get(ref(database, `events/${eventId}/assignments`))
+      ]);
 
-        if (!currentEventData.menuItems?.[itemId]) {
-          // If item doesn't exist, nothing to do.
-          return;
+      if (!itemSnapshot.exists()) {
+        // If item doesn't exist, nothing to do.
+        console.groupEnd();
+        return;
+      }
+
+      const itemToDelete = itemSnapshot.val();
+      const creatorId = itemToDelete.creatorId;
+      const assignments = assignmentsSnapshot.val() || {};
+
+      const hasOtherUserAssignments = Object.values(assignments)
+        .some((a: any) => a.menuItemId === itemId && a.userId !== creatorId);
+
+      if (hasOtherUserAssignments) {
+        console.warn('⚠️ Deleting item with active assignments for other users.');
+      }
+
+      const updates: { [key: string]: any } = {};
+
+      // Step 1: Delete the item itself
+      updates[`events/${eventId}/menuItems/${itemId}`] = null;
+
+      // Step 2: Update counter (if relevant). It is written down to zero rather
+      // than removed, because the counter rule only accepts a step of one in
+      // either direction and a zero entry reads the same as a missing one.
+      if (creatorId) {
+        const countSnapshot = await get(ref(database, `events/${eventId}/userItemCounts/${creatorId}`));
+        const currentCount = countSnapshot.val() || 0;
+        if (currentCount > 0) {
+          updates[`events/${eventId}/userItemCounts/${creatorId}`] = currentCount - 1;
+          console.log(`📉 Decremented item count for user ${creatorId} to ${currentCount - 1}`);
         }
+      }
 
-
-        // Check for active assignments - prevent deletion if any exist
-        const itemToDelete = currentEventData.menuItems[itemId];
-        const creatorId = itemToDelete.creatorId;
-
-        const assignments = currentEventData.assignments || {};
-        const hasOtherUserAssignments = Object.values(assignments)
-          .some((a: any) => a.menuItemId === itemId && a.userId !== creatorId);
-
-        if (hasOtherUserAssignments) {
-          console.warn('⚠️ Deleting item with active assignments for other users.');
+      // Step 3: Delete all assignments related to the item
+      Object.keys(assignments).forEach(assignmentId => {
+        if (assignments[assignmentId].menuItemId === itemId) {
+          updates[`events/${eventId}/assignments/${assignmentId}`] = null;
+          console.log(`🗑️ Marked related assignment ${assignmentId} for deletion.`);
         }
-
-        // Step 1: Update counter (if relevant)
-        if (creatorId && currentEventData.userItemCounts?.[creatorId]) {
-          currentEventData.userItemCounts[creatorId]--;
-          console.log(`📉 Decremented item count for user ${creatorId} to ${currentEventData.userItemCounts[creatorId]}`);
-          // If counter reaches zero, clean up the entry
-          if (currentEventData.userItemCounts[creatorId] <= 0) {
-            delete currentEventData.userItemCounts[creatorId];
-            console.log(`🧹 Cleaned up zero-count entry for user ${creatorId}`);
-          }
-        }
-
-        // Step 2: Delete the item itself
-        delete currentEventData.menuItems[itemId];
-        console.log(`🗑️ Marked menu item ${itemId} for deletion.`);
-
-        // Step 3: Delete all assignments related to the item
-        if (currentEventData.assignments) {
-          Object.keys(currentEventData.assignments).forEach(assignmentId => {
-            if (currentEventData.assignments[assignmentId].menuItemId === itemId) {
-              delete currentEventData.assignments[assignmentId];
-              console.log(`🗑️ Marked related assignment ${assignmentId} for deletion.`);
-            }
-          });
-        }
-
-        // Return the updated object so the transaction writes it
-        return currentEventData;
       });
+
+      // One atomic update: the item, its counter and its sign-ups go together.
+      await update(ref(database), updates);
+      console.groupEnd();
     } catch (error) {
-      console.error('❌ Error in deleteMenuItem transaction:', error);
+      console.error('❌ Error in deleteMenuItem:', error);
+      console.groupEnd();
       throw error;
     }
   }

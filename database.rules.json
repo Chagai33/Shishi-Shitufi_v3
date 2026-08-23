@@ -21,10 +21,10 @@
       // scanned. Both spellings are accepted because the client SDK sends
       // equalTo() on the wire as a range whose bounds are equal.
       ".read": "auth != null && query.orderByChild === 'organizerId' && ( query.equalTo === auth.uid || ( query.startAt === auth.uid && query.endAt === auth.uid ) )",
-      // Deliberately unchanged. Removing this breaks self-assignment and item
-      // creation for every non-organizer, because the client writes the whole
-      // event node in one transaction. See DOCS/PLANING/14-events-write-cascade.md.
-      ".write": "auth != null",
+      // There is deliberately no ".write" here any more. It used to be
+      // "auth != null", which let anyone the app gives an identity to write
+      // anywhere under events and made every rule below it a dead letter.
+      // See DOCS/PLANING/14-events-write-cascade.md.
       "$eventId": {
         ".read": "auth != null",
         ".write": "auth != null && ( !data.exists() || data.child('organizerId').val() === auth.uid || newData.child('organizerId').val() === auth.uid )",
@@ -33,11 +33,34 @@
         },
         "menuItems": {
           ".indexOn": ["creatorId"],
-          ".write": "auth != null",
+          // The second blanket permission, also removed: with it in place a
+          // stranger could still wipe the whole menu of somebody else's event
+          // in one write, and the per-item rule below would never be reached.
           "$itemId": {
-            // --- START: MODIFIED RULE ---
-            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && (!root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() || root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < root.child('events').child($eventId).child('details').child('userItemLimit').val())))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || data.child('creatorId').val() === auth.uid)))"
-            // --- END: MODIFIED RULE ---
+            // Creating: the organizer always may. A participant may only when
+            // the organizer switched participant items on, and only while under
+            // their quota - except for rides, which the product has always let
+            // people add beyond the quota. A missing quota reads as three, the
+            // same default the screens use.
+            // Editing and deleting: the organizer, or whoever created the item.
+            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && (newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'ride_requests' || newData.child('category').val() === 'trempim' || !root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() || (root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < root.child('events').child($eventId).child('details').child('userItemLimit').val()) || (!root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < 3))))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || data.child('creatorId').val() === auth.uid)))",
+            // Taking an item and giving it back. This is where the protection
+            // against two people grabbing the same item now lives: the field
+            // may be filled only while it is empty, and only with your own
+            // name, so the server refuses the second person no matter what the
+            // app does. Releasing is allowed only to whoever is holding it.
+            "assignedTo": {
+              ".write": "auth != null && ( (!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && (!newData.exists() || newData.val() === auth.uid)) )"
+            },
+            // The label and the timestamp follow whoever holds the item, so
+            // they may be written by the holder either before or after the
+            // change - which covers taking it, giving it back, and renaming.
+            "assignedToName": {
+              ".write": "auth != null && ( newData.parent().child('assignedTo').val() === auth.uid || data.parent().child('assignedTo').val() === auth.uid )"
+            },
+            "assignedAt": {
+              ".write": "auth != null && ( newData.parent().child('assignedTo').val() === auth.uid || data.parent().child('assignedTo').val() === auth.uid )"
+            }
           }
         },
         "participants": {
@@ -47,16 +70,18 @@
         },
         "assignments": {
           "$assignmentId": {
-            ".write": "auth != null && ( (newData.exists() && newData.child('userId').val() === auth.uid) || (data.exists() && data.child('userId').val() === auth.uid) || (data.exists() && !newData.exists() && root.child('events').child($eventId).child('organizerId').val() === auth.uid) )"
+            // Your own sign-up, or the organizer removing one. The last clause
+            // is new: deleting an item takes its sign-ups with it, and the
+            // screen lets whoever created the item do that - it even counts the
+            // people signed up in its confirmation.
+            ".write": "auth != null && ( (newData.exists() && newData.child('userId').val() === auth.uid) || (data.exists() && data.child('userId').val() === auth.uid) || (data.exists() && !newData.exists() && root.child('events').child($eventId).child('organizerId').val() === auth.uid) || (data.exists() && !newData.exists() && root.child('events').child($eventId).child('menuItems').child(data.child('menuItemId').val()).child('creatorId').val() === auth.uid) )"
           }
         },
-        // --- START: NEW RULE ---
         "userItemCounts": {
           "$uid": {
             ".write": "auth != null && auth.uid === $uid && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1 || !data.exists() && newData.val() == 1)"
           }
         }
-        // --- END: NEW RULE ---
       }
     },
     // Legacy node. Live preset lists moved to users/$uid/presetLists; one

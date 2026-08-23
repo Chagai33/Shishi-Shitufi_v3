@@ -18,48 +18,6 @@ const functions = getFunctions(); // <-- Functions service initialization
 export class FirebaseService {
 
   // ===============================
-  // Internal helper functions
-  // ===============================
-
-  /**
-   * Ensures the event has all required structures
-   */
-  private static async ensureEventStructure(eventId: string): Promise<void> {
-    try {
-      const eventRef = ref(database, `events/${eventId}`);
-      const snapshot = await get(eventRef);
-
-      if (snapshot.exists()) {
-        const eventData = snapshot.val();
-        const updates: { [key: string]: any } = {};
-
-        // Ensure all required structures exist
-        if (!eventData.menuItems) {
-          updates[`events/${eventId}/menuItems`] = {};
-        }
-        if (!eventData.assignments) {
-          updates[`events/${eventId}/assignments`] = {};
-        }
-        if (!eventData.participants) {
-          updates[`events/${eventId}/participants`] = {};
-        }
-
-        if (Object.keys(updates).length > 0) {
-          await update(ref(database), updates);
-        }
-      } else {
-        console.warn('⚠️ Event does not exist:', `events/${eventId}`);
-      }
-
-      console.groupEnd();
-    } catch (error) {
-      console.error('❌ Error in ensureEventStructure:', error);
-      console.groupEnd();
-      throw error;
-    }
-  }
-
-  // ===============================
   // Organizer management
   // ===============================
 
@@ -186,9 +144,6 @@ export class FirebaseService {
 
     const onValueChange = async (snapshot: any) => {
       if (snapshot.exists()) {
-        // Ensure valid structure before returning data
-        await this.ensureEventStructure(eventId);
-
         const eventData = snapshot.val();
         const fullEvent: ShishiEvent = {
           id: eventId,
@@ -332,6 +287,10 @@ export class FirebaseService {
 
   /**
    * מוחק את כל הפריטים והשיבוצים של אירוע (עבור איתחול או הגירה)
+   *
+   * Unused: no screen calls this. It already writes scoped paths, and the
+   * organizer may write anywhere under their own event, so it needs no change
+   * for the tightened rules. See DOCS/PLANING/14-events-write-cascade.md.
    */
   static async deleteAllEventItems(eventId: string): Promise<void> {
     try {
@@ -350,6 +309,11 @@ export class FirebaseService {
   /**
    * Safe Migration: Replaces all event items with a new list in a single atomic update.
    * This ensures we don't lose data if the user refreshes mid-process.
+   *
+   * Deliberately still a whole-event transaction. Only the organizer runs it,
+   * and the organizer may write anywhere under their own event, so the
+   * tightened rules do not block it. Converting it would lose the protection
+   * against items added while the migration is running.
    */
   static async replaceAllMenuItems(
     eventId: string,
@@ -478,77 +442,78 @@ export class FirebaseService {
     itemData: Omit<MenuItem, 'id'>,
     options?: { bypassLimit?: boolean }
   ): Promise<string> {
-    const eventRef = ref(database, `events/${eventId}`);
-    let newItemId: string | null = null;
-
     try {
-      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (currentEventData === null) {
-          // Firebase runTransaction can be called with null initially.
-          // Returning currentEventData (null) lets it retry once data is fetched.
-          return currentEventData;
-        }
+      // Read the two things the decision needs instead of the whole event.
+      const [detailsSnapshot, organizerSnapshot] = await Promise.all([
+        get(ref(database, `events/${eventId}/details`)),
+        get(ref(database, `events/${eventId}/organizerId`))
+      ]);
 
-        // --- Validation & Limit Check ---
-        const details = currentEventData.details;
-        const creatorId = itemData.creatorId;
-        const userItemCount = (creatorId && currentEventData.userItemCounts?.[creatorId]) || 0;
+      if (!detailsSnapshot.exists()) {
+        throw new Error('האירוע לא נמצא.');
+      }
 
-        const isOrganizer = creatorId === currentEventData.organizerId;
-        const shouldBypassLimit = isOrganizer || options?.bypassLimit;
+      const details = detailsSnapshot.val();
+      const creatorId = itemData.creatorId;
+      const isOrganizer = creatorId === organizerSnapshot.val();
+      const shouldBypassLimit = isOrganizer || options?.bypassLimit;
 
-        // Check 1: Is adding allowed?
-        if (details.allowUserItems === false && !isOrganizer) {
-          throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
-        }
+      const countSnapshot = creatorId
+        ? await get(ref(database, `events/${eventId}/userItemCounts/${creatorId}`))
+        : null;
+      const userItemCount = countSnapshot?.val() || 0;
 
-        // Check 2: Limit reached? (Skip if Admin/Organizer)
-        if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
-          throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
-        }
+      // Check 1: Is adding allowed?
+      if (details.allowUserItems === false && !isOrganizer) {
+        throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
+      }
 
-        // --- Prepare Data ---
-        const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
-        newItemId = newItemRef.key!;
+      // Check 2: Limit reached? (Skip if Admin/Organizer)
+      if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
+        throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
+      }
 
-        if (!currentEventData.menuItems) currentEventData.menuItems = {};
-        if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
+      // --- Prepare Data ---
+      const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
+      const newItemId = newItemRef.key!;
 
-        // Sanitize item data
-        const finalItemData: any = {
-          ...itemData,
-          id: newItemId,
-          notes: itemData.notes || null
-        };
-        Object.keys(finalItemData).forEach(key => {
-          if (finalItemData[key] === undefined) delete finalItemData[key];
-        });
-
-        // --- Update State ---
-        currentEventData.menuItems[newItemId] = finalItemData;
-
-        // Increment counter if we have a creatorId
-        if (creatorId) {
-          currentEventData.userItemCounts[creatorId] = userItemCount + 1;
-        }
-
-        return currentEventData;
+      // Sanitize item data
+      const finalItemData: any = {
+        ...itemData,
+        id: newItemId,
+        notes: itemData.notes || null
+      };
+      Object.keys(finalItemData).forEach(key => {
+        if (finalItemData[key] === undefined) delete finalItemData[key];
       });
 
-      if (!newItemId) {
-        throw new Error("Failed to generate item ID.");
+      // The item and the counter go up together in one atomic update. The
+      // counter rule accepts a step of exactly one, which makes it a
+      // compare-and-set: a second addition racing this one is refused by the
+      // server rather than overwriting the count, and the item is not created
+      // either. That is why no transaction is needed here.
+      const updates: { [key: string]: any } = {};
+      updates[`events/${eventId}/menuItems/${newItemId}`] = finalItemData;
+      if (creatorId) {
+        updates[`events/${eventId}/userItemCounts/${creatorId}`] = userItemCount + 1;
       }
+
+      await update(ref(database), updates);
+
       return newItemId;
 
     } catch (error) {
       console.error('❌ Error in addMenuItem:', error);
-      console.groupEnd();
       throw error;
     }
   }
 
   /**
    * Adds a new item and assigns it to a user (optional)
+   *
+   * Unused: no screen calls this. It is still a whole-event transaction and
+   * would have to be converted like addMenuItem before anything calls it again.
+   * See DOCS/PLANING/14-events-write-cascade.md.
    */
   static async addMenuItemAndAssign(
     eventId: string,
@@ -693,63 +658,63 @@ export class FirebaseService {
    * מוחק פריט תפריט
    */
   static async deleteMenuItem(eventId: string, itemId: string): Promise<void> {
-    console.group('🗑️ FirebaseService.deleteMenuItem (Transactional)');
+    console.group('🗑️ FirebaseService.deleteMenuItem');
     console.log('📥 Input parameters:', { eventId, itemId });
 
-    const eventRef = ref(database, `events/${eventId}`);
-
     try {
-      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (currentEventData === null) return currentEventData;
+      const [itemSnapshot, assignmentsSnapshot] = await Promise.all([
+        get(ref(database, `events/${eventId}/menuItems/${itemId}`)),
+        get(ref(database, `events/${eventId}/assignments`))
+      ]);
 
-        if (!currentEventData.menuItems?.[itemId]) {
-          // If item doesn't exist, nothing to do.
-          return;
+      if (!itemSnapshot.exists()) {
+        // If item doesn't exist, nothing to do.
+        console.groupEnd();
+        return;
+      }
+
+      const itemToDelete = itemSnapshot.val();
+      const creatorId = itemToDelete.creatorId;
+      const assignments = assignmentsSnapshot.val() || {};
+
+      const hasOtherUserAssignments = Object.values(assignments)
+        .some((a: any) => a.menuItemId === itemId && a.userId !== creatorId);
+
+      if (hasOtherUserAssignments) {
+        console.warn('⚠️ Deleting item with active assignments for other users.');
+      }
+
+      const updates: { [key: string]: any } = {};
+
+      // Step 1: Delete the item itself
+      updates[`events/${eventId}/menuItems/${itemId}`] = null;
+
+      // Step 2: Update counter (if relevant). It is written down to zero rather
+      // than removed, because the counter rule only accepts a step of one in
+      // either direction and a zero entry reads the same as a missing one.
+      if (creatorId) {
+        const countSnapshot = await get(ref(database, `events/${eventId}/userItemCounts/${creatorId}`));
+        const currentCount = countSnapshot.val() || 0;
+        if (currentCount > 0) {
+          updates[`events/${eventId}/userItemCounts/${creatorId}`] = currentCount - 1;
+          console.log(`📉 Decremented item count for user ${creatorId} to ${currentCount - 1}`);
         }
+      }
 
-
-        // Check for active assignments - prevent deletion if any exist
-        const itemToDelete = currentEventData.menuItems[itemId];
-        const creatorId = itemToDelete.creatorId;
-
-        const assignments = currentEventData.assignments || {};
-        const hasOtherUserAssignments = Object.values(assignments)
-          .some((a: any) => a.menuItemId === itemId && a.userId !== creatorId);
-
-        if (hasOtherUserAssignments) {
-          console.warn('⚠️ Deleting item with active assignments for other users.');
+      // Step 3: Delete all assignments related to the item
+      Object.keys(assignments).forEach(assignmentId => {
+        if (assignments[assignmentId].menuItemId === itemId) {
+          updates[`events/${eventId}/assignments/${assignmentId}`] = null;
+          console.log(`🗑️ Marked related assignment ${assignmentId} for deletion.`);
         }
-
-        // Step 1: Update counter (if relevant)
-        if (creatorId && currentEventData.userItemCounts?.[creatorId]) {
-          currentEventData.userItemCounts[creatorId]--;
-          console.log(`📉 Decremented item count for user ${creatorId} to ${currentEventData.userItemCounts[creatorId]}`);
-          // If counter reaches zero, clean up the entry
-          if (currentEventData.userItemCounts[creatorId] <= 0) {
-            delete currentEventData.userItemCounts[creatorId];
-            console.log(`🧹 Cleaned up zero-count entry for user ${creatorId}`);
-          }
-        }
-
-        // Step 2: Delete the item itself
-        delete currentEventData.menuItems[itemId];
-        console.log(`🗑️ Marked menu item ${itemId} for deletion.`);
-
-        // Step 3: Delete all assignments related to the item
-        if (currentEventData.assignments) {
-          Object.keys(currentEventData.assignments).forEach(assignmentId => {
-            if (currentEventData.assignments[assignmentId].menuItemId === itemId) {
-              delete currentEventData.assignments[assignmentId];
-              console.log(`🗑️ Marked related assignment ${assignmentId} for deletion.`);
-            }
-          });
-        }
-
-        // Return the updated object so the transaction writes it
-        return currentEventData;
       });
+
+      // One atomic update: the item, its counter and its sign-ups go together.
+      await update(ref(database), updates);
+      console.groupEnd();
     } catch (error) {
-      console.error('❌ Error in deleteMenuItem transaction:', error);
+      console.error('❌ Error in deleteMenuItem:', error);
+      console.groupEnd();
       throw error;
     }
   }
@@ -768,8 +733,6 @@ export class FirebaseService {
   ): Promise<void> {
 
     try {
-      await this.ensureEventStructure(eventId);
-
       const participantRef = ref(database, `events/${eventId}/participants/${userId}`);
       const participantData = {
         name: userName,
@@ -809,92 +772,77 @@ export class FirebaseService {
     assignmentData: Omit<Assignment, 'id'>
   ): Promise<string> {
 
-
-    const eventRef = ref(database, `events/${eventId}`);
     const newAssignmentRef = push(ref(database, `events/${eventId}/assignments`));
     const newAssignmentId = newAssignmentRef.key!;
+    let claimedTheItem = false;
 
     try {
-      await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
-        if (currentEventData === null) {
-          return currentEventData;
+      // Read only what the decision needs, instead of pulling the whole event
+      // in for a read-modify-write. The race the old transaction guarded is now
+      // guarded by the rule on the item's claim fields: claiming is allowed only
+      // while they are empty, so a second claimant is refused by the server and
+      // the update below fails as one.
+      const itemSnapshot = await get(ref(database, `events/${eventId}/menuItems/${assignmentData.menuItemId}`));
+      if (!itemSnapshot.exists()) {
+        throw new Error('הפריט לא נמצא.');
+      }
+      const item = itemSnapshot.val();
+
+      const sanitizedAssignmentData: any = { ...assignmentData };
+      // Remove undefined values to prevent "Data returned contains undefined"
+      Object.keys(sanitizedAssignmentData).forEach(key => {
+        if (sanitizedAssignmentData[key] === undefined) {
+          delete sanitizedAssignmentData[key];
         }
-
-        // --- 1. Basic Setup & Validation ---
-        if (!currentEventData.menuItems) currentEventData.menuItems = {};
-        if (!currentEventData.assignments) currentEventData.assignments = {};
-        if (!currentEventData.userItemCounts) currentEventData.userItemCounts = {};
-
-        const item = currentEventData.menuItems[assignmentData.menuItemId];
-        if (!item) {
-          throw new Error('הפריט לא נמצא.');
-        }
-
-        // --- 2. User Item Limit Validation ---
-        // Count how many items this user has CREATED (not assigned to)
-        // Note: The original requirement was about CREATING items, but let's be safe.
-        // If the limit applies to ASSIGNMENTS too, we would check it here. 
-        // Current logic in addMenuItemAndAssign checks creation limit. 
-        // We will assume simply signing up for an existing item doesn't count towards the "Create Item" limit unless specified.
-        // For now, we proceed.
-
-        // --- 3. Splittable vs Non-Splittable Logic ---
-        if (item.isSplittable || item.quantity > 1) {
-          // --- Splittable Item Logic ---
-          let currentAssignedQuantity = 0;
-
-          // Calculate total assigned quantity from all assignments for this item
-          Object.values(currentEventData.assignments).forEach((assignment: any) => {
-            if (assignment.menuItemId === assignmentData.menuItemId) {
-              currentAssignedQuantity += (assignment.quantity || 0);
-            }
-          });
-
-          const newTotal = currentAssignedQuantity + assignmentData.quantity;
-
-          if (newTotal > item.quantity) {
-            const remaining = Math.max(0, item.quantity - currentAssignedQuantity);
-            throw new Error(`הכמות המבוקשת גדולה מהכמות הפנויה. נותרו: ${remaining}`);
-          }
-
-          // We do NOT update item.assignedTo for splittable items to keep it "open"
-          // unless we want to mark it fully complete visually, but logic-wise it stays open until full.
-
-        } else {
-          // --- Non-Splittable Item Logic (Original 1-to-1) ---
-          if (item.assignedTo) {
-            throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
-          }
-
-          // Lock the item
-          item.assignedTo = assignmentData.userId;
-          item.assignedToName = assignmentData.userName;
-          item.assignedAt = Date.now();
-        }
-
-        // --- 4. Finalize Assignment ---
-        const sanitizedAssignmentData: any = { ...assignmentData };
-        // Remove undefined values to prevent "Transaction failed: Data returned contains undefined"
-        Object.keys(sanitizedAssignmentData).forEach(key => {
-          if (sanitizedAssignmentData[key] === undefined) {
-            delete sanitizedAssignmentData[key];
-          }
-        });
-
-        const finalAssignmentData = {
-          ...sanitizedAssignmentData,
-          id: newAssignmentId,
-          assignedAt: Date.now()
-        };
-
-        currentEventData.assignments[newAssignmentId] = finalAssignmentData;
-
-        return currentEventData;
       });
+
+      const updates: { [key: string]: any } = {};
+      updates[`events/${eventId}/assignments/${newAssignmentId}`] = {
+        ...sanitizedAssignmentData,
+        id: newAssignmentId,
+        assignedAt: Date.now()
+      };
+
+      if (item.isSplittable || item.quantity > 1) {
+        // Splittable item: several people share it, so the item itself is never
+        // claimed and the cap is the only thing to check. It is checked here and
+        // nowhere else - the rules cannot add up sibling assignments. The
+        // residual race is recorded in DOCS/PLANING/14-events-write-cascade.md.
+        const assignmentsSnapshot = await get(ref(database, `events/${eventId}/assignments`));
+        const assignments = assignmentsSnapshot.val() || {};
+
+        const currentAssignedQuantity = Object.values(assignments)
+          .filter((a: any) => a.menuItemId === assignmentData.menuItemId)
+          .reduce((sum: number, a: any) => sum + (a.quantity || 0), 0);
+
+        if (currentAssignedQuantity + assignmentData.quantity > item.quantity) {
+          const remaining = Math.max(0, item.quantity - currentAssignedQuantity);
+          throw new Error(`הכמות המבוקשת גדולה מהכמות הפנויה. נותרו: ${remaining}`);
+        }
+
+      } else {
+        // Non-splittable item: one person takes it, so it carries the claim.
+        if (item.assignedTo) {
+          throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
+        }
+
+        const itemPath = `events/${eventId}/menuItems/${assignmentData.menuItemId}`;
+        updates[`${itemPath}/assignedTo`] = assignmentData.userId;
+        updates[`${itemPath}/assignedToName`] = assignmentData.userName;
+        updates[`${itemPath}/assignedAt`] = Date.now();
+        claimedTheItem = true;
+      }
+
+      await update(ref(database), updates);
 
       return newAssignmentId;
     } catch (error: any) {
-      console.error('❌ Error in createAssignment transaction:', error);
+      console.error('❌ Error in createAssignment:', error);
+      // A refusal while claiming means somebody got there between the read above
+      // and the write. Keep the wording the user already knows.
+      if (claimedTheItem && String(error?.code || error?.message).toUpperCase().includes('PERMISSION')) {
+        throw new Error('מצטערים, מישהו אחר כבר הספיק לשבץ את הפריט הזה');
+      }
       // Improve error message for known issues
       if (error.message && error.message.includes('contains undefined')) {
         throw new Error('שגיאת מערכת: נתונים לא תקינים (undefined). אנא נסה שנית או פנה לתמיכה.');
@@ -950,7 +898,10 @@ export class FirebaseService {
                   dbUpdates[`events/${eventId}/assignments/${anId}/userName`] = updates.userName;
 
                   const menuItemId = allAssignments[anId].menuItemId;
-                  if (menuItemId) {
+                  // Only touch the item's label when this user is the one the
+                  // item is actually claimed by. On a splittable item nobody is,
+                  // so the label describes no one and writing it is meaningless.
+                  if (menuItemId && allMenuItems[menuItemId]?.assignedTo === currentUserId) {
                     dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
                   }
                 }
@@ -968,7 +919,12 @@ export class FirebaseService {
             dbUpdates[`${assignmentPath}/userName`] = updates.userName;
             const menuItemId = assignmentData.menuItemId;
             if (menuItemId) {
-              dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
+              // Same restriction as above: the label belongs to whoever claimed
+              // the item, and only they may write it.
+              const claimSnapshot = await get(ref(database, `events/${eventId}/menuItems/${menuItemId}/assignedTo`));
+              if (claimSnapshot.val() === currentUserId) {
+                dbUpdates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = updates.userName;
+              }
             }
           }
         }
@@ -998,10 +954,16 @@ export class FirebaseService {
       // Delete the assignment
       updates[`events/${eventId}/assignments/${assignmentId}`] = null;
 
-      // Remove assignment from item
-      updates[`events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
-      updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
-      updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
+      // Remove assignment from item - but only if the item is actually claimed.
+      // An item several people share is never claimed, so those three fields are
+      // already empty, and writing null over an empty claim field is still a
+      // write, which the rules refuse.
+      const claimSnapshot = await get(ref(database, `events/${eventId}/menuItems/${menuItemId}/assignedTo`));
+      if (claimSnapshot.exists()) {
+        updates[`events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
+        updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
+        updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
+      }
 
       await update(ref(database), updates);
     } catch (error) {

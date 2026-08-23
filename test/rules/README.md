@@ -17,12 +17,34 @@ java -version
 ## הרצה
 
 ```bash
-firebase emulators:exec --only database --project demo-shishi "node --test --test-concurrency=1 test/rules/"
+firebase emulators:exec --only database --project demo-shishi "node --test --test-concurrency=1 test/rules/*.test.mjs"
 ```
 
 הדגל `--test-concurrency=1` אינו קישוט: כל הבדיקות חולקות אמולטור אחד וקבוצת
 חוקים אחת, והבדיקה האחרונה מחליפה את החוקים ומחזירה אותם. הרצה במקביל תיצור
 מרוץ על המצב המשותף.
+
+התבנית `*.test.mjs` נחוצה — מסירת שם התיקייה בלבד גורמת ל-Node לנסות לטעון
+אותה כמודול ולהיכשל.
+
+## תקלת סביבה שכבר נתקלנו בה — "Unable to establish loopback connection"
+
+אם האמולטור נופל מיד עם `Database Emulator has exited with code: 1`, וב-
+`database-debug.log` מופיע `failed to create a child event loop` ואחריו
+`Unable to establish loopback connection` — זו אינה תקלה בבדיקות ולא בחוקים.
+
+מכונת ה-Java אינה מצליחה ליצור את הצינור הפנימי שלה, כי חיבור לשקע מסוג
+Unix בתיקיית הזמניות של המערכת נכשל. תעבורת TCP מקומית דווקא תקינה, ולכן זה
+נראה מבלבל.
+
+**הפתרון:** להפנות את מכונת ה-Java לתיקייה אחרת עבור השקעים האלה, לפני ההרצה:
+
+```powershell
+$env:JAVA_TOOL_OPTIONS = "-Djdk.net.unixdomain.tmpdir=C:\Temp\jsock"
+```
+
+יש לוודא שהתיקייה קיימת. אומת ב-23/08/2026: עם ההגדרה הזו האמולטור עולה
+כרגיל, ובלעדיה הוא נופל בכל פעם.
 
 הקידומת `demo-` בשם הפרויקט מבטיחה שהאמולטור עובד לגמרי מנותק, בלי לגעת בשום
 פרויקט אמיתי.

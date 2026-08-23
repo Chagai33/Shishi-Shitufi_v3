@@ -141,6 +141,9 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     message: string;
     onConfirm: (value?: string) => void;
     title?: string;
+    confirmLabel?: string;
+    secondaryLabel?: string;
+    onSecondary?: () => void;
   } | null>(null);
 
   const [templateName, setTemplateName] = useState('');
@@ -293,14 +296,32 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
         ...(formData.endTime ? { endTime: formData.endTime } : {}),
       };
 
+      const saveWithoutMigration = async () => {
+        await FirebaseService.updateEventDetails(event!.id, eventDetails);
+        toast.success('האירוע עודכן בהצלחה!');
+        onSuccess?.();
+        onClose();
+      };
+
       if (event) {
-        // Smart Migration Detection using areCategoriesEqual
-        // If we have items AND categories changed significantly
-        if (event.menuItems && Object.keys(event.menuItems).length > 0 && !areCategoriesEqual(formData.categories, event.details.categories || [])) {
+        // Smart Migration Detection using areCategoriesEqual.
+        // The baseline must mirror how formData.categories was initialised, otherwise
+        // legacy events (which have no details.categories at all) always compare as
+        // "changed" and every single save is forced through the migration flow.
+        const baselineCategories = event.details.categories || TEMPLATES['DEFAULT'].categories;
+
+        // If we have items AND categories actually changed
+        if (event.menuItems && Object.keys(event.menuItems).length > 0 && !areCategoriesEqual(formData.categories, baselineCategories)) {
           setActiveModal({
             type: 'confirm',
-            title: 'הגירה חכמה',
-            message: 'האם תרצה להשתמש ב"הגירה חכמה" (Smart Migration) כדי לסדר את הפריטים מחדש לפי הקטגוריות החדשות?\n\nאישור: ניתוח פריטים וסדר מחדש.\nביטול: שמירה רגילה (פריטים ללא קטגוריה תקינה עלולים להעלם מהתצוגה).',
+            title: 'שינוי קטגוריות',
+            message: 'שינית את הקטגוריות של האירוע, ויש בו כבר פריטים.\n\nהגירה חכמה: ניתוח הפריטים וסידורם מחדש לפי הקטגוריות החדשות.\nשמור בלי הגירה: הפריטים יישמרו כמו שהם. פריטים שהקטגוריה שלהם בוטלה יוצגו תחת שם הקטגוריה הישן, וללא סינון ייעודי.\nביטול: חזרה לטופס בלי לשמור.',
+            confirmLabel: 'הגירה חכמה',
+            secondaryLabel: 'שמור בלי הגירה',
+            onSecondary: async () => {
+              setActiveModal(null);
+              await saveWithoutMigration();
+            },
             onConfirm: async () => {
               // 1. Save Event Details first
               await FirebaseService.updateEventDetails(event.id, eventDetails);
@@ -318,10 +339,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
           return;
         }
 
-        await FirebaseService.updateEventDetails(event.id, eventDetails);
-        toast.success('האירוע עודכן בהצלחה!');
-        onSuccess?.();
-        onClose();
+        await saveWithoutMigration();
       } else {
         const eventId = await FirebaseService.createEvent(authUser.uid, eventDetails);
         if (eventId) {
@@ -871,10 +889,15 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
             }
           ] : [
             {
-              label: 'אישור',
+              label: activeModal.confirmLabel || 'אישור',
               onClick: () => activeModal.onConfirm(),
               className: 'bg-blue-500 text-white hover:bg-blue-600'
-            }
+            },
+            ...(activeModal.onSecondary ? [{
+              label: activeModal.secondaryLabel || 'שמור',
+              onClick: activeModal.onSecondary,
+              className: 'bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300'
+            }] : [])
           ]}
         >
           {activeModal.type === 'prompt' && (

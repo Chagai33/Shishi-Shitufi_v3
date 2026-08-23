@@ -301,6 +301,29 @@ describe('claiming an item', () => {
   });
 });
 
+// A splittable item is never claimed, so its claim fields are empty. Cancelling
+// a sign-up on one still writes null over all three of them, and null over an
+// empty field is still a write the rules have to allow.
+describe('cancelling a sign-up on a splittable item', () => {
+  test('B can cancel a seat on a shared item', async () => {
+    await seed(`events/${EVENT_A}/menuItems/-item-shared`, {
+      name: 'Ride with four seats', creatorId: A, quantity: 4, isSplittable: true,
+    });
+    await seed(`events/${EVENT_A}/assignments/-assignment-shared-b`, {
+      menuItemId: '-item-shared', userId: B, userName: 'B', quantity: 1,
+    });
+
+    // What cancelAssignment now sends: the claim fields are left alone when the
+    // item is not claimed by anybody.
+    await update(ref(bob.db), {
+      [`events/${EVENT_A}/assignments/-assignment-shared-b`]: null,
+    });
+
+    const snap = await get(ref(bob.db, `events/${EVENT_A}/assignments/-assignment-shared-b`));
+    assert.ok(!snap.exists());
+  });
+});
+
 describe('adding items as a participant', () => {
   test('B can add an item while under the quota, counter and all', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 1);

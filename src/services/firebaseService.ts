@@ -954,10 +954,16 @@ export class FirebaseService {
       // Delete the assignment
       updates[`events/${eventId}/assignments/${assignmentId}`] = null;
 
-      // Remove assignment from item
-      updates[`events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
-      updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
-      updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
+      // Remove assignment from item - but only if the item is actually claimed.
+      // An item several people share is never claimed, so those three fields are
+      // already empty, and writing null over an empty claim field is still a
+      // write, which the rules refuse.
+      const claimSnapshot = await get(ref(database, `events/${eventId}/menuItems/${menuItemId}/assignedTo`));
+      if (claimSnapshot.exists()) {
+        updates[`events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
+        updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
+        updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
+      }
 
       await update(ref(database), updates);
     } catch (error) {

@@ -22,6 +22,9 @@
 | 1 | מבקר אינו יכול להוסיף פריט משלו | 🔴 באג חי במוצר | אין | [28-visitor-cannot-add-own-item.md](28-visitor-cannot-add-own-item.md) |
 | 1א | למבקר אנונימי אין דרך לבקש מחיקה | 🟠 חשיפה משפטית | אין | [24-anonymous-visitor-cannot-delete-account.md](24-anonymous-visitor-cannot-delete-account.md) |
 | 1ב | משתמשים רשומים אינם נספרים כמשתתפים | 🟠 באג במוצר | אין | [23-registered-users-never-counted-as-participants.md](23-registered-users-never-counted-as-participants.md) |
+| 1ג | טרמפים נחסמים כשהמארגן כיבה הוספת פריטים | 🟠 באג במוצר | אין | [29-rides-blocked-by-user-items-setting.md](29-rides-blocked-by-user-items-setting.md) |
+| 1ד | המכסה ניתנת לעקיפה, ויוצר הפריט אינו מאומת | 🟠 חשיפה | אין | [30-item-rules-trust-the-client.md](30-item-rules-trust-the-client.md) |
+| 1ה | טרמפים אוכלים את מכסת הפריטים במסך | 🟠 באג במוצר | אין | [31-rides-consume-the-item-quota.md](31-rides-consume-the-item-quota.md) |
 | 2 | הסיווג האוטומטי מזרים הכל ל"אחר" | 🟠 באג במוצר | אין | [17-ai-classification-after-migration.md](17-ai-classification-after-migration.md) |
 | 3 | "אירוע" רפאים עם מידע אישי שלא יימחק | 🟠 חשיפה | אין | [15-phantom-event-node.md](15-phantom-event-node.md) |
 | 3א | כל מבקר יכול ליצור "אירוע" חדש במסד | 🟠 חשיפה | אין | [20-anyone-can-create-an-event-node.md](20-anyone-can-create-an-event-node.md) |

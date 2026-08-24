@@ -41,6 +41,7 @@
 | 13 | גודל ה-bundle | 🟢 שיפור | אין | [07-performance.md](07-performance.md) |
 | 14 | רקב הקישורים ב-README שבשורש | 🟢 תיעוד | אין | [22-readme-rot.md](22-readme-rot.md) |
 | 15 | פרופילים ריקים של מבקרים אנונימיים | 🟢 היגיינת נתונים | אין | [26-anonymous-visitors-leave-empty-profiles.md](26-anonymous-visitors-leave-empty-profiles.md) |
+| 💡 | כמות בלי יחידת מידה — גרמים ומנות | 💡 רעיון מוצר | אין | [33-quantity-units.md](33-quantity-units.md) |
 | — | ~~ניקוי ענפים~~ | ✅ סבב שני הושלם ואומת | 24/08/2026 | [05-branch-cleanup.md](05-branch-cleanup.md) |
 
 **חוקי הפריטים והטרמפים נפרסו לפרודקשן ב-24/08/2026** — שלוש רשומות בקמפיין אחד, כי הן

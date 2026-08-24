@@ -519,7 +519,10 @@
                 "completed": "הפריט הושלם",
                 "takenBy": "נלקח ע\"י",
                 "cancelAssignment": "בטל שיבוץ",
-                "iWillBringIt": "אני אביא את זה"
+                "iWillBringIt": "אני אביא את זה",
+                "removeAssignment": "הסר שיבוץ",
+                "editMyAssignment": "ערוך את ההרשמה שלי",
+                "deleteItem": "מחק פריט"
             },
             "status": {
                 "ended": "האירוע הסתיים",
@@ -583,7 +586,6 @@
                 "joinError": "שגיאה בהצטרפות לאירוע.",
                 "itemNotFound": "פריט לא נמצא",
                 "confirmDeleteEmptyItem": "האם אתה בטוח שברצונך למחוק פריט זה?",
-                "confirmDeleteItemWithParticipants": "פריט זה כולל {{count}} שיבוצים. האם אתה בטוח שברצונך למחוק אותו?",
                 "confirmUnassignCreatorKeepItem": "אתה מבטל את השיבוץ שלך, אך הפריט יישמר עבור המשתתפים האחרים.",
                 "deleteItemConfirm": "פעולה זו תמחק גם את הפריט וגם את השיבוץ",
                 "itemDeleted": "הפריט והשיבוץ נמחקו",
@@ -598,7 +600,24 @@
                 "quantityTooHigh": "הכמות המבוקשת גדולה מהכמות הפנויה (מקסימום {{max}}).",
                 "assignmentUpdated": "השיבוץ עודכן בהצלחה!",
                 "assignmentCreated": "שובצת בהצלחה לפריט: {{itemName}}",
-                "limitReached": "הגעת למכסת {{limit}} הפריטים שניתן להוסיף."
+                "limitReached": "הגעת למכסת {{limit}} הפריטים שניתן להוסיף.",
+                "confirmDeleteNotifiedThem": "אשרו רק אם הודעתם למי שהסרתם. למחוק?",
+                "cancelAssignmentNotifyWithName": "להסיר את {{name}}? אשרו רק אחרי שהודעתם לו.",
+                "deleteBlockedRemovePassengersFirst_one": "רשום לנסיעה הזו נוסע אחד. הסירו אותו תחילה, ואז אפשר יהיה למחוק אותה.",
+                "deleteBlockedRemovePassengersFirst_two": "רשומים לנסיעה הזו שני נוסעים. הסירו אותם תחילה, ואז אפשר יהיה למחוק אותה.",
+                "deleteBlockedRemovePassengersFirst_other": "רשומים לנסיעה הזו {{count}} נוסעים. הסירו אותם תחילה, ואז אפשר יהיה למחוק אותה.",
+                "deleteBlockedRemoveParticipantsFirst_one": "רשום לפריט הזה משתתף אחד. הסירו אותו תחילה, ואז אפשר יהיה למחוק.",
+                "deleteBlockedRemoveParticipantsFirst_two": "רשומים לפריט הזה שני משתתפים. הסירו אותם תחילה, ואז אפשר יהיה למחוק.",
+                "deleteBlockedRemoveParticipantsFirst_other": "רשומים לפריט הזה {{count}} משתתפים. הסירו אותם תחילה, ואז אפשר יהיה למחוק.",
+                "confirmEditRideWithPassengers_one": "רשום לנסיעה הזו נוסע אחד, והוא לא יקבל הודעה על השינוי. להמשיך בעריכה?",
+                "confirmEditRideWithPassengers_two": "רשומים לנסיעה הזו שני נוסעים, והם לא יקבלו הודעה על השינוי. להמשיך בעריכה?",
+                "confirmEditRideWithPassengers_other": "רשומים לנסיעה הזו {{count}} נוסעים, והם לא יקבלו הודעה על השינוי. להמשיך בעריכה?",
+                "confirmEditItemWithParticipants_one": "רשום לפריט הזה משתתף אחד, והוא לא יקבל הודעה על השינוי. להמשיך בעריכה?",
+                "confirmEditItemWithParticipants_two": "רשומים לפריט הזה שני משתתפים, והם לא יקבלו הודעה על השינוי. להמשיך בעריכה?",
+                "confirmEditItemWithParticipants_other": "רשומים לפריט הזה {{count}} משתתפים, והם לא יקבלו הודעה על השינוי. להמשיך בעריכה?",
+                "confirmDeleteItemWithParticipants_one": "רשום לפריט הזה משתתף אחד. למחוק אותו בכל זאת?",
+                "confirmDeleteItemWithParticipants_two": "רשומים לפריט הזה שני משתתפים. למחוק אותו בכל זאת?",
+                "confirmDeleteItemWithParticipants_other": "רשומים לפריט הזה {{count}} משתתפים. למחוק אותו בכל זאת?"
             },
             "participantsList": {
                 "title": "רשימת משתתפים",

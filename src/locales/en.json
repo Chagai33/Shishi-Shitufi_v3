@@ -523,7 +523,10 @@
                 "takenBy": "Taken by",
                 "cancelAssignment": "Cancel Assignment",
                 "editItem": "Edit Item",
-                "iWillBringIt": "I'll bring it"
+                "iWillBringIt": "I'll bring it",
+                "removeAssignment": "Remove sign-up",
+                "editMyAssignment": "Edit my sign-up",
+                "deleteItem": "Delete item"
             },
             "status": {
                 "ended": "Event Ended",
@@ -586,7 +589,6 @@
                 "joinError": "Error joining event.",
                 "itemNotFound": "Item not found",
                 "confirmDeleteEmptyItem": "Are you sure you want to delete this item?",
-                "confirmDeleteItemWithParticipants": "This item has {{count}} assignments. Are you sure you want to delete it?",
                 "deleteItemConfirm": "This action will delete both the item and the assignment",
                 "itemDeleted": "Item and assignment deleted",
                 "deleteItemError": "Error deleting item",
@@ -600,7 +602,19 @@
                 "quantityTooHigh": "Requested quantity exceeds available quantity (max {{max}}).",
                 "assignmentUpdated": "Assignment updated successfully!",
                 "assignmentCreated": "Successfully assigned to item: {{itemName}}",
-                "limitReached": "You have reached the limit of {{limit}} items you can add."
+                "limitReached": "You have reached the limit of {{limit}} items you can add.",
+                "confirmDeleteNotifiedThem": "Confirm only if you have told the people you removed. Delete?",
+                "cancelAssignmentNotifyWithName": "Remove {{name}}? Confirm only after you have told them.",
+                "deleteBlockedRemovePassengersFirst_one": "One passenger is signed up for this ride. Remove them first, then you can delete it.",
+                "deleteBlockedRemovePassengersFirst_other": "{{count}} passengers are signed up for this ride. Remove them first, then you can delete it.",
+                "deleteBlockedRemoveParticipantsFirst_one": "One person is signed up for this item. Remove them first, then you can delete it.",
+                "deleteBlockedRemoveParticipantsFirst_other": "{{count}} people are signed up for this item. Remove them first, then you can delete it.",
+                "confirmEditRideWithPassengers_one": "One passenger is signed up for this ride and will not be notified of the change. Continue editing?",
+                "confirmEditRideWithPassengers_other": "{{count}} passengers are signed up for this ride and will not be notified of the change. Continue editing?",
+                "confirmEditItemWithParticipants_one": "One person is signed up for this item and will not be notified of the change. Continue editing?",
+                "confirmEditItemWithParticipants_other": "{{count}} people are signed up for this item and will not be notified of the change. Continue editing?",
+                "confirmDeleteItemWithParticipants_one": "One person is signed up for this item. Delete it anyway?",
+                "confirmDeleteItemWithParticipants_other": "{{count}} people are signed up for this item. Delete it anyway?"
             },
             "participantsList": {
                 "title": "Participants List",

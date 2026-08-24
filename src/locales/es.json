@@ -452,7 +452,10 @@
                 "takenBy": "Tomado por",
                 "cancelAssignment": "Cancelar Asignación",
                 "editItem": "Editar Artículo",
-                "iWillBringIt": "Yo lo traeré"
+                "iWillBringIt": "Yo lo traeré",
+                "removeAssignment": "Quitar inscripción",
+                "editMyAssignment": "Editar mi inscripción",
+                "deleteItem": "Eliminar artículo"
             },
             "status": {
                 "ended": "Evento Finalizado",
@@ -497,7 +500,6 @@
                 "joinError": "Error al unirse al evento.",
                 "itemNotFound": "Artículo no encontrado",
                 "confirmDeleteEmptyItem": "¿Estás seguro de que quieres eliminar este artículo?",
-                "confirmDeleteItemWithParticipants": "Este artículo tiene {{count}} asignaciones. ¿Estás seguro de que quieres eliminarlo?",
                 "deleteItemConfirm": "Esta acción eliminará tanto el artículo como la asignación",
                 "itemDeleted": "Artículo y asignación eliminados",
                 "deleteItemError": "Error al eliminar el artículo",
@@ -511,7 +513,19 @@
                 "quantityTooHigh": "La cantidad solicitada excede la cantidad disponible (máx {{max}}).",
                 "assignmentUpdated": "¡Asignación actualizada con éxito!",
                 "assignmentCreated": "Asignado exitosamente al artículo: {{itemName}}",
-                "limitReached": "Has alcanzado el límite de {{limit}} artículos que puedes añadir."
+                "limitReached": "Has alcanzado el límite de {{limit}} artículos que puedes añadir.",
+                "confirmDeleteNotifiedThem": "Confirma solo si has avisado a las personas que quitaste. ¿Eliminar?",
+                "cancelAssignmentNotifyWithName": "¿Quitar a {{name}}? Confirma solo después de haberle avisado.",
+                "deleteBlockedRemovePassengersFirst_one": "Hay un pasajero apuntado a este viaje. Quítalo primero y luego podrás eliminarlo.",
+                "deleteBlockedRemovePassengersFirst_other": "Hay {{count}} pasajeros apuntados a este viaje. Quítalos primero y luego podrás eliminarlo.",
+                "deleteBlockedRemoveParticipantsFirst_one": "Hay una persona apuntada a este artículo. Quítala primero y luego podrás eliminarlo.",
+                "deleteBlockedRemoveParticipantsFirst_other": "Hay {{count}} personas apuntadas a este artículo. Quítalas primero y luego podrás eliminarlo.",
+                "confirmEditRideWithPassengers_one": "Hay un pasajero apuntado a este viaje y no se le avisará del cambio. ¿Continuar con la edición?",
+                "confirmEditRideWithPassengers_other": "Hay {{count}} pasajeros apuntados a este viaje y no se les avisará del cambio. ¿Continuar con la edición?",
+                "confirmEditItemWithParticipants_one": "Hay una persona apuntada a este artículo y no se le avisará del cambio. ¿Continuar con la edición?",
+                "confirmEditItemWithParticipants_other": "Hay {{count}} personas apuntadas a este artículo y no se les avisará del cambio. ¿Continuar con la edición?",
+                "confirmDeleteItemWithParticipants_one": "Hay una persona apuntada a este artículo. ¿Eliminarlo de todos modos?",
+                "confirmDeleteItemWithParticipants_other": "Hay {{count}} personas apuntadas a este artículo. ¿Eliminarlo de todos modos?"
             },
             "participantsList": {
                 "title": "Lista de Participantes",

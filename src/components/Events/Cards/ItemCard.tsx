@@ -78,7 +78,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       onEdit={onEditItem}
       onDelete={onDeleteItem}
       showEdit={!!(isCreatorLogic && isEventActive)}
-      showDelete={isOrganizer && isEventActive}
+      // Whoever created the item may remove it, not just the organizer - the
+      // rules have always allowed it and only the button was missing. Whether
+      // it is allowed right now is decided in one place, in EventPage, because
+      // it depends on who has signed up.
+      // See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md.
+      showDelete={!!(isCreatorLogic && isEventActive)}
       footer={
         isSplittable ? (
           <div className="space-y-2">

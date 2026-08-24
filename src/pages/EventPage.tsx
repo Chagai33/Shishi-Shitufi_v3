@@ -289,7 +289,9 @@ const EventPage: React.FC = () => {
 
         if (!isSelfAssignment) {
             // Manager deleting someone else
-            if (window.confirm(t('eventPage.messages.cancelAssignmentConfirmWithName', { name: assignment.userName }))) {
+            // Removing somebody else is the moment the obligation to tell them
+            // applies, and it is the only moment the app knows their name.
+            if (window.confirm(t('eventPage.messages.cancelAssignmentNotifyWithName', { name: assignment.userName }))) {
                 try {
                     await FirebaseService.cancelAssignment(eventId, assignment.id, assignment.menuItemId);
                     toast.success(t('eventPage.messages.assignmentCancelled'));
@@ -362,10 +364,29 @@ const EventPage: React.FC = () => {
 
         const itemAssignments = assignments.filter(a => a.menuItemId === item.id);
         const count = itemAssignments.length;
+        const isRide = isRideCategory(item.category) || isCarpoolLogic(item.name, item.category, item.rowType);
+
+        // Two different people can reach this. The organizer is the fallback
+        // authority and keeps exactly the behaviour they have always had: the
+        // item goes, with the number of sign-ups in the warning.
+        //
+        // Whoever created the item has to empty it first. They can already
+        // remove people one by one from the card - that control exists and
+        // works - so the rule is that a ride with passengers still in it
+        // cannot be deleted out from under them.
+        // See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md.
+        if (!showAdminButton && count > 0) {
+            toast.error(isRide
+                ? t('eventPage.messages.deleteBlockedRemovePassengersFirst', { count })
+                : t('eventPage.messages.deleteBlockedRemoveParticipantsFirst', { count }));
+            return;
+        }
 
         const confirmMsg = count > 0
             ? t('eventPage.messages.confirmDeleteItemWithParticipants', { count })
-            : t('eventPage.messages.confirmDeleteEmptyItem');
+            : (showAdminButton
+                ? t('eventPage.messages.confirmDeleteEmptyItem')
+                : t('eventPage.messages.confirmDeleteNotifiedThem'));
 
         if (window.confirm(confirmMsg)) {
             try {
@@ -400,7 +421,20 @@ const EventPage: React.FC = () => {
     };
 
     const handleEditClick = (item: MenuItemType, assignment: AssignmentType) => setModalState({ type: 'edit', item, assignment });
-    const handleEditItemClick = (item: MenuItemType) => setModalState({ type: 'edit-item', item });
+    const handleEditItemClick = (item: MenuItemType) => {
+        // Moving a departure time under people who already booked a seat tells
+        // them nothing, so say so before the form opens rather than after.
+        // See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md.
+        const count = assignments.filter(a => a.menuItemId === item.id).length;
+        if (count > 0) {
+            const isRide = isRideCategory(item.category) || isCarpoolLogic(item.name, item.category, item.rowType);
+            const warning = isRide
+                ? t('eventPage.messages.confirmEditRideWithPassengers', { count })
+                : t('eventPage.messages.confirmEditItemWithParticipants', { count });
+            if (!window.confirm(warning)) return;
+        }
+        setModalState({ type: 'edit-item', item });
+    };
     const handleBackToCategories = () => { setView('categories'); setSelectedCategory(null); setSearchTerm(''); };
     const handleAllCategoriesClick = () => { setView('categories'); setSelectedCategory(null); setSearchTerm(''); };
     const handleCategoryClick = (category: string) => { setSelectedCategory(category); setView('items'); };

@@ -173,6 +173,23 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
       await db().ref().update(updates);
     } catch (error) {
       console.error(`Error during database cleanup for user ${uid}:`, error);
+
+      // The auth account is already gone by now, so this trigger will never run
+      // again and nothing retries it. Without a record of the failure the data
+      // simply stays, and no screen anywhere says so. This is deliberately only
+      // a record for somebody to act on by hand - no retry, no work queue - and
+      // it should be deleted once the leftover data has been cleaned up.
+      // No client can read it: the database rules do not define this node, so
+      // everything but the server is denied by default.
+      try {
+        await db().ref(`/deletionFailures/${uid}`).set({
+          failedAt: Date.now(),
+          error: (error && error.message) || String(error),
+          paths: Object.keys(updates)
+        });
+      } catch (recordError) {
+        console.error(`Could not record the cleanup failure for user ${uid}:`, recordError);
+      }
     }
   }
 

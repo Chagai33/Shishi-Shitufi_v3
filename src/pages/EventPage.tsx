@@ -106,6 +106,13 @@ const EventPage: React.FC = () => {
     const isOrganizer = !!showAdminButton;
 
     const canAddMoreItems = showAdminButton || ((currentEvent?.details.allowUserItems ?? false) && userCreatedItemsCount < MAX_USER_ITEMS);
+    // Which of the two reasons applies, ready to show. Both facts are already
+    // on screen, so nothing has to be read back from the database.
+    const addBlockedReason = useMemo(() => {
+        if (canAddMoreItems) return undefined;
+        if (!(currentEvent?.details.allowUserItems ?? false)) return t('eventPage.category.addingDisabled');
+        return t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS });
+    }, [canAddMoreItems, currentEvent, MAX_USER_ITEMS, t]);
     const assignmentStats = useMemo(() => {
         const requiredItems = menuItems.filter(item => item.isRequired);
         const optionalItems = menuItems.filter(item => !item.isRequired);
@@ -654,13 +661,14 @@ const EventPage: React.FC = () => {
                                 if (canAddMoreItems) {
                                     setModalState({ type: 'add-user-item', rowType: 'offers' });
                                 } else {
-                                    toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
+                                    if (addBlockedReason) toast.error(addBlockedReason);
                                 }
                             }}
                             canAddMoreItems={canAddMoreItems}
                             userCreatedItemsCount={userCreatedItemsCount}
                             MAX_USER_ITEMS={MAX_USER_ITEMS}
                             showLimit={!showAdminButton}
+                            addBlockedReason={addBlockedReason}
                             categories={getEventCategories(currentEvent || undefined, t)}
                             onOfferRide={currentEvent?.details.allowRideOffers === true ? () => {
                                 // Check if user already has a ride offer
@@ -749,12 +757,13 @@ const EventPage: React.FC = () => {
                                             if (canAddMoreItems) {
                                                 setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
                                             } else {
-                                                toast.error(t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS }));
+                                                if (addBlockedReason) toast.error(addBlockedReason);
                                             }
                                         }}
-                                        className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 disabled:bg-neutral-400 disabled:cursor-not-allowed transition-colors font-semibold text-sm flex items-center text-white flex-shrink-0 ${selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-dark' : 'bg-accent-dark'
+                                        title={canAddMoreItems ? t('eventPage.category.addItem') : addBlockedReason}
+                                        className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-colors font-semibold text-sm flex items-center text-white flex-shrink-0 ${!canAddMoreItems ? 'bg-neutral-400 cursor-not-allowed' : selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-dark' : 'bg-accent-dark'
                                             }`}
-                                        disabled={!canAddMoreItems}
+                                        aria-disabled={!canAddMoreItems}
                                         aria-label={`${t('eventPage.category.addItem')} ${(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
                                     >
                                         <Plus size={16} className="inline-block ml-1" aria-hidden="true" />

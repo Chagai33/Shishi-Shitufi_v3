@@ -498,6 +498,8 @@
             },
             "category": {
                 "addItemTooltip": "Add item to this category",
+                "addingDisabled": "The organizer has not allowed participants to add items to this event",
+                "limitReached": "You have reached the {{limit}} items you can add to this event",
                 "addItem": "Add Item"
             },
             "promo": {
@@ -810,7 +812,7 @@
                 "missingName": "Name is required to add an item",
                 "success": "Item added successfully!",
                 "generalError": "Error adding item",
-                "permissionDenied": "Permission denied. Check Firebase settings"
+                "permissionDenied": "The item was not added and nothing was saved. Refresh the page and try again; if it keeps happening, contact the event organizer"
             }
         },
         "rideCard": {

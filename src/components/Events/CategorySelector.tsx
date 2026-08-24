@@ -13,6 +13,11 @@ interface CategorySelectorProps {
   userCreatedItemsCount: number;
   MAX_USER_ITEMS: number;
   showLimit?: boolean;
+  // Why adding is blocked, in the user's own language, or undefined when it
+  // is not blocked. The button stays clickable so that a tap can say it -
+  // a disabled button swallows the tap, and phones have no hover to fall
+  // back on. See DOCS/PLANING/19-permission-denied-message.md.
+  addBlockedReason?: string;
   onOfferRide?: () => void; // New prop for ride offers
   onRideRequest?: () => void; // NEW prop for ride requests
 }
@@ -85,6 +90,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   userCreatedItemsCount,
   MAX_USER_ITEMS,
   showLimit = true,
+  addBlockedReason,
   onOfferRide,
   onRideRequest,
 }) => {
@@ -230,9 +236,9 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         <button
           onClick={onAddItem}
           type="button"
-          disabled={!canAddMoreItems}
-          title={canAddMoreItems ? t('categorySelector.addItemBtn') : t('categorySelector.cantAdd')}
-          className="w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-accent bg-accent-dark hover:bg-accent-dark/90 disabled:bg-neutral-400 disabled:cursor-not-allowed"
+          title={canAddMoreItems ? t('categorySelector.addItemBtn') : addBlockedReason}
+          aria-disabled={!canAddMoreItems}
+          className={`w-full flex items-center justify-center text-white font-semibold py-3 px-2 sm:px-6 rounded-lg shadow-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-accent ${canAddMoreItems ? 'bg-accent-dark hover:bg-accent-dark/90' : 'bg-neutral-400 cursor-not-allowed'}`}
         >
           <Plus size={20} className="ml-2 flex-shrink-0" />
           <span className="truncate">{t('categorySelector.addItemBtn')} {showLimit && `(${userCreatedItemsCount}/${MAX_USER_ITEMS})`}</span>

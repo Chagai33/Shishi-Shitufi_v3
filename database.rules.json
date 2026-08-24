@@ -78,8 +78,22 @@
           }
         },
         "userItemCounts": {
+          // Your own counter only, and only one step at a time, which is what
+          // makes adding an item a compare-and-set.
+          //
+          // The two halves are kept apart on purpose. The arithmetic runs only
+          // once there is a previous value to do arithmetic on: with the two
+          // folded into one condition, a participant who has no counter yet -
+          // every visitor arriving through an invitation link - was refused,
+          // because the failed subtraction took the whole condition down before
+          // the clause written to cover them was ever reached. That refusal took
+          // the item down with it, since both are sent as one write.
+          // See DOCS/PLANING/28-visitor-cannot-add-own-item.md.
+          //
+          // A first counter may only be one. Anything else would let a client
+          // open at any number and step straight past the quota.
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1 || !data.exists() && newData.val() == 1)"
+            ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1)) )"
           }
         }
       }

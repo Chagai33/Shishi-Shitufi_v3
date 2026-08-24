@@ -19,7 +19,7 @@
 | — | ~~ניקוי המסד נדחה כולו בשקט~~ | ✅ נפרס ואומת | 24/08/2026 | [27-cleanup-aborts-before-it-starts.md](27-cleanup-aborts-before-it-starts.md) |
 | — | ~~ההגנה על חשבון מנהל העל אינה פעילה~~ | ✅ נפרס ואומת | 24/08/2026 | [21-super-admin-guard-inert.md](21-super-admin-guard-inert.md) |
 | — | ~~מונה הפריטים שורד את מחיקת החשבון~~ | ✅ נפרס | 24/08/2026 | [25-user-item-counts-survive-deletion.md](25-user-item-counts-survive-deletion.md) |
-| 1 | מבקר אינו יכול להוסיף פריט משלו | 🔴 באג חי במוצר | אין | [28-visitor-cannot-add-own-item.md](28-visitor-cannot-add-own-item.md) |
+| 1 | מבקר אינו יכול להוסיף פריט משלו | ✅ מיושם, טרם נפרס | 24/08/2026 | [28-visitor-cannot-add-own-item.md](28-visitor-cannot-add-own-item.md) |
 | 1א | למבקר אנונימי אין דרך לבקש מחיקה | 🟠 חשיפה משפטית | אין | [24-anonymous-visitor-cannot-delete-account.md](24-anonymous-visitor-cannot-delete-account.md) |
 | 1ב | משתמשים רשומים אינם נספרים כמשתתפים | 🟠 באג במוצר | אין | [23-registered-users-never-counted-as-participants.md](23-registered-users-never-counted-as-participants.md) |
 | 1ג | טרמפים נחסמים כשהמארגן כיבה הוספת פריטים | 🟠 באג במוצר | אין | [29-rides-blocked-by-user-items-setting.md](29-rides-blocked-by-user-items-setting.md) |
@@ -33,7 +33,7 @@
 | 6 | שדרוג firebase-functions SDK | 🟠 בינוני | אין | [04-firebase-sdk.md](04-firebase-sdk.md) |
 | 7 | פגיעויות אבטחה בתלויות | 🟠 בינוני | אין | [03-dependencies.md](03-dependencies.md) |
 | 8 | בדיקת תקינות הקוד קורסת ואינה נותנת כיסוי | 🟠 איכות | אין | [16-lint-broken.md](16-lint-broken.md) |
-| 9 | הודעת "אין הרשאה" מפנה את המשתמש ל-Firebase | 🟢 ניסוח | אין | [19-permission-denied-message.md](19-permission-denied-message.md) |
+| 9 | הודעת "אין הרשאה" מפנה את המשתמש ל-Firebase | ✅ מיושם, טרם נפרס | 24/08/2026 | [19-permission-denied-message.md](19-permission-denied-message.md) |
 | 10 | תקרת הכמות בפריט מתחלק אינה נאכפת בשרת | 🟢 פער ידוע | אין | [18-splittable-quantity-race.md](18-splittable-quantity-race.md) |
 | 11 | קבצים ענקיים וקוד כפול | 🟢 חוב מבני | אין | [13-code-structure.md](13-code-structure.md) |
 | 12 | ניקוי קוד מת | 🟢 קל | אין | [06-dead-code.md](06-dead-code.md) |

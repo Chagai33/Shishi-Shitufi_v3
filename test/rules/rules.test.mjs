@@ -17,12 +17,15 @@ import { clientAs, seed, loadRules, applyRules, denied } from './helpers.mjs';
 const A = 'uid-organizer-a';
 const B = 'uid-guest-b';
 const C = 'uid-other-organizer';
+// Somebody who has never added anything to any event, so they have no item
+// counter yet. That is every visitor arriving through an invitation link.
+const V = 'uid-visitor-no-counter';
 
 const EVENT_A = '-EventOwnedByA000000';
 const EVENT_C = '-EventOwnedByC000000';
 const EVENT_EMPTY = '-EventWithNoItems000';
 
-let alice, bob, anon;
+let alice, bob, anon, visitor;
 
 before(async () => {
   await applyRules(loadRules());
@@ -71,10 +74,11 @@ before(async () => {
   alice = clientAs(A);
   bob = clientAs(B);
   anon = clientAs(null);
+  visitor = clientAs(V);
 });
 
 after(async () => {
-  await Promise.all([alice?.close(), bob?.close(), anon?.close()]);
+  await Promise.all([alice?.close(), bob?.close(), anon?.close(), visitor?.close()]);
 });
 
 // If the namespace or the rule upload were wrong, the emulator would be serving
@@ -325,6 +329,63 @@ describe('cancelling a sign-up on a splittable item', () => {
 });
 
 describe('adding items as a participant', () => {
+  // Every other test in this block seeds a counter before it writes, so none of
+  // them exercise a participant who does not have one yet - which is how the
+  // suite missed DOCS/PLANING/28-visitor-cannot-add-own-item.md. These four do.
+  const firstItem = (name, category) => ({ name, creatorId: V, category, quantity: 1 });
+
+  test('a participant with no counter yet can add their first item', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+
+    await update(ref(visitor.db), {
+      [`events/${EVENT_A}/menuItems/-first-item-by-v`]: firstItem('Quiche', 'main'),
+      [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
+    });
+
+    const snap = await get(ref(visitor.db, `events/${EVENT_A}/menuItems/-first-item-by-v/name`));
+    assert.equal(snap.val(), 'Quiche');
+  });
+
+  test('a first ride offer is not refused either', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+
+    await update(ref(visitor.db), {
+      [`events/${EVENT_A}/menuItems/-first-offer-by-v`]: firstItem('Ride there', 'ride_offers'),
+      [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
+    });
+
+    const snap = await get(ref(visitor.db, `events/${EVENT_A}/menuItems/-first-offer-by-v/name`));
+    assert.equal(snap.val(), 'Ride there');
+  });
+
+  test('nor is a first ride request', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+
+    await update(ref(visitor.db), {
+      [`events/${EVENT_A}/menuItems/-first-request-by-v`]: firstItem('Need a lift', 'ride_requests'),
+      [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
+    });
+
+    const snap = await get(ref(visitor.db, `events/${EVENT_A}/menuItems/-first-request-by-v/name`));
+    assert.equal(snap.val(), 'Need a lift');
+  });
+
+  // The other half of the same rule: a first counter may only be one. Without
+  // this, a fix that simply waves through a missing previous value would let
+  // somebody open at any number and skip the quota entirely.
+  test('but a first counter may only be one, not any number the client likes', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+
+    assert.ok(
+      await denied(
+        update(ref(visitor.db), {
+          [`events/${EVENT_A}/menuItems/-jump-by-v`]: firstItem('Opening high', 'main'),
+          [`events/${EVENT_A}/userItemCounts/${V}`]: 5,
+        }),
+      ),
+    );
+  });
+
   test('B can add an item while under the quota, counter and all', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 1);
 

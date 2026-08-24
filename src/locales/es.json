@@ -427,6 +427,8 @@
             },
             "category": {
                 "addItemTooltip": "Añadir artículo a esta categoría",
+                "addingDisabled": "El organizador no permitió que los participantes añadan artículos a este evento",
+                "limitReached": "Has alcanzado los {{limit}} artículos que puedes añadir a este evento",
                 "addItem": "Añadir Artículo"
             },
             "promo": {
@@ -607,7 +609,7 @@
                 "missingName": "Se requiere nombre para agregar un artículo",
                 "success": "¡Artículo agregado con éxito!",
                 "generalError": "Error al agregar el artículo",
-                "permissionDenied": "Permiso denegado. Verifique la configuración de Firebase"
+                "permissionDenied": "El artículo no se añadió y no se guardó nada. Actualiza la página e inténtalo de nuevo; si sigue ocurriendo, contacta al organizador del evento"
             }
         }
     }

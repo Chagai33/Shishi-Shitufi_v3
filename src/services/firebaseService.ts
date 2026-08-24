@@ -8,6 +8,7 @@ import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
 
 import { toast } from 'react-hot-toast';
+import i18n from '../i18n';
 
 const functions = getFunctions(); // <-- Functions service initialization
 
@@ -465,12 +466,12 @@ export class FirebaseService {
 
       // Check 1: Is adding allowed?
       if (details.allowUserItems === false && !isOrganizer) {
-        throw new Error('המארגן לא איפשר הוספת פריטים באירוע זה.');
+        throw new Error(i18n.t('eventPage.category.addingDisabled'));
       }
 
       // Check 2: Limit reached? (Skip if Admin/Organizer)
       if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
-        throw new Error(`הגעת למגבלת ${details.userItemLimit ?? 3} הפריטים שניתן להוסיף.`);
+        throw new Error(i18n.t('eventPage.category.limitReached', { limit: details.userItemLimit ?? 3 }));
       }
 
       // --- Prepare Data ---

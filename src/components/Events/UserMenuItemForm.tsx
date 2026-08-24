@@ -10,7 +10,7 @@ import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import FocusTrap from 'focus-trap-react';
-import { isCarpoolLogic } from '../../utils/eventUtils';
+import { isCarpoolLogic, isRideCategory } from '../../utils/eventUtils';
 
 // ============================================================================
 // HELPER COMPONENTS - Card View Style
@@ -294,10 +294,10 @@ export function UserMenuItemForm({
 
 
   const isRequest = formData.rowType === 'needs';
-  const isRideCategory = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim';
+  const isRideCategorySelected = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim';
 
   // For rides, don't allow self-assignment
-  const effectiveMyQuantity = isRideCategory ? 0 : myQuantity;
+  const effectiveMyQuantity = isRideCategorySelected ? 0 : myQuantity;
 
 
   // Get dynamic categories from the event using shared helper
@@ -575,7 +575,7 @@ export function UserMenuItemForm({
 
 
 
-      const isRide = ['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(formData.category);
+      const isRide = isRideCategory(formData.category);
       const shouldBypassLimit = isOrganizer || isRide;
 
       // For items where name field isn't shown (offers/requests that aren't rides),
@@ -747,7 +747,7 @@ export function UserMenuItemForm({
 
       // If switching category, reset ride-specific fields if new category is NOT a ride
       if (field === 'category') {
-        const isNewRide = ['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(value);
+        const isNewRide = isRideCategory(value);
         if (!isNewRide) {
           updates.rowType = undefined;
           updates.phoneNumber = '';

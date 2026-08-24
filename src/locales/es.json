@@ -428,6 +428,8 @@
             "category": {
                 "addItemTooltip": "Añadir artículo a esta categoría",
                 "addingDisabled": "El organizador no permitió que los participantes añadan artículos a este evento",
+                "rideOffersDisabled": "El organizador no permitió ofertas de viaje en este evento",
+                "rideRequestsDisabled": "El organizador no permitió solicitudes de viaje en este evento",
                 "limitReached": "Has alcanzado los {{limit}} artículos que puedes añadir a este evento",
                 "addItem": "Añadir Artículo"
             },

@@ -18,7 +18,7 @@ import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
 import { ParticipantsListModal } from '../components/Events/ParticipantsListModal';
 import { getEventCategories } from '../constants/templates';
-import { resolveCategoryDisplayName, isCarpoolLogic } from '../utils/eventUtils';
+import { resolveCategoryDisplayName, isCarpoolLogic, isRideCategory, RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS } from '../utils/eventUtils';
 import { useDebounce } from '../hooks/useDebounce';
 
 
@@ -113,6 +113,7 @@ const EventPage: React.FC = () => {
         if (!(currentEvent?.details.allowUserItems ?? false)) return t('eventPage.category.addingDisabled');
         return t('eventPage.category.limitReached', { limit: MAX_USER_ITEMS });
     }, [canAddMoreItems, currentEvent, MAX_USER_ITEMS, t]);
+
     const assignmentStats = useMemo(() => {
         const requiredItems = menuItems.filter(item => item.isRequired);
         const optionalItems = menuItems.filter(item => !item.isRequired);
@@ -142,6 +143,34 @@ const EventPage: React.FC = () => {
     const debouncedSearchTerm = useDebounce(searchTerm, 300); // 🚀 OPTIMIZATION: Debounced search
     const [view, setView] = useState<'categories' | 'items'>('categories');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    // The same two questions for the category the user is standing in. A ride
+    // category answers to its own switch on the event form and ignores the item
+    // quota it is exempt from; everything else answers to the item switch and
+    // the quota, exactly as before. Asking the item switch about a ride is what
+    // hid the "Offer a ride" button in events where the organizer had switched
+    // items off and left rides on.
+    // See DOCS/PLANING/29-rides-blocked-by-user-items-setting.md.
+    const canAddInSelectedCategory = useMemo(() => {
+        if (showAdminButton) return true;
+        if (RIDE_OFFER_CATEGORY_IDS.includes(selectedCategory ?? '')) return currentEvent?.details.allowRideOffers === true;
+        if (RIDE_REQUEST_CATEGORY_IDS.includes(selectedCategory ?? '')) return currentEvent?.details.allowRideRequests === true;
+        return canAddMoreItems;
+    }, [showAdminButton, selectedCategory, currentEvent, canAddMoreItems]);
+
+    const selectedCategoryBlockedReason = useMemo(() => {
+        if (canAddInSelectedCategory) return undefined;
+        if (RIDE_OFFER_CATEGORY_IDS.includes(selectedCategory ?? '')) return t('eventPage.category.rideOffersDisabled');
+        if (RIDE_REQUEST_CATEGORY_IDS.includes(selectedCategory ?? '')) return t('eventPage.category.rideRequestsDisabled');
+        return addBlockedReason;
+    }, [canAddInSelectedCategory, selectedCategory, addBlockedReason, t]);
+
+    // Whether the add button belongs on this category screen at all, as opposed
+    // to being there but refusing: a ride category shows it when its own switch
+    // is on, everything else when participant items are on.
+    const showAddInSelectedCategory = useMemo(() => {
+        if (isRideCategory(selectedCategory ?? '')) return canAddInSelectedCategory;
+        return !!currentEvent?.details.allowUserItems;
+    }, [selectedCategory, canAddInSelectedCategory, currentEvent]);
     const [lastManualCategory, setLastManualCategory] = useState<string>('main');
 
     const eventCategories = useMemo(() => getEventCategories(currentEvent || undefined, t), [currentEvent, t]);
@@ -687,7 +716,7 @@ const EventPage: React.FC = () => {
 
                                 setModalState({ type: 'add-user-item', category: 'ride_offers', rowType: 'offers' });
                             } : undefined}
-                            onRideRequest={currentEvent?.details.allowRideRequests !== false ? () => {
+                            onRideRequest={currentEvent?.details.allowRideRequests === true ? () => {
                                 if (localUser) {
                                     const userHasRequest = menuItems.some(item =>
                                         (item.category === 'ride_requests' || item.category === 'trempim' || item.category === 'rides') &&
@@ -732,7 +761,7 @@ const EventPage: React.FC = () => {
                                     </h2>
                                 </div>
 
-                                {selectedCategory && selectedCategory !== 'my-assignments' && currentEvent?.details.allowUserItems && (
+                                {selectedCategory && selectedCategory !== 'my-assignments' && showAddInSelectedCategory && (
                                     <button
                                         onClick={() => {
                                             if (localUser && (selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests')) {
@@ -754,16 +783,16 @@ const EventPage: React.FC = () => {
                                                 }
                                             }
 
-                                            if (canAddMoreItems) {
+                                            if (canAddInSelectedCategory) {
                                                 setModalState({ type: 'add-user-item', item: undefined, assignment: undefined, category: selectedCategory as any });
                                             } else {
-                                                if (addBlockedReason) toast.error(addBlockedReason);
+                                                if (selectedCategoryBlockedReason) toast.error(selectedCategoryBlockedReason);
                                             }
                                         }}
-                                        title={canAddMoreItems ? t('eventPage.category.addItem') : addBlockedReason}
-                                        className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-colors font-semibold text-sm flex items-center text-white flex-shrink-0 ${!canAddMoreItems ? 'bg-neutral-400 cursor-not-allowed' : selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-dark' : 'bg-accent-dark'
+                                        title={canAddInSelectedCategory ? t('eventPage.category.addItem') : selectedCategoryBlockedReason}
+                                        className={`px-3 py-1.5 rounded-lg shadow-sm hover:opacity-90 transition-colors font-semibold text-sm flex items-center text-white flex-shrink-0 ${!canAddInSelectedCategory ? 'bg-neutral-400 cursor-not-allowed' : selectedCategory === 'ride_offers' || selectedCategory === 'ride_requests' ? 'bg-rides-dark' : 'bg-accent-dark'
                                             }`}
-                                        aria-disabled={!canAddMoreItems}
+                                        aria-disabled={!canAddInSelectedCategory}
                                         aria-label={`${t('eventPage.category.addItem')} ${(!showAdminButton && selectedCategory !== 'ride_offers' && selectedCategory !== 'ride_requests') ? `(${userCreatedItemsCount}/${MAX_USER_ITEMS})` : ''}`}
                                     >
                                         <Plus size={16} className="inline-block ml-1" aria-hidden="true" />

@@ -37,13 +37,50 @@
           // stranger could still wipe the whole menu of somebody else's event
           // in one write, and the per-item rule below would never be reached.
           "$itemId": {
-            // Creating: the organizer always may. A participant may only when
-            // the organizer switched participant items on, and only while under
-            // their quota - except for rides, which the product has always let
-            // people add beyond the quota. A missing quota reads as three, the
-            // same default the screens use.
+            // Creating: the organizer always may. For everybody else the event
+            // form's three switches are read as the three independent things
+            // they are, because that is what they are on screen: offering a
+            // ride answers to "allow ride offers", asking for one answers to
+            // "allow ride requests", and everything else answers to "allow
+            // participant items" plus the quota. Folding the rides inside the
+            // item switch is what refused a ride in an event where the
+            // organizer had switched items off and left rides on - and ride
+            // offers are on by default, so that pairing is ordinary.
+            // See DOCS/PLANING/29-rides-blocked-by-user-items-setting.md.
+            //
+            // A missing switch reads as off, the same way the event screen
+            // reads it. A missing quota reads as three, the same default the
+            // screens use.
+            //
+            // An ordinary item must arrive together with the writer's own
+            // counter, stepped up by exactly one and still inside the quota.
+            // Without that the quota only held against a client that chose to
+            // report: an item written on its own read as "this person has never
+            // added anything", every time, and eight of them went into an event
+            // with a quota of three. The counter is read through newData so
+            // that it is the value the same write is about to leave behind, not
+            // the one already stored. Rides are exempt because they do not
+            // count against the quota and so no longer carry a counter at all.
+            //
+            // Whoever the item says created it must be the one writing it, and
+            // the field is frozen afterwards - checking it only on the way in
+            // would let somebody create an item in their own name and then hand
+            // it over by editing the field. The freeze is conditional on the
+            // item still existing, or deleting one would read as changing it.
+            // The organizer is exempt from both, and needs to be: bulk item
+            // management records items under a fixed name, and turning a
+            // participant's one-way ride into a round trip copies that
+            // participant onto the new leg.
+            // See DOCS/PLANING/30-item-rules-trust-the-client.md.
+            //
+            // Four category names count as a ride, matching RIDE_CATEGORY_IDS
+            // in src/utils/eventUtils.ts - `trempim` and `rides` are older
+            // names still present in existing events. This list and that one
+            // had drifted apart, so an item in the name only one of them knew
+            // was exempt from the quota on screen and counted against it here.
+            // See DOCS/PLANING/31-rides-consume-the-item-quota.md.
             // Editing and deleting: the organizer, or whoever created the item.
-            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && (newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'ride_requests' || newData.child('category').val() === 'trempim' || !root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() || (root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < root.child('events').child($eventId).child('details').child('userItemLimit').val()) || (!root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < 3))))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || data.child('creatorId').val() === auth.uid)))",
+            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (newData.child('creatorId').val() === auth.uid && (((newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'trempim' || newData.child('category').val() === 'rides') && root.child('events').child($eventId).child('details').child('allowRideOffers').val() === true) || (newData.child('category').val() === 'ride_requests' && root.child('events').child($eventId).child('details').child('allowRideRequests').val() === true) || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && ((!root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() && newData.parent().parent().child('userItemCounts').child(auth.uid).val() === 1 && 1 <= (root.child('events').child($eventId).child('details').child('userItemLimit').exists() ? root.child('events').child($eventId).child('details').child('userItemLimit').val() : 3)) || (root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() && newData.parent().parent().child('userItemCounts').child(auth.uid).val() === root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() + 1 && newData.parent().parent().child('userItemCounts').child(auth.uid).val() <= (root.child('events').child($eventId).child('details').child('userItemLimit').exists() ? root.child('events').child($eventId).child('details').child('userItemLimit').val() : 3)))))))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (data.child('creatorId').val() === auth.uid && (!newData.exists() || newData.child('creatorId').val() === data.child('creatorId').val())))))",
             // Taking an item and giving it back. This is where the protection
             // against two people grabbing the same item now lives: the field
             // may be filled only while it is empty, and only with your own

@@ -22,9 +22,9 @@
 | — | ~~מבקר אינו יכול להוסיף פריט משלו~~ | ✅ נפרס ואומת | 24/08/2026 | [28-visitor-cannot-add-own-item.md](28-visitor-cannot-add-own-item.md) |
 | 1א | למבקר אנונימי אין דרך לבקש מחיקה | 🟠 חשיפה משפטית | אין | [24-anonymous-visitor-cannot-delete-account.md](24-anonymous-visitor-cannot-delete-account.md) |
 | 1ב | משתמשים רשומים אינם נספרים כמשתתפים | 🟠 באג במוצר | אין | [23-registered-users-never-counted-as-participants.md](23-registered-users-never-counted-as-participants.md) |
-| 1ג | טרמפים נחסמים כשהמארגן כיבה הוספת פריטים | 🟠 באג במוצר | אין | [29-rides-blocked-by-user-items-setting.md](29-rides-blocked-by-user-items-setting.md) |
-| 1ד | המכסה ניתנת לעקיפה, ויוצר הפריט אינו מאומת | 🟠 חשיפה | אין | [30-item-rules-trust-the-client.md](30-item-rules-trust-the-client.md) |
-| 1ה | טרמפים אוכלים את מכסת הפריטים במסך | 🟠 באג במוצר | אין | [31-rides-consume-the-item-quota.md](31-rides-consume-the-item-quota.md) |
+| — | ~~טרמפים נחסמים כשהמארגן כיבה הוספת פריטים~~ | ✅ מיושם, טרם נפרס | 24/08/2026 | [29-rides-blocked-by-user-items-setting.md](29-rides-blocked-by-user-items-setting.md) |
+| — | ~~המכסה ניתנת לעקיפה, ויוצר הפריט אינו מאומת~~ | ✅ מיושם, טרם נפרס | 24/08/2026 | [30-item-rules-trust-the-client.md](30-item-rules-trust-the-client.md) |
+| — | ~~טרמפים אוכלים את מכסת הפריטים במסך~~ | ✅ מיושם, טרם נפרס | 24/08/2026 | [31-rides-consume-the-item-quota.md](31-rides-consume-the-item-quota.md) |
 | 2 | הסיווג האוטומטי מזרים הכל ל"אחר" | 🟠 באג במוצר | אין | [17-ai-classification-after-migration.md](17-ai-classification-after-migration.md) |
 | 3 | "אירוע" רפאים עם מידע אישי שלא יימחק | 🟠 חשיפה | אין | [15-phantom-event-node.md](15-phantom-event-node.md) |
 | 3א | כל מבקר יכול ליצור "אירוע" חדש במסד | 🟠 חשיפה | אין | [20-anyone-can-create-an-event-node.md](20-anyone-can-create-an-event-node.md) |
@@ -37,10 +37,18 @@
 | 10 | תקרת הכמות בפריט מתחלק אינה נאכפת בשרת | 🟢 פער ידוע | אין | [18-splittable-quantity-race.md](18-splittable-quantity-race.md) |
 | 11 | קבצים ענקיים וקוד כפול | 🟢 חוב מבני | אין | [13-code-structure.md](13-code-structure.md) |
 | 12 | ניקוי קוד מת | 🟢 קל | אין | [06-dead-code.md](06-dead-code.md) |
+| 16 | מסך ניהול הפריטים בכמות רושם "admin" כיוצר | 🟢 היגיינת נתונים | אין | [32-bulk-manager-writes-a-literal-admin-as-creator.md](32-bulk-manager-writes-a-literal-admin-as-creator.md) |
 | 13 | גודל ה-bundle | 🟢 שיפור | אין | [07-performance.md](07-performance.md) |
 | 14 | רקב הקישורים ב-README שבשורש | 🟢 תיעוד | אין | [22-readme-rot.md](22-readme-rot.md) |
 | 15 | פרופילים ריקים של מבקרים אנונימיים | 🟢 היגיינת נתונים | אין | [26-anonymous-visitors-leave-empty-profiles.md](26-anonymous-visitors-leave-empty-profiles.md) |
 | — | ~~ניקוי ענפים~~ | ✅ סבב שני הושלם ואומת | 24/08/2026 | [05-branch-cleanup.md](05-branch-cleanup.md) |
+
+**חוקי הפריטים והטרמפים נסגרו ב-24/08/2026** — שלוש רשומות בקמפיין אחד, כי הן
+היו תפר אחד ולא שלושה באגים: שלוש תיבות הסימון של האירוע נותקו זו מזו, טרמפ
+הפסיק לאכול את מכסת הפריטים, ומכסת הפריטים ושדה היוצר עברו לאכיפת שרת אמיתית.
+**הקוד מיושם בענף `rides-and-item-rules` וטרם נפרס.** הסוויטה עומדת על 54
+בדיקות. **נשאר פתוח:** מונים שכבר התנפחו בפרודקשן, שתיקונם הוא כתיבה לנתונים
+חיים ודורש אישור נפרד — מתועד ב-[31](31-rides-consume-the-item-quota.md).
 
 ## למה זה הסדר הזה
 

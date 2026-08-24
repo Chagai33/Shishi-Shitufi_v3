@@ -499,6 +499,8 @@
             "category": {
                 "addItemTooltip": "Add item to this category",
                 "addingDisabled": "The organizer has not allowed participants to add items to this event",
+                "rideOffersDisabled": "The organizer has not allowed ride offers in this event",
+                "rideRequestsDisabled": "The organizer has not allowed ride requests in this event",
                 "limitReached": "You have reached the {{limit}} items you can add to this event",
                 "addItem": "Add Item"
             },

@@ -124,7 +124,23 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
   // 3. Delete the user's own record from the /users node
   updates[`/users/${uid}`] = null;
 
-  // 4. Perform all database updates at once
+  // 4. Drop any path that sits inside another path already being deleted.
+  // A multi-path update may not contain both a path and something nested under
+  // it: the database refuses the write, and because the refusal happens before
+  // any of it is applied, the whole cleanup used to abort while the caller was
+  // told the account had been deleted. It happens for real whenever the user
+  // both created an item and was assigned to it - one branch above deletes the
+  // item, another blanks fields inside it. The item wins, since deleting it
+  // takes those fields with it.
+  // See DOCS/PLANING/27-cleanup-aborts-before-it-starts.md.
+  const paths = Object.keys(updates);
+  for (const path of paths) {
+    if (paths.some(other => other !== path && path.startsWith(`${other}/`))) {
+      delete updates[path];
+    }
+  }
+
+  // 5. Perform all database updates at once
   if (Object.keys(updates).length > 0) {
     try {
       await db().ref().update(updates);

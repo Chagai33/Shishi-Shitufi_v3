@@ -123,7 +123,7 @@ export const RideCard: React.FC<RideCardProps> = ({
       onDelete={onDeleteItem}
       showEdit={!!(isCreatorLogic && isEventActive)}
       // Whoever offered the ride may take it down, not just the organizer.
-      // See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md.
+      // See DOCS/PLANING/34-item-owner-cannot-delete-and-unlabelled-controls.md.
       showDelete={!!(isCreatorLogic && isEventActive)}
       footer={
         <div className="space-y-3">

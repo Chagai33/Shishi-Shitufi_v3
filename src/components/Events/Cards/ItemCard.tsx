@@ -82,7 +82,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       // rules have always allowed it and only the button was missing. Whether
       // it is allowed right now is decided in one place, in EventPage, because
       // it depends on who has signed up.
-      // See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md.
+      // See DOCS/PLANING/34-item-owner-cannot-delete-and-unlabelled-controls.md.
       showDelete={!!(isCreatorLogic && isEventActive)}
       footer={
         isSplittable ? (

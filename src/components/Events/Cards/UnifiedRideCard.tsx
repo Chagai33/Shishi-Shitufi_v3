@@ -116,7 +116,7 @@ export const UnifiedRideCard: React.FC<UnifiedRideCardProps> = ({
               <div className="flex gap-1">
                 <button onClick={() => onEditItem?.(item)} title={t('eventPage.item.editItem')} aria-label={t('eventPage.item.editItem')} className="p-1 text-gray-400 hover:text-blue-500 rounded"><Edit size={14} /></button>
                 {/* Whoever offered the ride may take a leg down, not just the
-                    organizer. See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md. */}
+                    organizer. See DOCS/PLANING/34-item-owner-cannot-delete-and-unlabelled-controls.md. */}
                 <button onClick={() => onDeleteItem?.(item)} title={t('eventPage.item.deleteItem')} aria-label={t('eventPage.item.deleteItem')} className="p-1 text-gray-400 hover:text-red-500 rounded"><Trash2 size={14} /></button>
               </div>
             )}
@@ -148,7 +148,7 @@ export const UnifiedRideCard: React.FC<UnifiedRideCardProps> = ({
                             label a passenger sees a pencil inside somebody
                             else's ride and reads it as "edit this ride" - the
                             one-way card has always labelled them.
-                            See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md. */}
+                            See DOCS/PLANING/34-item-owner-cannot-delete-and-unlabelled-controls.md. */}
                         {isMe && onEditAssignment && <button onClick={() => onEditAssignment(item, a)} title={t('eventPage.item.editMyAssignment')} aria-label={t('eventPage.item.editMyAssignment')}><Edit size={10} /></button>}
                         <button onClick={() => onCancel(a)} title={isMe ? t('rideCard.cancel') : t('eventPage.item.removeAssignment')} aria-label={isMe ? t('rideCard.cancel') : t('eventPage.item.removeAssignment')} className="hover:text-red-500"><Trash2 size={10} /></button>
                       </div>

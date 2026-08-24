@@ -374,7 +374,7 @@ const EventPage: React.FC = () => {
         // remove people one by one from the card - that control exists and
         // works - so the rule is that a ride with passengers still in it
         // cannot be deleted out from under them.
-        // See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md.
+        // See DOCS/PLANING/34-item-owner-cannot-delete-and-unlabelled-controls.md.
         if (!showAdminButton && count > 0) {
             toast.error(isRide
                 ? t('eventPage.messages.deleteBlockedRemovePassengersFirst', { count })
@@ -424,7 +424,7 @@ const EventPage: React.FC = () => {
     const handleEditItemClick = (item: MenuItemType) => {
         // Moving a departure time under people who already booked a seat tells
         // them nothing, so say so before the form opens rather than after.
-        // See DOCS/PLANING/33-item-owner-cannot-delete-and-unlabelled-controls.md.
+        // See DOCS/PLANING/34-item-owner-cannot-delete-and-unlabelled-controls.md.
         const count = assignments.filter(a => a.menuItemId === item.id).length;
         if (count > 0) {
             const isRide = isRideCategory(item.category) || isCarpoolLogic(item.name, item.category, item.rowType);

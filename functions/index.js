@@ -9,8 +9,10 @@ admin.initializeApp();
 // below only needs it once a handler is actually invoked.
 const db = () => admin.database();
 
-// Super-admin UID definition from environment variable
-const SUPER_ADMIN_UID = process.env.SUPER_ADMIN_UID;
+// Super-admin UID, from the environment. Trimmed on purpose: a stray space in
+// functions/.env would make the comparison below quietly never match, which is
+// the exact way this guard already spent months doing nothing.
+const SUPER_ADMIN_UID = (process.env.SUPER_ADMIN_UID || "").trim();
 
 /**
  * Deletes a user account and all associated data.
@@ -26,15 +28,25 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
 
   const uid = context.auth.uid;
 
-  // --- New protection layer ---
-  if (uid === SUPER_ADMIN_UID) {
+  // Protection for the super-admin account. When the variable is not set the
+  // comparison can never match, so the guard skips itself - silently, until now.
+  // It says so loudly instead, but it must never refuse the deletion itself:
+  // this function is the only way any user has to delete their account, and
+  // refusing would take that right away from everybody in order to protect one
+  // account. See DOCS/PLANING/21-super-admin-guard-inert.md.
+  if (!SUPER_ADMIN_UID) {
+    console.warn(
+      'SUPER_ADMIN_UID is not set, so the super-admin account is NOT protected ' +
+      'from deletion. Account deletion continues to work as normal for everyone. ' +
+      'Set SUPER_ADMIN_UID in functions/.env and deploy again.'
+    );
+  } else if (uid === SUPER_ADMIN_UID) {
     console.warn(`Attempt to delete super-admin account (${uid}) was blocked.`);
     throw new functions.https.HttpsError(
       'permission-denied',
       'The super-admin account cannot be deleted.'
     );
   }
-  // -------------------------
 
   try {
     await admin.auth().deleteUser(uid);

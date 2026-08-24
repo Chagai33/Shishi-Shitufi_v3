@@ -495,6 +495,102 @@ describe('adding items as a participant', () => {
     assert.equal(snap.val(), 'Ride, old category');
   });
 
+  // The quota is only worth as much as the counter it is measured against, and
+  // until now the counter was optional: an item written on its own was taken
+  // as "this person has never added anything", every time. Eight items went
+  // into an event with a quota of three that way.
+  // See DOCS/PLANING/30-item-rules-trust-the-client.md.
+  test('an item written without its counter is refused', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${B}`, 1);
+
+    assert.ok(
+      await denied(
+        set(ref(bob.db, `events/${EVENT_A}/menuItems/-item-with-no-counter`), {
+          name: 'Quiche', creatorId: B, category: 'main', quantity: 1,
+        }),
+      ),
+    );
+  });
+
+  // Deleting your last item writes the counter down to zero rather than
+  // removing it, so "has a counter" and "has items" are not the same question.
+  test('a participant whose counter is back at zero can add again', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${B}`, 0);
+
+    await update(ref(bob.db), {
+      [`events/${EVENT_A}/menuItems/-item-after-zero`]: {
+        name: 'Back again', creatorId: B, category: 'main', quantity: 1,
+      },
+      [`events/${EVENT_A}/userItemCounts/${B}`]: 1,
+    });
+
+    const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-item-after-zero/name`));
+    assert.equal(snap.val(), 'Back again');
+  });
+
+  // The item says who created it, the screens show that name, and the right to
+  // edit or delete the item follows that same field - so an item recorded
+  // against somebody else is theirs to delete and not the writer's.
+  test('an item recorded against somebody else is refused', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${B}`, 1);
+
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_A}/menuItems/-item-in-another-name`]: {
+            name: 'Not mine', creatorId: C, category: 'main', quantity: 1,
+          },
+          [`events/${EVENT_A}/userItemCounts/${B}`]: 2,
+        }),
+      ),
+    );
+  });
+
+  // Checking it only on the way in would be theatre: create it in your own
+  // name, then edit the field and hand the item over.
+  test('and the creator cannot hand an item over by editing that field', async () => {
+    await seed(`events/${EVENT_A}/menuItems/-item-to-hand-over`, {
+      name: 'Mine', creatorId: B, category: 'main', quantity: 1,
+    });
+
+    assert.ok(await denied(set(ref(bob.db, `events/${EVENT_A}/menuItems/-item-to-hand-over/creatorId`), C)));
+  });
+
+  // The three things that must keep working around all of the above. The
+  // organizer records items against other people in two live screens - bulk
+  // item management writes a fixed name, and turning a participant's one-way
+  // ride into a round trip copies that participant's id onto the new leg.
+  test('but the organizer still records items against other people', async () => {
+    await set(ref(alice.db, `events/${EVENT_A}/menuItems/-item-by-organizer-for-b`), {
+      name: 'Added for B', creatorId: B, category: 'main', quantity: 1,
+    });
+
+    const snap = await get(ref(alice.db, `events/${EVENT_A}/menuItems/-item-by-organizer-for-b/creatorId`));
+    assert.equal(snap.val(), B);
+  });
+
+  test('an edit that does not resend the creator still works', async () => {
+    await seed(`events/${EVENT_A}/menuItems/-item-to-edit`, {
+      name: 'Mine', creatorId: B, category: 'main', quantity: 1,
+    });
+
+    await update(ref(bob.db, `events/${EVENT_A}/menuItems/-item-to-edit`), { quantity: 4 });
+
+    const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-item-to-edit/quantity`));
+    assert.equal(snap.val(), 4);
+  });
+
+  test('and deleting your own item is not read as changing its creator', async () => {
+    await seed(`events/${EVENT_A}/menuItems/-item-to-delete`, {
+      name: 'Mine', creatorId: B, category: 'main', quantity: 1,
+    });
+
+    await set(ref(bob.db, `events/${EVENT_A}/menuItems/-item-to-delete`), null);
+
+    const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-item-to-delete`));
+    assert.ok(!snap.exists());
+  });
+
   test("B cannot move somebody else's counter", async () => {
     assert.ok(await denied(set(ref(bob.db, `events/${EVENT_A}/userItemCounts/${C}`), 1)));
   });

@@ -7,6 +7,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added i
 import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
 
+import { RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS, isRideCategory } from '../utils/eventUtils';
 import { toast } from 'react-hot-toast';
 import i18n from '../i18n';
 
@@ -475,11 +476,11 @@ export class FirebaseService {
       // rules read it.
       if (!isOrganizer) {
         const category = itemData.category;
-        if (category === 'ride_offers' || category === 'trempim') {
+        if (RIDE_OFFER_CATEGORY_IDS.includes(category)) {
           if (details.allowRideOffers !== true) {
             throw new Error(i18n.t('eventPage.category.rideOffersDisabled'));
           }
-        } else if (category === 'ride_requests') {
+        } else if (RIDE_REQUEST_CATEGORY_IDS.includes(category)) {
           if (details.allowRideRequests !== true) {
             throw new Error(i18n.t('eventPage.category.rideRequestsDisabled'));
           }
@@ -488,8 +489,13 @@ export class FirebaseService {
         }
       }
 
-      // Check 2: Limit reached? (Skip if Admin/Organizer)
-      if (!shouldBypassLimit && userItemCount >= (details.userItemLimit ?? 3)) {
+      // Check 2: Limit reached? A ride does not count against the quota - that
+      // is what the product promises and what the rules enforce - so it is
+      // exempt here by what it is, not by a flag the caller passes in. Callers
+      // still pass the flag for the organizer and the admin screens.
+      // See DOCS/PLANING/31-rides-consume-the-item-quota.md.
+      const isRide = isRideCategory(itemData.category);
+      if (!shouldBypassLimit && !isRide && userItemCount >= (details.userItemLimit ?? 3)) {
         throw new Error(i18n.t('eventPage.category.limitReached', { limit: details.userItemLimit ?? 3 }));
       }
 
@@ -514,7 +520,10 @@ export class FirebaseService {
       // either. That is why no transaction is needed here.
       const updates: { [key: string]: any } = {};
       updates[`events/${eventId}/menuItems/${newItemId}`] = finalItemData;
-      if (creatorId) {
+      // A ride is exempt from the quota, so it must not move the counter that
+      // the quota is measured against. It used to, which is how three rides
+      // could use up a quota of three and grey out the add button for food.
+      if (creatorId && !isRide) {
         updates[`events/${eventId}/userItemCounts/${creatorId}`] = userItemCount + 1;
       }
 
@@ -712,7 +721,10 @@ export class FirebaseService {
       // Step 2: Update counter (if relevant). It is written down to zero rather
       // than removed, because the counter rule only accepts a step of one in
       // either direction and a zero entry reads the same as a missing one.
-      if (creatorId) {
+      // Both halves of the counter move together or neither does. Lowering it
+      // for a ride that never raised it would hand the creator a free slot
+      // every time they deleted one.
+      if (creatorId && !isRideCategory(itemToDelete.category)) {
         const countSnapshot = await get(ref(database, `events/${eventId}/userItemCounts/${creatorId}`));
         const currentCount = countSnapshot.val() || 0;
         if (currentCount > 0) {

@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { getEventCategories } from '../../constants/templates';
+import { isRideCategory } from '../../utils/eventUtils';
 
 interface EditItemModalProps {
     item: MenuItem;
@@ -168,7 +169,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
 
     const isOffer = item.category === 'ride_offers';
     const isRequest = item.category === 'ride_requests';
-    const isRide = isOffer || isRequest || item.category === 'trempim' || item.category === 'rides';
+    const isRide = isOffer || isRequest || isRideCategory(item.category);
 
     // Access Global State for Helper Logic
     const allMenuItems = useStore((state) => selectMenuItems(state));

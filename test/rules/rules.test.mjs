@@ -463,18 +463,36 @@ describe('adding items as a participant', () => {
     );
   });
 
+  // A ride is exempt from the quota, so the app no longer sends a counter with
+  // it at all - it used to, which is how three rides could use up a quota of
+  // three and leave somebody unable to bring food.
+  // See DOCS/PLANING/31-rides-consume-the-item-quota.md.
   test('a ride does not count against the quota, exactly as the screen behaves', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 3);
 
-    await update(ref(bob.db), {
-      [`events/${EVENT_A}/menuItems/-ride-by-b`]: {
-        name: 'Ride to the event', creatorId: B, category: 'ride_offers', quantity: 3,
-      },
-      [`events/${EVENT_A}/userItemCounts/${B}`]: 4,
+    await set(ref(bob.db, `events/${EVENT_A}/menuItems/-ride-by-b`), {
+      name: 'Ride to the event', creatorId: B, category: 'ride_offers', quantity: 3,
     });
 
-    const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-ride-by-b/name`));
-    assert.equal(snap.val(), 'Ride to the event');
+    const name = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-ride-by-b/name`));
+    assert.equal(name.val(), 'Ride to the event');
+
+    const count = await get(ref(bob.db, `events/${EVENT_A}/userItemCounts/${B}`));
+    assert.equal(count.val(), 3, 'the ride moved the item counter');
+  });
+
+  // The screens have always treated four category names as rides; the rules
+  // knew three of them. An item in the fourth was exempt on screen and counted
+  // on the server, so the button was live and the write refused.
+  test('the fourth, older ride category is exempt too', async () => {
+    await seed(`events/${EVENT_A}/userItemCounts/${B}`, 3);
+
+    await set(ref(bob.db, `events/${EVENT_A}/menuItems/-legacy-ride-by-b`), {
+      name: 'Ride, old category', creatorId: B, category: 'rides', quantity: 3,
+    });
+
+    const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-legacy-ride-by-b/name`));
+    assert.equal(snap.val(), 'Ride, old category');
   });
 
   test("B cannot move somebody else's counter", async () => {

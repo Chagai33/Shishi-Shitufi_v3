@@ -486,6 +486,12 @@ export function UserMenuItemForm({
       return;
     }
 
+    // Whether this person was on the participant list before this attempt, so
+    // that a failure can put things back exactly as they were.
+    const wasParticipant = !!event.participants?.[authUser.uid];
+    let joinedInThisSubmission = false;
+    let createdAnyItem = false;
+
     setIsSubmitting(true);
 
     try {
@@ -494,6 +500,7 @@ export function UserMenuItemForm({
       // If needed, join event
       if (showNameInput && finalUserName) {
         await FirebaseService.joinEvent(event.id, authUser.uid, finalUserName);
+        joinedInThisSubmission = true;
       } else {
         const existingParticipant = event.participants?.[authUser.uid];
         finalUserName = existingParticipant?.name || authUser.displayName || t('header.guest');
@@ -612,6 +619,7 @@ export function UserMenuItemForm({
         };
 
         const itemIdTo = await FirebaseService.addMenuItem(event.id, itemDataTo, { bypassLimit: true });
+        createdAnyItem = true;
 
         // Create assignment for "to" if needed
         if (itemIdTo && effectiveMyQuantity > 0) {
@@ -637,6 +645,7 @@ export function UserMenuItemForm({
         };
 
         const itemIdFrom = await FirebaseService.addMenuItem(event.id, itemDataFrom, { bypassLimit: true });
+        createdAnyItem = true;
 
         // Create assignment for "from" if needed
         if (itemIdFrom && effectiveMyQuantity > 0) {
@@ -665,6 +674,7 @@ export function UserMenuItemForm({
         };
 
         const itemId = await FirebaseService.addMenuItem(event.id, itemData, { bypassLimit: true });
+        createdAnyItem = true;
 
         if (itemId && effectiveMyQuantity > 0) {
           await FirebaseService.createAssignment(event.id, {
@@ -684,6 +694,7 @@ export function UserMenuItemForm({
       } else {
         // Regular item (not a ride)
         const itemId = await FirebaseService.addMenuItem(event.id, baseItemData, { bypassLimit: shouldBypassLimit });
+        createdAnyItem = true;
 
         if (itemId && effectiveMyQuantity > 0) {
           await FirebaseService.createAssignment(event.id, {
@@ -705,6 +716,19 @@ export function UserMenuItemForm({
       onClose();
     } catch (error: any) {
       console.error('❌ Error in form submission:', error);
+
+      // The name goes on the participant list before the item is created, so a
+      // failure used to leave the person listed having received nothing. Undo
+      // it - but only when this submission is what put them there and nothing
+      // was created. Somebody who was already a participant stays one, and so
+      // does anybody whose first of two rides did get through.
+      if (joinedInThisSubmission && !wasParticipant && !createdAnyItem) {
+        try {
+          await FirebaseService.leaveEvent(event.id, authUser.uid);
+        } catch (undoError) {
+          console.error('⚠️ Could not undo the join after a failed submission:', undoError);
+        }
+      }
       let errorMessage = t('userItemForm.errors.generalError');
       if (error.code === 'PERMISSION_DENIED') {
         errorMessage = t('userItemForm.errors.permissionDenied');

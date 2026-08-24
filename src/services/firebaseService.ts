@@ -457,7 +457,15 @@ export class FirebaseService {
 
       const details = detailsSnapshot.val();
       const creatorId = itemData.creatorId;
-      const isOrganizer = creatorId === organizerSnapshot.val();
+      // Who is writing, not whose name is on the item. The two are not the same
+      // and two live organizer screens rely on the difference: bulk item
+      // management records a fixed name that belongs to no account, and turning
+      // a participant's one-way ride into a round trip copies that participant
+      // onto the new leg. Reading the organizer off the item's creator field
+      // also meant a participant could claim the organizer's exemptions simply
+      // by writing the organizer's id into the item - which the rules now
+      // refuse outright. See DOCS/PLANING/30-item-rules-trust-the-client.md.
+      const isOrganizer = !!auth.currentUser && auth.currentUser.uid === organizerSnapshot.val();
       const shouldBypassLimit = isOrganizer || options?.bypassLimit;
 
       const countSnapshot = creatorId

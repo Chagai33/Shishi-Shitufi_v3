@@ -687,7 +687,7 @@ const EventPage: React.FC = () => {
 
                                 setModalState({ type: 'add-user-item', category: 'ride_offers', rowType: 'offers' });
                             } : undefined}
-                            onRideRequest={currentEvent?.details.allowRideRequests !== false ? () => {
+                            onRideRequest={currentEvent?.details.allowRideRequests === true ? () => {
                                 if (localUser) {
                                     const userHasRequest = menuItems.some(item =>
                                         (item.category === 'ride_requests' || item.category === 'trempim' || item.category === 'rides') &&

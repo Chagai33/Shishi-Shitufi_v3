@@ -24,6 +24,12 @@ const V = 'uid-visitor-no-counter';
 const EVENT_A = '-EventOwnedByA000000';
 const EVENT_C = '-EventOwnedByC000000';
 const EVENT_EMPTY = '-EventWithNoItems000';
+// The two events where the organizer switched participant items off but left
+// one of the ride switches on. The three switches on the event form are
+// independent, so this combination is ordinary - ride offers are even on by
+// default. See DOCS/PLANING/29-rides-blocked-by-user-items-setting.md.
+const EVENT_OFFERS_ONLY = '-EventOffersOnly0000';
+const EVENT_REQUESTS_ONLY = '-EventRequestsOnly00';
 
 let alice, bob, anon, visitor;
 
@@ -36,7 +42,17 @@ before(async () => {
     organizerId: A,
     organizerName: 'A',
     createdAt: 1,
-    details: { title: 'Event A', allowUserItems: true, userItemLimit: 3 },
+    // Both ride switches are on, which is what an event that offers rides
+    // looks like in production - the rules read each switch on its own now, so
+    // a fixture that leaves them out is an event with no rides, not an event
+    // with rides nobody governs.
+    details: {
+      title: 'Event A',
+      allowUserItems: true,
+      userItemLimit: 3,
+      allowRideOffers: true,
+      allowRideRequests: true,
+    },
     participants: { [A]: { name: 'A', joinedAt: 1 } },
     menuItems: {
       // Unclaimed, one person takes it - what a guest signs up for.
@@ -60,6 +76,35 @@ before(async () => {
     createdAt: 3,
     details: { title: 'Empty Event', allowUserItems: true, userItemLimit: 3 },
   });
+  // Participant items off, ride offers on. The item limit is zero because
+  // that is what the event form writes when the item switch goes off.
+  await seed(`events/${EVENT_OFFERS_ONLY}`, {
+    organizerId: A,
+    organizerName: 'A',
+    createdAt: 4,
+    details: {
+      title: 'Offers only',
+      allowUserItems: false,
+      userItemLimit: 0,
+      allowRideOffers: true,
+      allowRideRequests: false,
+    },
+  });
+
+  // The mirror image: participant items off, ride requests on.
+  await seed(`events/${EVENT_REQUESTS_ONLY}`, {
+    organizerId: A,
+    organizerName: 'A',
+    createdAt: 5,
+    details: {
+      title: 'Requests only',
+      allowUserItems: false,
+      userItemLimit: 0,
+      allowRideOffers: false,
+      allowRideRequests: true,
+    },
+  });
+
   await seed(`events/${EVENT_C}`, {
     organizerId: C,
     organizerName: 'C',
@@ -107,7 +152,10 @@ describe('reading events', () => {
   test("A can list A's own events - this is the organizer screen", async () => {
     const q = query(ref(alice.db, 'events'), orderByChild('organizerId'), equalTo(A));
     const snap = await get(q);
-    assert.deepEqual(Object.keys(snap.val() || {}).sort(), [EVENT_A, EVENT_EMPTY].sort());
+    assert.deepEqual(
+      Object.keys(snap.val() || {}).sort(),
+      [EVENT_A, EVENT_EMPTY, EVENT_OFFERS_ONLY, EVENT_REQUESTS_ONLY].sort(),
+    );
   });
 
   test('B can open a single event by its id - the invitation link flow', async () => {
@@ -431,6 +479,47 @@ describe('adding items as a participant', () => {
 
   test("B cannot move somebody else's counter", async () => {
     assert.ok(await denied(set(ref(bob.db, `events/${EVENT_A}/userItemCounts/${C}`), 1)));
+  });
+});
+
+describe('rides follow their own switch, not the item switch', () => {
+  const ride = (name, category) => ({ name, creatorId: B, category, quantity: 3 });
+
+  test('B can offer a ride even though participant items are switched off', async () => {
+    await set(ref(bob.db, `events/${EVENT_OFFERS_ONLY}/menuItems/-offer-by-b`), ride('Ride there', 'ride_offers'));
+
+    const snap = await get(ref(bob.db, `events/${EVENT_OFFERS_ONLY}/menuItems/-offer-by-b/name`));
+    assert.equal(snap.val(), 'Ride there');
+  });
+
+  test('B can ask for a ride in the event where that switch is the one left on', async () => {
+    await set(ref(bob.db, `events/${EVENT_REQUESTS_ONLY}/menuItems/-request-by-b`), ride('Need a lift', 'ride_requests'));
+
+    const snap = await get(ref(bob.db, `events/${EVENT_REQUESTS_ONLY}/menuItems/-request-by-b/name`));
+    assert.equal(snap.val(), 'Need a lift');
+  });
+
+  // The other half of the same decoupling: switching rides on must not become
+  // a way in for ordinary items, and one ride switch must not open the other.
+  test('a plain item is still refused in that same event', async () => {
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_OFFERS_ONLY}/menuItems/-plain-by-b`]: {
+            name: 'Quiche', creatorId: B, category: 'main', quantity: 1,
+          },
+          [`events/${EVENT_OFFERS_ONLY}/userItemCounts/${B}`]: 1,
+        }),
+      ),
+    );
+  });
+
+  test('and a ride request is refused there, because that switch is off', async () => {
+    assert.ok(
+      await denied(
+        set(ref(bob.db, `events/${EVENT_OFFERS_ONLY}/menuItems/-request-not-allowed`), ride('Need a lift', 'ride_requests')),
+      ),
+    );
   });
 });
 

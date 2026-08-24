@@ -464,9 +464,28 @@ export class FirebaseService {
         : null;
       const userItemCount = countSnapshot?.val() || 0;
 
-      // Check 1: Is adding allowed?
-      if (details.allowUserItems === false && !isOrganizer) {
-        throw new Error(i18n.t('eventPage.category.addingDisabled'));
+      // Check 1: Is adding allowed? The event form has three independent
+      // switches, so this asks the one that actually governs what is being
+      // added. Asking the item switch about a ride is what refused a ride in
+      // an event where the organizer had switched items off and left rides on,
+      // and it answered with a message about items that the user had never
+      // asked for. See DOCS/PLANING/29-rides-blocked-by-user-items-setting.md.
+      //
+      // A missing switch reads as off, the same way the event screen and the
+      // rules read it.
+      if (!isOrganizer) {
+        const category = itemData.category;
+        if (category === 'ride_offers' || category === 'trempim') {
+          if (details.allowRideOffers !== true) {
+            throw new Error(i18n.t('eventPage.category.rideOffersDisabled'));
+          }
+        } else if (category === 'ride_requests') {
+          if (details.allowRideRequests !== true) {
+            throw new Error(i18n.t('eventPage.category.rideRequestsDisabled'));
+          }
+        } else if (details.allowUserItems !== true) {
+          throw new Error(i18n.t('eventPage.category.addingDisabled'));
+        }
       }
 
       // Check 2: Limit reached? (Skip if Admin/Organizer)

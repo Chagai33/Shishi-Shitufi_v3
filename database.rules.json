@@ -37,13 +37,22 @@
           // stranger could still wipe the whole menu of somebody else's event
           // in one write, and the per-item rule below would never be reached.
           "$itemId": {
-            // Creating: the organizer always may. A participant may only when
-            // the organizer switched participant items on, and only while under
-            // their quota - except for rides, which the product has always let
-            // people add beyond the quota. A missing quota reads as three, the
-            // same default the screens use.
+            // Creating: the organizer always may. For everybody else the event
+            // form's three switches are read as the three independent things
+            // they are, because that is what they are on screen: offering a
+            // ride answers to "allow ride offers", asking for one answers to
+            // "allow ride requests", and everything else answers to "allow
+            // participant items" plus the quota. Folding the rides inside the
+            // item switch is what refused a ride in an event where the
+            // organizer had switched items off and left rides on - and ride
+            // offers are on by default, so that pairing is ordinary.
+            // See DOCS/PLANING/29-rides-blocked-by-user-items-setting.md.
+            //
+            // A missing switch reads as off, the same way the event screen
+            // reads it. A missing quota reads as three, the same default the
+            // screens use.
             // Editing and deleting: the organizer, or whoever created the item.
-            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && (newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'ride_requests' || newData.child('category').val() === 'trempim' || !root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() || (root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < root.child('events').child($eventId).child('details').child('userItemLimit').val()) || (!root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < 3))))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || data.child('creatorId').val() === auth.uid)))",
+            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || ((newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'trempim') && root.child('events').child($eventId).child('details').child('allowRideOffers').val() === true) || (newData.child('category').val() === 'ride_requests' && root.child('events').child($eventId).child('details').child('allowRideRequests').val() === true) || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && (!root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() || (root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < root.child('events').child($eventId).child('details').child('userItemLimit').val()) || (!root.child('events').child($eventId).child('details').child('userItemLimit').exists() && root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() < 3))))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || data.child('creatorId').val() === auth.uid)))",
             // Taking an item and giving it back. This is where the protection
             // against two people grabbing the same item now lives: the field
             // may be filled only while it is empty, and only with your own

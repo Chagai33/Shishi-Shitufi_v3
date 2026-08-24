@@ -294,10 +294,10 @@ export function UserMenuItemForm({
 
 
   const isRequest = formData.rowType === 'needs';
-  const isRideCategory = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim';
+  const isRideCategorySelected = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim';
 
   // For rides, don't allow self-assignment
-  const effectiveMyQuantity = isRideCategory ? 0 : myQuantity;
+  const effectiveMyQuantity = isRideCategorySelected ? 0 : myQuantity;
 
 
   // Get dynamic categories from the event using shared helper

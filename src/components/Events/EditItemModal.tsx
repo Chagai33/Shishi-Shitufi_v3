@@ -169,7 +169,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
 
     const isOffer = item.category === 'ride_offers';
     const isRequest = item.category === 'ride_requests';
-    const isRide = isOffer || isRequest || isRideCategory(item.category);
+    const isRide = isRideCategory(item.category);
 
     // Access Global State for Helper Logic
     const allMenuItems = useStore((state) => selectMenuItems(state));

@@ -9,8 +9,10 @@ admin.initializeApp();
 // below only needs it once a handler is actually invoked.
 const db = () => admin.database();
 
-// Super-admin UID definition from environment variable
-const SUPER_ADMIN_UID = process.env.SUPER_ADMIN_UID;
+// Super-admin UID, from the environment. Trimmed on purpose: a stray space in
+// functions/.env would make the comparison below quietly never match, which is
+// the exact way this guard already spent months doing nothing.
+const SUPER_ADMIN_UID = (process.env.SUPER_ADMIN_UID || "").trim();
 
 /**
  * Deletes a user account and all associated data.
@@ -26,15 +28,25 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
 
   const uid = context.auth.uid;
 
-  // --- New protection layer ---
-  if (uid === SUPER_ADMIN_UID) {
+  // Protection for the super-admin account. When the variable is not set the
+  // comparison can never match, so the guard skips itself - silently, until now.
+  // It says so loudly instead, but it must never refuse the deletion itself:
+  // this function is the only way any user has to delete their account, and
+  // refusing would take that right away from everybody in order to protect one
+  // account. See DOCS/PLANING/21-super-admin-guard-inert.md.
+  if (!SUPER_ADMIN_UID) {
+    console.warn(
+      'SUPER_ADMIN_UID is not set, so the super-admin account is NOT protected ' +
+      'from deletion. Account deletion continues to work as normal for everyone. ' +
+      'Set SUPER_ADMIN_UID in functions/.env and deploy again.'
+    );
+  } else if (uid === SUPER_ADMIN_UID) {
     console.warn(`Attempt to delete super-admin account (${uid}) was blocked.`);
     throw new functions.https.HttpsError(
       'permission-denied',
       'The super-admin account cannot be deleted.'
     );
   }
-  // -------------------------
 
   try {
     await admin.auth().deleteUser(uid);
@@ -80,6 +92,18 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
         return;
       }
 
+      // The user's row in this event's participant list, which is what puts
+      // their name on the participants screen, and their per-event item
+      // counter. Both are keyed by uid, and both are written unconditionally:
+      // deleting something that is not there costs nothing and never fails,
+      // whereas relying on somebody remembering this later does.
+      // Today the participant list holds anonymous visitors almost exclusively,
+      // because registered users are never added to it - a bug of its own, and
+      // the day it is fixed this cleanup is already in place.
+      // See DOCS/PLANING/23-registered-users-never-counted-as-participants.md.
+      updates[`/events/${eventId}/participants/${uid}`] = null;
+      updates[`/events/${eventId}/userItemCounts/${uid}`] = null;
+
       // Cleanup user's assignments
       const assignments = eventSnapshot.child('assignments').val();
       if (assignments) {
@@ -121,15 +145,63 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
     });
   }
 
-  // 3. Delete the user's own record from the /users node
+  // 3. Delete the user's own record from the /users node, and the admin entry
+  // that goes with it. The admins node does not exist in the database today, so
+  // this is preparation rather than housekeeping - a guard that waits for some
+  // future condition is a guard nobody remembers to add.
   updates[`/users/${uid}`] = null;
+  updates[`/admins/${uid}`] = null;
 
-  // 4. Perform all database updates at once
+  // 4. Legacy preset lists at the top level. Saved lists moved under each user's
+  // own record long ago, but the old node is still there and its records carry
+  // an owner id. One such record survives in production and its owner no longer
+  // has an account at all, which is what this leaves behind.
+  const presetListsSnapshot = await db().ref('/presetLists').once('value');
+  presetListsSnapshot.forEach(listSnapshot => {
+    if (listSnapshot.child('createdBy').val() === uid) {
+      updates[`/presetLists/${listSnapshot.key}`] = null;
+    }
+  });
+
+  // 5. Drop any path that sits inside another path already being deleted.
+  // A multi-path update may not contain both a path and something nested under
+  // it: the database refuses the write, and because the refusal happens before
+  // any of it is applied, the whole cleanup used to abort while the caller was
+  // told the account had been deleted. It happens for real whenever the user
+  // both created an item and was assigned to it - one branch above deletes the
+  // item, another blanks fields inside it. The item wins, since deleting it
+  // takes those fields with it.
+  // See DOCS/PLANING/27-cleanup-aborts-before-it-starts.md.
+  const paths = Object.keys(updates);
+  for (const path of paths) {
+    if (paths.some(other => other !== path && path.startsWith(`${other}/`))) {
+      delete updates[path];
+    }
+  }
+
+  // 6. Perform all database updates at once
   if (Object.keys(updates).length > 0) {
     try {
       await db().ref().update(updates);
     } catch (error) {
       console.error(`Error during database cleanup for user ${uid}:`, error);
+
+      // The auth account is already gone by now, so this trigger will never run
+      // again and nothing retries it. Without a record of the failure the data
+      // simply stays, and no screen anywhere says so. This is deliberately only
+      // a record for somebody to act on by hand - no retry, no work queue - and
+      // it should be deleted once the leftover data has been cleaned up.
+      // No client can read it: the database rules do not define this node, so
+      // everything but the server is denied by default.
+      try {
+        await db().ref(`/deletionFailures/${uid}`).set({
+          failedAt: Date.now(),
+          error: (error && error.message) || String(error),
+          paths: Object.keys(updates)
+        });
+      } catch (recordError) {
+        console.error(`Could not record the cleanup failure for user ${uid}:`, recordError);
+      }
     }
   }
 

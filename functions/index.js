@@ -80,6 +80,18 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
         return;
       }
 
+      // The user's row in this event's participant list, which is what puts
+      // their name on the participants screen, and their per-event item
+      // counter. Both are keyed by uid, and both are written unconditionally:
+      // deleting something that is not there costs nothing and never fails,
+      // whereas relying on somebody remembering this later does.
+      // Today the participant list holds anonymous visitors almost exclusively,
+      // because registered users are never added to it - a bug of its own, and
+      // the day it is fixed this cleanup is already in place.
+      // See DOCS/PLANING/23-registered-users-never-counted-as-participants.md.
+      updates[`/events/${eventId}/participants/${uid}`] = null;
+      updates[`/events/${eventId}/userItemCounts/${uid}`] = null;
+
       // Cleanup user's assignments
       const assignments = eventSnapshot.child('assignments').val();
       if (assignments) {
@@ -121,10 +133,25 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
     });
   }
 
-  // 3. Delete the user's own record from the /users node
+  // 3. Delete the user's own record from the /users node, and the admin entry
+  // that goes with it. The admins node does not exist in the database today, so
+  // this is preparation rather than housekeeping - a guard that waits for some
+  // future condition is a guard nobody remembers to add.
   updates[`/users/${uid}`] = null;
+  updates[`/admins/${uid}`] = null;
 
-  // 4. Drop any path that sits inside another path already being deleted.
+  // 4. Legacy preset lists at the top level. Saved lists moved under each user's
+  // own record long ago, but the old node is still there and its records carry
+  // an owner id. One such record survives in production and its owner no longer
+  // has an account at all, which is what this leaves behind.
+  const presetListsSnapshot = await db().ref('/presetLists').once('value');
+  presetListsSnapshot.forEach(listSnapshot => {
+    if (listSnapshot.child('createdBy').val() === uid) {
+      updates[`/presetLists/${listSnapshot.key}`] = null;
+    }
+  });
+
+  // 5. Drop any path that sits inside another path already being deleted.
   // A multi-path update may not contain both a path and something nested under
   // it: the database refuses the write, and because the refusal happens before
   // any of it is applied, the whole cleanup used to abort while the caller was
@@ -140,7 +167,7 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
     }
   }
 
-  // 5. Perform all database updates at once
+  // 6. Perform all database updates at once
   if (Object.keys(updates).length > 0) {
     try {
       await db().ref().update(updates);

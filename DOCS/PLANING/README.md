@@ -25,7 +25,7 @@
 | — | ~~טרמפים נחסמים כשהמארגן כיבה הוספת פריטים~~ | ✅ נפרס ואומת | 24/08/2026 | [29-rides-blocked-by-user-items-setting.md](29-rides-blocked-by-user-items-setting.md) |
 | — | ~~המכסה ניתנת לעקיפה, ויוצר הפריט אינו מאומת~~ | ✅ נפרס ואומת | 24/08/2026 | [30-item-rules-trust-the-client.md](30-item-rules-trust-the-client.md) |
 | — | ~~טרמפים אוכלים את מכסת הפריטים במסך~~ | ✅ נפרס ואומת | 24/08/2026 | [31-rides-consume-the-item-quota.md](31-rides-consume-the-item-quota.md) |
-| 1ג | יוצר הפריט אינו יכול למחוק, וכפתורי הנוסע חסרי תווית | 🟠 באג במוצר | אין | [33-item-owner-cannot-delete-and-unlabelled-controls.md](33-item-owner-cannot-delete-and-unlabelled-controls.md) |
+| — | ~~יוצר הפריט אינו יכול למחוק, וכפתורי הנוסע חסרי תווית~~ | ✅ מיושם, טרם נפרס | 24/08/2026 | [33-item-owner-cannot-delete-and-unlabelled-controls.md](33-item-owner-cannot-delete-and-unlabelled-controls.md) |
 | 2 | הסיווג האוטומטי מזרים הכל ל"אחר" | 🟠 באג במוצר | אין | [17-ai-classification-after-migration.md](17-ai-classification-after-migration.md) |
 | 3 | "אירוע" רפאים עם מידע אישי שלא יימחק | 🟠 חשיפה | אין | [15-phantom-event-node.md](15-phantom-event-node.md) |
 | 3א | כל מבקר יכול ליצור "אירוע" חדש במסד | 🟠 חשיפה | אין | [20-anyone-can-create-an-event-node.md](20-anyone-can-create-an-event-node.md) |

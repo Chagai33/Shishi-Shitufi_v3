@@ -37,6 +37,7 @@
 | 10 | תקרת הכמות בפריט מתחלק אינה נאכפת בשרת | 🟢 פער ידוע | אין | [18-splittable-quantity-race.md](18-splittable-quantity-race.md) |
 | 11 | קבצים ענקיים וקוד כפול | 🟢 חוב מבני | אין | [13-code-structure.md](13-code-structure.md) |
 | 12 | ניקוי קוד מת | 🟢 קל | אין | [06-dead-code.md](06-dead-code.md) |
+| 16 | מסך ניהול הפריטים בכמות רושם "admin" כיוצר | 🟢 היגיינת נתונים | אין | [32-bulk-manager-writes-a-literal-admin-as-creator.md](32-bulk-manager-writes-a-literal-admin-as-creator.md) |
 | 13 | גודל ה-bundle | 🟢 שיפור | אין | [07-performance.md](07-performance.md) |
 | 14 | רקב הקישורים ב-README שבשורש | 🟢 תיעוד | אין | [22-readme-rot.md](22-readme-rot.md) |
 | 15 | פרופילים ריקים של מבקרים אנונימיים | 🟢 היגיינת נתונים | אין | [26-anonymous-visitors-leave-empty-profiles.md](26-anonymous-visitors-leave-empty-profiles.md) |

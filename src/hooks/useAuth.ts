@@ -23,6 +23,28 @@ export function useAuth() {
       if (user) {
         setFirebaseUser(user);
 
+        // A visitor arriving through an invitation link is signed in
+        // anonymously before they have done anything at all, and this used to
+        // write them a permanent user record on the spot: a fixed name, an
+        // empty email, and nothing else, kept forever. 826 of the 848 records
+        // in the database were that. Nothing reads them - the name a guest
+        // types is stored on the event's participant list, not here - so the
+        // only thing they ever did was make the number of users look 38 times
+        // larger than it is.
+        //
+        // They get no record now, and no read either: there is nothing to look
+        // for. The store simply has no user, which every screen already
+        // handles, since that is the same state as being signed out. Two
+        // things change on screen and both are corrections: the header says
+        // "guest" instead of "new user", and the dashboard link stops being
+        // offered to people who have no dashboard.
+        // See DOCS/PLANING/26-anonymous-visitors-leave-empty-profiles.md.
+        if (user.isAnonymous) {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
         // Load user profile from Database
         const userProfileRef = ref(database, `users/${user.uid}`);
         const snapshot = await get(userProfileRef);

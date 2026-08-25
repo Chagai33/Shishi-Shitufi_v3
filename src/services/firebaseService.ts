@@ -1012,6 +1012,78 @@ export class FirebaseService {
     }
   }
 
+  /**
+   * Takes one person out of one event completely: the items they created, the
+   * sign-ups they made, and their row on the participant list.
+   *
+   * This exists because none of the three did it. leaveEvent removes the list
+   * row and leaves everything with the person's name and phone number on it
+   * still standing, and cancelling a sign-up leaves the list row. Somebody who
+   * used what was there would have watched their name disappear from the
+   * participants screen while their number stayed on the ride they offered.
+   *
+   * It is built out of the existing calls rather than one large write, and
+   * that is deliberate. Deleting an item steps the person's item counter down
+   * by one, and the rules accept a step of one per write - three items have to
+   * be three writes or the database refuses all of them. Going through
+   * deleteMenuItem also keeps the counter and the cascade in the one place
+   * that already gets them right, and avoids the older trap of sending a path
+   * and something nested inside it in the same write.
+   * See DOCS/PLANING/24-anonymous-visitor-cannot-delete-account.md
+   * and DOCS/PLANING/27-cleanup-aborts-before-it-starts.md.
+   *
+   * Deleting a ride takes the passengers' sign-ups with it. The event screen
+   * normally refuses that and tells the driver to empty the ride first, which
+   * is right for an ordinary delete - a ride should not vanish under the
+   * people in it. Here it has to be allowed, because the alternative is
+   * telling somebody they may not withdraw their own phone number. The screen
+   * says how many people it affects before it calls this.
+   */
+  static async removeMyselfFromEvent(eventId: string, userId: string): Promise<void> {
+    try {
+      const [itemsSnapshot, assignmentsSnapshot] = await Promise.all([
+        get(ref(database, `events/${eventId}/menuItems`)),
+        get(ref(database, `events/${eventId}/assignments`))
+      ]);
+
+      const menuItems = itemsSnapshot.val() || {};
+      const assignments = assignmentsSnapshot.val() || {};
+
+      // Own items first. Each call takes its own sign-ups with it, so anything
+      // this person had on their own item is gone by the time the sign-ups are
+      // dealt with below.
+      const myItemIds = Object.keys(menuItems).filter(
+        itemId => menuItems[itemId].creatorId === userId
+      );
+      for (const itemId of myItemIds) {
+        await FirebaseService.deleteMenuItem(eventId, itemId);
+      }
+
+      // Then the sign-ups left on other people's items. Cancelling releases the
+      // claim on the item too, so nobody's name stays on something they are no
+      // longer bringing.
+      const myRemainingAssignments = Object.keys(assignments).filter(
+        assignmentId =>
+          assignments[assignmentId].userId === userId &&
+          !myItemIds.includes(assignments[assignmentId].menuItemId)
+      );
+      for (const assignmentId of myRemainingAssignments) {
+        await FirebaseService.cancelAssignment(
+          eventId,
+          assignmentId,
+          assignments[assignmentId].menuItemId
+        );
+      }
+
+      // The name goes last. If anything above fails the person is still listed,
+      // which is the honest state - they are still in the event.
+      await FirebaseService.leaveEvent(eventId, userId);
+    } catch (error) {
+      console.error('❌ Error in removeMyselfFromEvent:', error);
+      throw error;
+    }
+  }
+
   // ===============================
   // Preset lists management
   // ===============================

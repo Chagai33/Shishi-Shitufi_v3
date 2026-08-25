@@ -391,8 +391,10 @@
                 "processing": "Deleting account and data...",
                 "success": "Account deleted successfully. Thank you for using our service!",
                 "error": "Error deleting account.",
-                "confirmMessage": "Are you sure you want to delete your account?\nThis action is **irreversible** and will delete all your events, items, and assignments.",
-                "confirmButton": "Yes, delete account"
+                "confirmMessage": "Are you sure you want to delete your account?\nThis action is irreversible and will delete all your events, items, and assignments.",
+                "confirmButton": "Yes, delete account",
+                "confirmMessageGuest": "Delete all of your information?\nYour name, any phone numbers you entered, and everything you signed up to bring will be removed from every event you joined from this device.\n\nThis cannot be undone, and this identity cannot be restored — it has no password.\nIf you joined an event from another device, the information there will remain.",
+                "confirmButtonGuest": "Yes, delete my information"
             }
         },
         "categories": {
@@ -485,6 +487,9 @@
                 "assigned": "assigned"
             },
             "searchPlaceholder": "Search...",
+            "leaveEvent": {
+                "button": "Remove me from this event"
+            },
             "backToCategories": "Back to Categories",
             "list": {
                 "searchResults": "Search Results",
@@ -592,6 +597,10 @@
                 "deleteItemConfirm": "This action will delete both the item and the assignment",
                 "itemDeleted": "Item and assignment deleted",
                 "deleteItemError": "Error deleting item",
+                "confirmLeaveEvent": "Remove yourself from this event?\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
+                "confirmLeaveEventWithPassengers": "Remove yourself from this event?\nNote: {{count}} people are signed up to the ride you offered — removing yourself cancels their ride too.\n\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
+                "leftEvent": "You have been removed from the event and your information deleted",
+                "leaveEventError": "Could not remove you from the event. Refresh the page and try again",
                 "cancelAssignmentConfirm": "Are you sure you want to cancel the assignment?",
                 "cancelAssignmentConfirmWithName": "Are you sure you want to cancel the assignment for {{name}}?",
                 "assignmentCancelled": "Assignment cancelled",
@@ -631,6 +640,7 @@
             "privacy": "Privacy Policy",
             "feedback": "Feedback",
             "deleteAccount": "Delete Account",
+            "deleteMyData": "Delete my information",
             "developedBy": "Developed by",
             "iconsBy": "Icons by"
         },

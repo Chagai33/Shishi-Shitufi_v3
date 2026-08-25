@@ -398,6 +398,53 @@ const EventPage: React.FC = () => {
         }
     }
 
+    // What this person has left in this event, and who else it touches.
+    // Withdrawing is offered only to somebody who is actually in the event,
+    // and the count of other people signed up to their rides is what the
+    // confirmation has to say out loud before it cancels those too.
+    const myFootprint = useMemo(() => {
+        if (!localUser) {
+            return { isInEvent: false, passengers: 0 };
+        }
+        const myItemIds = new Set(
+            menuItems.filter(i => i.creatorId === localUser.uid).map(i => i.id)
+        );
+        const myAssignments = assignments.filter(a => a.userId === localUser.uid);
+        const passengers = assignments.filter(
+            a => myItemIds.has(a.menuItemId) && a.userId !== localUser.uid
+        ).length;
+
+        return {
+            isInEvent:
+                participants.some(p => p.id === localUser.uid) ||
+                myItemIds.size > 0 ||
+                myAssignments.length > 0,
+            passengers
+        };
+    }, [localUser, menuItems, assignments, participants]);
+
+    // Withdrawing from one event, as opposed to deleting everything
+    // everywhere. Somebody who put a phone number on a ride and wants it back
+    // should not have to give up every other event they ever joined to get it.
+    // See DOCS/PLANING/24-anonymous-visitor-cannot-delete-account.md.
+    const handleRemoveMyselfFromEvent = async () => {
+        if (!eventId || !localUser) return;
+
+        const confirmMsg = myFootprint.passengers > 0
+            ? t('eventPage.messages.confirmLeaveEventWithPassengers', { count: myFootprint.passengers })
+            : t('eventPage.messages.confirmLeaveEvent');
+
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            await FirebaseService.removeMyselfFromEvent(eventId, localUser.uid);
+            toast.success(t('eventPage.messages.leftEvent'));
+        } catch (error) {
+            console.error('❌ Error leaving event:', error);
+            toast.error(t('eventPage.messages.leaveEventError'));
+        }
+    };
+
     const handleModalConfirmAction = async (cancelBoth: boolean) => {
         if (!cancelModalData || !eventId) return;
         const { assignment, twinAssignment } = cancelModalData;
@@ -626,6 +673,22 @@ const EventPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Offered only to somebody who is in this event, and kept
+                    quiet: it is a way out, not something to invite people to
+                    take. The button that removes everything everywhere lives
+                    in the footer of every page, including this one. */}
+                {myFootprint.isInEvent && (
+                    <div className="flex justify-end mb-4">
+                        <button
+                            type="button"
+                            onClick={handleRemoveMyselfFromEvent}
+                            className="text-xs text-neutral-500 hover:text-red-600 underline transition-colors"
+                        >
+                            {t('eventPage.leaveEvent.button')}
+                        </button>
+                    </div>
+                )}
 
                 <div className="bg-white rounded-xl shadow-md p-3 mb-6">
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">

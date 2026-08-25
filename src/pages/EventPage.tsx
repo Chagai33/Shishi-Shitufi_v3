@@ -442,7 +442,7 @@ const EventPage: React.FC = () => {
     // confirmation has to say out loud before it cancels those too.
     const myFootprint = useMemo(() => {
         if (!localUser) {
-            return { isInEvent: false, passengers: 0 };
+            return { isInEvent: false, affectedPeople: 0 };
         }
 
         // Never the host. Withdrawing deletes the items you created, and the
@@ -450,23 +450,30 @@ const EventPage: React.FC = () => {
         // Whatever an organiser wants to do with their own event, they do from
         // the dashboard, where deleting it is called what it is.
         if (currentEvent?.organizerId === localUser.uid) {
-            return { isInEvent: false, passengers: 0 };
+            return { isInEvent: false, affectedPeople: 0 };
         }
 
         const myItemIds = new Set(
             menuItems.filter(i => i.creatorId === localUser.uid).map(i => i.id)
         );
         const myAssignments = assignments.filter(a => a.userId === localUser.uid);
-        const passengers = assignments.filter(
-            a => myItemIds.has(a.menuItemId) && a.userId !== localUser.uid
-        ).length;
+
+        // People, not rows. A round trip is two items, and somebody who booked
+        // both legs has two sign-ups; counting rows told the driver that one
+        // passenger was two, and the number in this confirmation is the whole
+        // reason the confirmation is allowed to cancel other people at all.
+        const affectedPeople = new Set(
+            assignments
+                .filter(a => myItemIds.has(a.menuItemId) && a.userId !== localUser.uid)
+                .map(a => a.userId)
+        );
 
         return {
             isInEvent:
                 participants.some(p => p.id === localUser.uid) ||
                 myItemIds.size > 0 ||
                 myAssignments.length > 0,
-            passengers
+            affectedPeople: affectedPeople.size
         };
     }, [localUser, menuItems, assignments, participants, currentEvent?.organizerId]);
 
@@ -477,8 +484,8 @@ const EventPage: React.FC = () => {
     const handleRemoveMyselfFromEvent = async () => {
         if (!eventId || !localUser) return;
 
-        const confirmMsg = myFootprint.passengers > 0
-            ? t('eventPage.messages.confirmLeaveEventWithPassengers', { count: myFootprint.passengers })
+        const confirmMsg = myFootprint.affectedPeople > 0
+            ? t('eventPage.messages.confirmLeaveEventWithPassengers', { count: myFootprint.affectedPeople })
             : t('eventPage.messages.confirmLeaveEvent');
 
         if (!window.confirm(confirmMsg)) return;

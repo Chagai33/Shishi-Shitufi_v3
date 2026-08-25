@@ -390,6 +390,8 @@
             "delete": {
                 "processing": "Deleting account and data...",
                 "success": "Account deleted successfully. Thank you for using our service!",
+                "processingGuest": "Deleting your information...",
+                "successGuest": "Your information was deleted. Thanks for taking part!",
                 "error": "Error deleting account.",
                 "confirmMessage": "Delete the account {{email}}?\n\nThis action is irreversible and will delete every event you organised, along with all items and assignments belonging to this account.\n\nIf this is not the account you meant to delete, close this window and sign in to the right one.",
                 "confirmButton": "Yes, delete account",

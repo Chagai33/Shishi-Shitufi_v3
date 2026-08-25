@@ -229,16 +229,19 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
     }
 
     // SAVE PHONE TO STORAGE (Convenience)
+    //
+    // The device remembers the number so the next ride offer from this browser
+    // arrives filled in. It used to be copied under the person's user record as
+    // well, and nothing ever read that copy: the auto fill above reads local
+    // storage, and every screen that shows a number reads it off the ride or the
+    // sign-up. A second copy of a phone number that no screen needs is data the
+    // product is holding for no reason, and the write also brought a deleted
+    // account's user record back into existence, silently, because it swallowed
+    // every error.
+    // See DOCS/PLANING/45-other-paths-still-materialise-a-user-node.md.
     if (isOffers && phoneNumber.trim()) {
       try {
         localStorage.setItem('user_last_phone', phoneNumber.trim());
-
-        // If registered, sync to DB (nice to have)
-        // We can't easily access the DB user record here without a fetch, 
-        // but we can fire-and-forget an update if they are not anonymous
-        if (!user.isAnonymous) {
-          FirebaseService.updateUser(user.uid, { phoneNumber: phoneNumber.trim() } as any);
-        }
       } catch (e) { /* ignore storage errors */ }
     }
 

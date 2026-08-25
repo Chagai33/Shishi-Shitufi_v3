@@ -19,6 +19,7 @@
             "edit": "Edit",
             "close": "Close",
             "confirm": "Confirm",
+            "confirmAction": "Confirm action",
             "back": "Back"
         },
         "errors": {

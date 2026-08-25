@@ -178,11 +178,31 @@ const EventPage: React.FC = () => {
         return resolveCategoryDisplayName(id, currentEvent || undefined, eventCategories, t);
     }, [eventCategories, t, currentEvent]);
 
+    // Getting an identity, and nothing else. It has to finish before the
+    // subscriptions below are allowed to start.
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, (user) => {
             if (user) setLocalUser(user);
             else signInAnonymously(auth).catch(err => console.error("Anonymous sign-in failed:", err));
         });
+        return () => unsubAuth();
+    }, []);
+
+    // Reading the event, once there is somebody to read it as. Every rule on
+    // this data requires a signed-in caller, so a listener opened before the
+    // anonymous sign-in lands is refused - and a refused listener is cancelled
+    // rather than retried, so it never recovers. The page then sits on an
+    // event with no details and calls it inactive, which is a lie about
+    // somebody else's event and lands on the first visit, the one where a
+    // guest opens an invitation link.
+    //
+    // This was always the order of things here. It was hidden by the profile
+    // lookup that used to run for anonymous visitors on sign-in: that round
+    // trip took long enough to force this component down and back up, and the
+    // second set of listeners opened after the credential had arrived. Taking
+    // that write away took the accident with it.
+    useEffect(() => {
+        if (!localUser) return;
         if (!eventId) return;
 
         setIsEventLoading(true);
@@ -226,14 +246,13 @@ const EventPage: React.FC = () => {
         });
 
         return () => {
-            unsubAuth();
             unsubDetails();
             unsubMenuItems();
             unsubAssignments();
             unsubParticipants();
             clearCurrentEvent();
         };
-    }, [eventId, setCurrentEvent, updateCurrentEventPartial, clearCurrentEvent]);
+    }, [eventId, localUser?.uid, setCurrentEvent, updateCurrentEventPartial, clearCurrentEvent]);
 
     const handleJoinEvent = useCallback(async (name: string) => {
         if (!eventId || !localUser || !name.trim()) return;

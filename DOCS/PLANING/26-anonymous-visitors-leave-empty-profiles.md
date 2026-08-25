@@ -46,7 +46,7 @@
   אינו מציג דבר: רשימת המשתמשים שהוא מבקש אינה קיימת במחסן המרכזי, ופעולת המחיקה
   שהוא קורא לה אינה קיימת בקוד. הוא נשבר ברגע שפותחים אותו. **ולכן החשש שהשינוי
   כאן ירוקן אותו מוסר** — אי אפשר לרוקן מסך ריק. הפירוט
-  ב-[36-temporary-user-management-screen-is-dead.md](36-temporary-user-management-screen-is-dead.md).
+  ב-[42-temporary-user-management-screen-is-dead.md](42-temporary-user-management-screen-is-dead.md).
 
 ## מי קורא את הפרופיל האנונימי — נבדק 24/08/2026
 

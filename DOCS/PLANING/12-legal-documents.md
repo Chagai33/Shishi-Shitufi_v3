@@ -88,7 +88,7 @@
 בכלל זה. המסך מסתיר — האחסון לא. ראה [09](09-database-permissions.md).
 
 **רשימת הסעיפים המלאה להוספה ולעדכון** — כולל אלה שנובעים מתפוגת המידע —
-נמצאת ב-[35-anonymous-data-never-expires.md](35-anonymous-data-never-expires.md).
+נמצאת ב-[41-anonymous-data-never-expires.md](41-anonymous-data-never-expires.md).
 **איחוד שני המסמכים הוא תנאי מקדים לכל אחד מהם**, אחרת מעדכנים אחד והשני ממשיך
 לסתור.
 

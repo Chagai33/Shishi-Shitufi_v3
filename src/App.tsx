@@ -240,7 +240,10 @@ function App() {
                 spellCheck={false}
                 value={typedEmail}
                 onChange={(e) => setTypedEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && canConfirmDelete) handleDeleteAccount(); }}
+                /* No Enter key here on purpose. Finishing an address and
+                   pressing Enter out of habit is not the same as deciding to
+                   destroy an account, and this is the one field in the product
+                   where those two must not be the same gesture. */
                 aria-describedby={showEmailMismatch ? `${confirmEmailId}-mismatch` : undefined}
                 placeholder={t('account.delete.confirmEmailPlaceholder')}
                 className="mt-1 w-full px-3 py-2 text-left border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"

@@ -180,11 +180,11 @@ export function useAuth() {
 
         setUser((outcome.snapshot.val() as User | null) ?? newUserProfile);
       } catch (error) {
+        // Deliberately only a record and a lowered flag. Whatever failed here
+        // says nothing about who is signed in, so clearing the store would
+        // throw an established organizer off their own dashboard because one
+        // read did not come back.
         console.error('Could not settle the signed-in user:', error);
-        if (!cancelled) {
-          setUser(null);
-          clearCurrentEvent();
-        }
       } finally {
         if (!cancelled) setIsLoading(false);
       }

@@ -104,19 +104,43 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
       updates[`/events/${eventId}/participants/${uid}`] = null;
       updates[`/events/${eventId}/userItemCounts/${uid}`] = null;
 
-      // Cleanup user's assignments
+      // Cleanup user's assignments. The sign-up record and nothing else: what
+      // the item itself says about who is bringing it is handled below, by
+      // asking the item rather than by trusting the sign-up to point at it.
       const assignments = eventSnapshot.child('assignments').val();
       if (assignments) {
         for (const assignmentId in assignments) {
           if (assignments[assignmentId].userId === uid) {
             updates[`/events/${eventId}/assignments/${assignmentId}`] = null;
+          }
+        }
+      }
 
-            // Also un-assign the menu item if currently assigned to this user
-            const menuItemId = assignments[assignmentId].menuItemId;
-            const menuItem = eventSnapshot.child(`menuItems/${menuItemId}`).val();
+      const menuItems = eventSnapshot.child('menuItems').val();
 
-            // Only unassign if the assignment actually points to this user's name or is unassigned
-            // (Just to be safe, but typically we can blindly set to null since we are deleting the assignment)
+      // The claim written on the item itself, which carries the person's id
+      // and their name. Reached by walking the items, because reaching it
+      // through a matching sign-up record got both directions wrong.
+      //
+      // It missed items. An item can say it is claimed with no sign-up record
+      // pointing at it, and the product already knows this state exists:
+      // validateEventData looks for exactly it and reports it. Those items
+      // kept the name of somebody who had asked to be deleted, forever, and
+      // nothing could ever find them again, since every route in starts from
+      // the id of an account that no longer exists.
+      //
+      // And it cleared items belonging to other people. An item several
+      // people share is claimed by whoever took it first, and a sign-up by
+      // anybody else pointed at that same item: one person deleting
+      // themselves released a claim that was never theirs, and the item
+      // stopped looking taken to everyone.
+      //
+      // So the question is the one the client already asks before releasing a
+      // claim, in FirebaseService.cancelAssignment: is the holder on record
+      // this person. The whole event is in hand here, so it costs no reads.
+      if (menuItems) {
+        for (const menuItemId in menuItems) {
+          if (menuItems[menuItemId].assignedTo === uid) {
             updates[`/events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
             updates[`/events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
             updates[`/events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
@@ -125,7 +149,6 @@ exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
       }
 
       // Cleanup user's created menu items (including ride offers with phone numbers)
-      const menuItems = eventSnapshot.child('menuItems').val();
       if (menuItems) {
         for (const menuItemId in menuItems) {
           if (menuItems[menuItemId].creatorId === uid) {

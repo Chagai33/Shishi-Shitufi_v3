@@ -201,6 +201,18 @@ const EventPage: React.FC = () => {
                 setSignInFailed(false);
                 setLocalUser(user);
             } else {
+                // Letting go of the old identity, and not only asking for a new
+                // one. Every control on this page acts as whoever is held here,
+                // and the subscriptions below are keyed on it, so keeping a
+                // signed-out identity means the page carries on writing under a
+                // name that no longer exists and holding listeners the rules
+                // now refuse - at which point the screen announces that the
+                // event does not exist. It matters from the moment the auth
+                // hook started ending sessions for deleted accounts: that
+                // person should land back on the event as a guest, which is
+                // what clearing this makes happen.
+                // See DOCS/PLANING/46-event-page-keeps-a-deleted-identity.md.
+                setLocalUser(null);
                 attemptAnonymousSignIn();
             }
         });

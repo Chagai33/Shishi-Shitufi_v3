@@ -393,7 +393,7 @@
                 "error": "Error deleting account.",
                 "confirmMessage": "Delete the account {{email}}?\n\nThis action is irreversible and will delete every event you organised, along with all items and assignments belonging to this account.\n\nIf this is not the account you meant to delete, close this window and sign in to the right one.",
                 "confirmButton": "Yes, delete account",
-                "confirmMessageGuest": "Delete all of your information?\nYour name, any phone numbers you entered, and everything you signed up to bring will be removed from every event you joined from this device.\n\nThis cannot be undone, and this identity cannot be restored — it has no password.\nIf you joined an event from another device, the information there will remain.",
+                "confirmMessageGuest": "Delete all of your information?\nYour name, any phone numbers you entered, and everything you signed up to bring will be removed from every event you joined from this device.\n\nThis cannot be undone, and this identity cannot be restored, because it has no password.\nIf you joined an event from another device, the information there will remain.",
                 "confirmButtonGuest": "Yes, delete my information"
             }
         },
@@ -538,7 +538,7 @@
                 "inactive": "Event Inactive",
                 "inactiveSubtitle": "New items cannot be assigned.",
                 "connectionFailed": "We could not connect to the event",
-                "connectionFailedSubtitle": "This looks like a connection problem. The event itself is fine — we just could not reach it.",
+                "connectionFailedSubtitle": "This looks like a connection problem. The event itself is fine. We just could not reach it.",
                 "connectionFailedRetry": "Try again"
             },
             "welcome": {
@@ -601,7 +601,7 @@
                 "itemDeleted": "Item and assignment deleted",
                 "deleteItemError": "Error deleting item",
                 "confirmLeaveEvent": "Remove yourself from this event?\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
-                "confirmLeaveEventWithPassengers": "Remove yourself from this event?\nNote: {{count}} people are signed up to the ride you offered — removing yourself cancels their ride too.\n\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
+                "confirmLeaveEventWithPassengers": "Remove yourself from this event?\nNote: {{count}} people are signed up to the ride you offered, and removing yourself cancels their ride too.\n\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
                 "leftEvent": "You have been removed from the event and your information deleted",
                 "leaveEventError": "Could not remove you from the event. Refresh the page and try again",
                 "cancelAssignmentConfirm": "Are you sure you want to cancel the assignment?",

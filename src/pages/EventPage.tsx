@@ -406,6 +406,15 @@ const EventPage: React.FC = () => {
         if (!localUser) {
             return { isInEvent: false, passengers: 0 };
         }
+
+        // Never the host. Withdrawing deletes the items you created, and the
+        // organiser created the menu - the whole event would go with them.
+        // Whatever an organiser wants to do with their own event, they do from
+        // the dashboard, where deleting it is called what it is.
+        if (currentEvent?.organizerId === localUser.uid) {
+            return { isInEvent: false, passengers: 0 };
+        }
+
         const myItemIds = new Set(
             menuItems.filter(i => i.creatorId === localUser.uid).map(i => i.id)
         );
@@ -421,7 +430,7 @@ const EventPage: React.FC = () => {
                 myAssignments.length > 0,
             passengers
         };
-    }, [localUser, menuItems, assignments, participants]);
+    }, [localUser, menuItems, assignments, participants, currentEvent?.organizerId]);
 
     // Withdrawing from one event, as opposed to deleting everything
     // everywhere. Somebody who put a phone number on a ride and wants it back

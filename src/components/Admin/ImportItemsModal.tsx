@@ -87,6 +87,38 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     return cats.map(c => ({ value: c.id, label: c.name }));
   }, [event.details.categories, categoriesOverride, t]);
 
+  // An AI answer counts as a classification only when it names a category this
+  // event actually has. Anything else means the model did not classify the item,
+  // and the item then keeps whatever category it already had. The automatic run
+  // used to force "other" instead, which is what wiped the categories an
+  // organiser had already sorted whenever the answer did not come back clean.
+  const allowedCategoryIds = React.useMemo(
+    () => new Set(categoryOptions.map(opt => opt.value)),
+    [categoryOptions]
+  );
+
+  // Where an item goes when there is no earlier category to keep, which is the
+  // case for a brand new item in a plain Smart Import. The event's own catch-all
+  // if it has one, otherwise its first category. Never a hardcoded id: templates
+  // such as BBQ and Picnic have no "other" category, so the old hardcoded value
+  // was not even in their list and the dropdown came up empty.
+  const fallbackCategoryId = React.useMemo(() => {
+    const catchAll = categoryOptions.find(opt => opt.value === 'other' || opt.value === 'general');
+    return catchAll?.value || categoryOptions[0]?.value || 'other';
+  }, [categoryOptions]);
+
+  // The categories the items already carry in the event, keyed by name. On a
+  // Smart Migration these are exactly what the organiser stands to lose when the
+  // model has no answer for an item.
+  const existingCategoryByName = React.useMemo(() => {
+    const byName = new Map<string, string>();
+    const eventMenuItems = event.menuItems ? Object.values(event.menuItems) : [];
+    eventMenuItems.forEach(item => {
+      byName.set(item.name.trim().toLowerCase(), item.category);
+    });
+    return byName;
+  }, [event.menuItems]);
+
   // Handle active listening transcript
   useEffect(() => {
     if (transcript) {
@@ -149,10 +181,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
       const items: ImportItem[] = data.items.map(item => {
         // Validate returned category
-        const isValidCategory = allowedCats.some(c => c.id === item.category);
+        const isValidCategory = !!item.category && allowedCategoryIds.has(item.category);
+        // Not classified: keep the category the item already has in the event, and
+        // use the fallback only for an item that has no earlier category at all.
+        const previousCategory = existingCategoryByName.get(item.name.trim().toLowerCase());
+        const keptCategory = previousCategory && allowedCategoryIds.has(previousCategory)
+          ? previousCategory
+          : fallbackCategoryId;
         return {
           name: item.name,
-          category: (isValidCategory ? item.category : 'other') as MenuCategory,
+          category: (isValidCategory ? item.category : keptCategory) as MenuCategory,
           quantity: item.quantity,
           isRequired: false,
           selected: true
@@ -487,7 +525,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
       const updatedItems = importItems.map(item => {
         const aiCategory = classificationMap.get(item.name.trim().toLowerCase());
-        const isValidCategory = aiCategory && allowedCats.some(c => c.id === aiCategory);
+        // The same acceptance test the automatic run applies, so the two paths can
+        // no longer disagree about what an unrecognised answer means.
+        const isValidCategory = !!aiCategory && allowedCategoryIds.has(aiCategory);
 
         return {
           ...item,

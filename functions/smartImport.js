@@ -62,7 +62,7 @@ exports.parseShoppingList = onCall(
       // 4. Golden Prompt
       const systemPrompt = `You are a Hebrew event item parser and classifier.
 Your inputs are: 1. Text/Image list. 2. Allowed Categories (JSON Array of {id, name}).
-Task: Extract items [{ name: string, quantity: number, category: string }] and classify strictly into Allowed Categories.
+Task: Extract items [{ name: string, quantity: number, category?: string }] and classify strictly into Allowed Categories.
 Rules:
 - Handle slang (e.g., '2 חלב', 'חלב פעמיים' -> quantity: 2).
 - Clean names (remove 'bottles of', 'packages of', etc.).
@@ -70,8 +70,9 @@ Rules:
 - Category Logic:
   - You will be provided with a JSON list of allowed categories.
   - You MUST try to match each item to the most appropriate category 'id' from that list based on the 'name'.
+  - Return the 'id' exactly as it appears in the list, character for character. Ids are opaque and a real one can look like "custom-1755701234567". Never return the category name instead of its id, and never invent an id that is not in the list.
   - If "meat" (בשר) is in the list and item is "kebab", use "meat".
-  - If no match found, use "other" (or "general" if it exists in the list).
+  - If you genuinely cannot place an item, omit the 'category' field for that item entirely. Do not guess and do not fall back to a catch-all such as "other" or "general". A missing field tells the client you had no answer, and the client then keeps the category the item already has, which is what the organiser sorted by hand.
 - Output ONLY valid JSON array of objects.`;
 
       const parts = [systemPrompt];

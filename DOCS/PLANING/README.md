@@ -28,6 +28,7 @@
 | 12 | מסך ניהול הפריטים בכמות רושם "admin" כיוצר | 🟢 היגיינת נתונים | [32](32-bulk-manager-writes-a-literal-admin-as-creator.md) |
 | 13 | בהרשמה לא כתוב לאן שם התצוגה הולך | 🟢 ניסוח | [38](38-display-name-copy.md) |
 | 13 | מסלול מחיקת המידע לאורח חסר בספרדית | 🟢 ניסוח | [47](47-translation-gaps-in-the-delete-flow.md) |
+| 13 | כפתור "הוסף ליומן" מציג מפתח טכני בעברית | 🟢 ניסוח | [49](49-add-to-calendar-shows-a-raw-key-in-hebrew.md) |
 | 14 | תקרת הכמות בפריט מתחלק אינה נאכפת בשרת | 🟢 פער ידוע | [18](18-splittable-quantity-race.md) |
 | 15 | קבצים ענקיים וקוד כפול | 🟢 חוב מבני | [13](13-code-structure.md) |
 | 16 | ניקוי קוד מת | 🟢 קל | [06](06-dead-code.md) |

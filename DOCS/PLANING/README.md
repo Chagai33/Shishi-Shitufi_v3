@@ -1,7 +1,7 @@
 # תוכניות עבודה — Shishi Shitufi
 
 מסמכי תכנון למשימות פתוחות בפרויקט.
-עודכן לאחרונה: **24/08/2026**
+עודכן לאחרונה: **25/08/2026**
 
 ---
 
@@ -20,8 +20,8 @@
 | — | ~~ההגנה על חשבון מנהל העל אינה פעילה~~ | ✅ נפרס ואומת | 24/08/2026 | [21-super-admin-guard-inert.md](21-super-admin-guard-inert.md) |
 | — | ~~מונה הפריטים שורד את מחיקת החשבון~~ | ✅ נפרס | 24/08/2026 | [25-user-item-counts-survive-deletion.md](25-user-item-counts-survive-deletion.md) |
 | — | ~~מבקר אינו יכול להוסיף פריט משלו~~ | ✅ נפרס ואומת | 24/08/2026 | [28-visitor-cannot-add-own-item.md](28-visitor-cannot-add-own-item.md) |
-| 1א | למבקר אנונימי אין דרך לבקש מחיקה | 🟠 חשיפה משפטית | אין | [24-anonymous-visitor-cannot-delete-account.md](24-anonymous-visitor-cannot-delete-account.md) |
-| 1ב | משתמשים רשומים אינם נספרים כמשתתפים | 🟠 באג במוצר | אין | [23-registered-users-never-counted-as-participants.md](23-registered-users-never-counted-as-participants.md) |
+| — | ~~למבקר אנונימי אין דרך לבקש מחיקה~~ | ✅ מיושם ואומת | 25/08/2026 | [24-anonymous-visitor-cannot-delete-account.md](24-anonymous-visitor-cannot-delete-account.md) |
+| — | ~~משתמשים רשומים אינם נספרים כמשתתפים~~ | ✅ מיושם ואומת | 25/08/2026 | [23-registered-users-never-counted-as-participants.md](23-registered-users-never-counted-as-participants.md) |
 | — | ~~טרמפים נחסמים כשהמארגן כיבה הוספת פריטים~~ | ✅ נפרס ואומת | 24/08/2026 | [29-rides-blocked-by-user-items-setting.md](29-rides-blocked-by-user-items-setting.md) |
 | — | ~~המכסה ניתנת לעקיפה, ויוצר הפריט אינו מאומת~~ | ✅ נפרס ואומת | 24/08/2026 | [30-item-rules-trust-the-client.md](30-item-rules-trust-the-client.md) |
 | — | ~~טרמפים אוכלים את מכסת הפריטים במסך~~ | ✅ נפרס ואומת | 24/08/2026 | [31-rides-consume-the-item-quota.md](31-rides-consume-the-item-quota.md) |
@@ -31,6 +31,8 @@
 | 1ד | אין "שכחתי סיסמה" — מי ששכח נעול לנצח | 🟠 באג במוצר | אין | [36-no-password-reset.md](36-no-password-reset.md) |
 | 1ה | אין אימות מייל — אפשר לתפוס כתובת של אחר | 🟠 חשיפה | אין | [37-no-email-verification.md](37-no-email-verification.md) |
 | 1ו | בהרשמה לא כתוב לאן שם התצוגה הולך | 🟢 ניסוח | אין | [38-display-name-copy.md](38-display-name-copy.md) |
+| 1ח | חשבון שנמחק חוזר למסד כפרופיל עם האימייל | 🔴 חשיפה משפטית | אין | [40-deleted-account-comes-back-as-a-profile.md](40-deleted-account-comes-back-as-a-profile.md) |
+| 1ט | חלון המחיקה, שתי שאריות | 🟠 חשיפה | אין | [39-delete-account-never-says-which-account.md](39-delete-account-never-says-which-account.md) |
 | 2 | הסיווג האוטומטי מזרים הכל ל"אחר" | 🟠 באג במוצר | אין | [17-ai-classification-after-migration.md](17-ai-classification-after-migration.md) |
 | 3 | "אירוע" רפאים עם מידע אישי שלא יימחק | 🟠 חשיפה | אין | [15-phantom-event-node.md](15-phantom-event-node.md) |
 | 3א | כל מבקר יכול ליצור "אירוע" חדש במסד | 🟠 חשיפה | אין | [20-anyone-can-create-an-event-node.md](20-anyone-can-create-an-event-node.md) |
@@ -46,7 +48,7 @@
 | 16 | מסך ניהול הפריטים בכמות רושם "admin" כיוצר | 🟢 היגיינת נתונים | אין | [32-bulk-manager-writes-a-literal-admin-as-creator.md](32-bulk-manager-writes-a-literal-admin-as-creator.md) |
 | 13 | גודל ה-bundle | 🟢 שיפור | אין | [07-performance.md](07-performance.md) |
 | 14 | רקב הקישורים ב-README שבשורש | 🟢 תיעוד | אין | [22-readme-rot.md](22-readme-rot.md) |
-| 15 | פרופילים ריקים של מבקרים אנונימיים | 🟢 היגיינת נתונים | אין | [26-anonymous-visitors-leave-empty-profiles.md](26-anonymous-visitors-leave-empty-profiles.md) |
+| — | ~~פרופילים ריקים של מבקרים אנונימיים~~ | ✅ מיושם ואומת | 25/08/2026 | [26-anonymous-visitors-leave-empty-profiles.md](26-anonymous-visitors-leave-empty-profiles.md) |
 | 17 | מסך "ניהול משתמשים זמניים" נשבר בפתיחה | 🟢 קוד מת או תיקון | אין | [42-temporary-user-management-screen-is-dead.md](42-temporary-user-management-screen-is-dead.md) |
 | 💡 | כמות בלי יחידת מידה — גרמים ומנות | 💡 רעיון מוצר | אין | [33-quantity-units.md](33-quantity-units.md) |
 | — | ~~ניקוי ענפים~~ | ✅ סבב שני הושלם ואומת | 24/08/2026 | [05-branch-cleanup.md](05-branch-cleanup.md) |
@@ -57,6 +59,31 @@
 **החוקים נפרסו ידנית לפני המיזוג, הקוד עלה ב-`main@71c750d`, והענף נמחק.** הסוויטה עומדת על 54
 בדיקות. **נשאר פתוח:** מונים שכבר התנפחו בפרודקשן, שתיקונם הוא כתיבה לנתונים
 חיים ודורש אישור נפרד — מתועד ב-[31](31-rides-consume-the-item-quota.md).
+
+**קמפיין המבקרים האנונימיים נסגר ב-25/08/2026** — שלוש רשומות בקמפיין אחד, כי
+הן היו הנחה אחת ולא שלושה באגים: המוצר התייחס למבקר אנונימי כאורח חולף ולא
+כמשתמש. **מבקר כבר אינו מייצר רשומת משתמש ריקה** (נמדד: הקוד הפרוס העלה את
+הטבלה מ-856 ל-857 בפתיחת קישור אחת, החדש נשאר על 859), **כל מי שמשבץ את עצמו
+נרשם לרשימת המשתתפים** כולל משתמשים רשומים והמארגן, **ולאורח יש שתי דלתות
+יציאה** — מחיקת המידע מכל עמוד, והסרה מאירוע יחיד עם אזהרה מספרית לפני שהיא
+מבטלת נסיעות של נוסעים.
+
+**ושלושה דברים שהקמפיין הזה מלמד:**
+
+**הרצה מצאה מה שקריאה לא.** התיקון הראשון פתח רגרסיה שהייתה מציגה לכל אורח
+בכניסה הראשונה "האירוע אינו פעיל" על אירוע פעיל, ונתקעת שם. היא נמצאה רק כי
+הקוד הורץ. **הסיבה מאלפת:** הכתיבה המיותרת שהוסרה יצרה עיכוב שהסתיר באג קיים
+בסדר הפעולות, והסרת הבזבוז הסירה איתה את התאונה שהצילה.
+
+**שלוש טענות שנכתבו ברשומות מראש התבררו כלא נכונות.** מסך רשימת המשתתפים
+והמונה של המארגן כבר עבדו נכון, חלון הביטול נסגר שש שעות אחרי תחילת האירוע ולא
+בחצות, ומסך ניהול המשתמשים הזמניים לא הסתמך על כלום כי הוא בכלל לא נטען.
+**רשומה שנכתבה בלי להריץ מתארת נכון מה חסר, ולא מה קורה.**
+
+**וקפיצה למסקנה עלתה סבב שלם.** נמצא שחשבון שנמחק חוזר למסד עם האימייל שלו,
+ונקבע כעובדה שזו רגרסיה של הענף. **היא לא הייתה** — השוואה מבוקרת הראתה
+שלשונית ישנה של האתר החי היא שכתבה אותו בחזרה. התקלה אמיתית ופתוחה
+([40](40-deleted-account-comes-back-as-a-profile.md)), אבל הייחוס היה שגוי.
 
 ## למה זה הסדר הזה
 

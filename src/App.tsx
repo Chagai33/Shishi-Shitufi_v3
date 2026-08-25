@@ -39,10 +39,21 @@ function App() {
 
   const handleDeleteAccount = async () => {
     setIsDeletingAccount(true);
-    toast.loading(t('account.delete.processing'), { id: 'delete-toast' });
+    // The dialog and the button were already careful not to tell a guest they
+    // have an account. These two were not, so the same person read a question
+    // about their information, pressed a button about their information, and
+    // was then told twice that an account had been deleted - which invites
+    // exactly the question the wording was written to avoid: which account?
+    toast.loading(
+      t(isAnonymousVisitor ? 'account.delete.processingGuest' : 'account.delete.processing'),
+      { id: 'delete-toast' }
+    );
     try {
       await FirebaseService.deleteCurrentUserAccount();
-      toast.success(t('account.delete.success'), { id: 'delete-toast' });
+      toast.success(
+        t(isAnonymousVisitor ? 'account.delete.successGuest' : 'account.delete.success'),
+        { id: 'delete-toast' }
+      );
 
       // The account is gone on the server, but the browser is still holding a
       // session for it and will keep acting as though it works. Every write

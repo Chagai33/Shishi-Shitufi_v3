@@ -994,12 +994,23 @@ export class FirebaseService {
       // Delete the assignment
       updates[`events/${eventId}/assignments/${assignmentId}`] = null;
 
-      // Remove assignment from item - but only if the item is actually claimed.
-      // An item several people share is never claimed, so those three fields are
-      // already empty, and writing null over an empty claim field is still a
-      // write, which the rules refuse.
+      // Remove assignment from item - but only if the item is actually claimed,
+      // and only if the claim belongs to the person whose sign-up is going.
+      //
+      // An item several people share is never claimed, so those three fields
+      // are already empty, and writing null over an empty claim field is still
+      // a write, which the rules refuse.
+      //
+      // And a claim can outlive the arrangement that made it. An item created
+      // with a quantity of one is claimed by whoever takes it; raising the
+      // quantity afterwards makes it splittable and lets other people sign up,
+      // without ever clearing that first claim. Cancelling one of those later
+      // sign-ups used to try to release somebody else's claim, which the rules
+      // refuse - the release belongs to the holder - and the refusal took the
+      // whole write down with it, cancellation included.
       const claimSnapshot = await get(ref(database, `events/${eventId}/menuItems/${menuItemId}/assignedTo`));
-      if (claimSnapshot.exists()) {
+      const assignmentSnapshot = await get(ref(database, `events/${eventId}/assignments/${assignmentId}/userId`));
+      if (claimSnapshot.exists() && claimSnapshot.val() === assignmentSnapshot.val()) {
         updates[`events/${eventId}/menuItems/${menuItemId}/assignedTo`] = null;
         updates[`events/${eventId}/menuItems/${menuItemId}/assignedToName`] = null;
         updates[`events/${eventId}/menuItems/${menuItemId}/assignedAt`] = null;
@@ -1049,19 +1060,19 @@ export class FirebaseService {
       const menuItems = itemsSnapshot.val() || {};
       const assignments = assignmentsSnapshot.val() || {};
 
-      // Own items first. Each call takes its own sign-ups with it, so anything
-      // this person had on their own item is gone by the time the sign-ups are
-      // dealt with below.
       const myItemIds = Object.keys(menuItems).filter(
         itemId => menuItems[itemId].creatorId === userId
       );
-      for (const itemId of myItemIds) {
-        await FirebaseService.deleteMenuItem(eventId, itemId);
-      }
 
-      // Then the sign-ups left on other people's items. Cancelling releases the
-      // claim on the item too, so nobody's name stays on something they are no
-      // longer bringing.
+      // Sign-ups on other people's items go first, and deliberately so. This
+      // half can be refused - it writes to items somebody else owns - whereas
+      // deleting your own items cannot. Running the destructible half first
+      // meant a refusal here landed after the items were already gone: the
+      // person had lost what they created, was still on the participant list,
+      // and their phone number was still on somebody else's ride, with every
+      // retry hitting the same refusal. Failing before anything is destroyed
+      // leaves them exactly where they started, which they can retry or
+      // report.
       const myRemainingAssignments = Object.keys(assignments).filter(
         assignmentId =>
           assignments[assignmentId].userId === userId &&
@@ -1073,6 +1084,12 @@ export class FirebaseService {
           assignmentId,
           assignments[assignmentId].menuItemId
         );
+      }
+
+      // Then their own items. Each call takes the sign-ups on it with it,
+      // which is what cancels the passengers the confirmation warned about.
+      for (const itemId of myItemIds) {
+        await FirebaseService.deleteMenuItem(eventId, itemId);
       }
 
       // The name goes last. If anything above fails the person is still listed,

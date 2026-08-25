@@ -178,11 +178,50 @@ const EventPage: React.FC = () => {
         return resolveCategoryDisplayName(id, currentEvent || undefined, eventCategories, t);
     }, [eventCategories, t, currentEvent]);
 
+    // Getting an identity, and nothing else. It has to finish before the
+    // subscriptions below are allowed to start.
+    //
+    // If it cannot be got, that has to be said. Nothing here can run without
+    // one - the rules refuse every read - so the page would otherwise sit on a
+    // spinner for as long as somebody is willing to watch it, which is worse
+    // than a wrong answer because it never becomes an answer at all.
+    const [signInFailed, setSignInFailed] = useState(false);
+
+    const attemptAnonymousSignIn = useCallback(() => {
+        setSignInFailed(false);
+        signInAnonymously(auth).catch(err => {
+            console.error("Anonymous sign-in failed:", err);
+            setSignInFailed(true);
+        });
+    }, []);
+
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, (user) => {
-            if (user) setLocalUser(user);
-            else signInAnonymously(auth).catch(err => console.error("Anonymous sign-in failed:", err));
+            if (user) {
+                setSignInFailed(false);
+                setLocalUser(user);
+            } else {
+                attemptAnonymousSignIn();
+            }
         });
+        return () => unsubAuth();
+    }, [attemptAnonymousSignIn]);
+
+    // Reading the event, once there is somebody to read it as. Every rule on
+    // this data requires a signed-in caller, so a listener opened before the
+    // anonymous sign-in lands is refused - and a refused listener is cancelled
+    // rather than retried, so it never recovers. The page then sits on an
+    // event with no details and calls it inactive, which is a lie about
+    // somebody else's event and lands on the first visit, the one where a
+    // guest opens an invitation link.
+    //
+    // This was always the order of things here. It was hidden by the profile
+    // lookup that used to run for anonymous visitors on sign-in: that round
+    // trip took long enough to force this component down and back up, and the
+    // second set of listeners opened after the credential had arrived. Taking
+    // that write away took the accident with it.
+    useEffect(() => {
+        if (!localUser) return;
         if (!eventId) return;
 
         setIsEventLoading(true);
@@ -226,14 +265,13 @@ const EventPage: React.FC = () => {
         });
 
         return () => {
-            unsubAuth();
             unsubDetails();
             unsubMenuItems();
             unsubAssignments();
             unsubParticipants();
             clearCurrentEvent();
         };
-    }, [eventId, setCurrentEvent, updateCurrentEventPartial, clearCurrentEvent]);
+    }, [eventId, localUser?.uid, setCurrentEvent, updateCurrentEventPartial, clearCurrentEvent]);
 
     const handleJoinEvent = useCallback(async (name: string) => {
         if (!eventId || !localUser || !name.trim()) return;
@@ -398,6 +436,62 @@ const EventPage: React.FC = () => {
         }
     }
 
+    // What this person has left in this event, and who else it touches.
+    // Withdrawing is offered only to somebody who is actually in the event,
+    // and the count of other people signed up to their rides is what the
+    // confirmation has to say out loud before it cancels those too.
+    const myFootprint = useMemo(() => {
+        if (!localUser) {
+            return { isInEvent: false, passengers: 0 };
+        }
+
+        // Never the host. Withdrawing deletes the items you created, and the
+        // organiser created the menu - the whole event would go with them.
+        // Whatever an organiser wants to do with their own event, they do from
+        // the dashboard, where deleting it is called what it is.
+        if (currentEvent?.organizerId === localUser.uid) {
+            return { isInEvent: false, passengers: 0 };
+        }
+
+        const myItemIds = new Set(
+            menuItems.filter(i => i.creatorId === localUser.uid).map(i => i.id)
+        );
+        const myAssignments = assignments.filter(a => a.userId === localUser.uid);
+        const passengers = assignments.filter(
+            a => myItemIds.has(a.menuItemId) && a.userId !== localUser.uid
+        ).length;
+
+        return {
+            isInEvent:
+                participants.some(p => p.id === localUser.uid) ||
+                myItemIds.size > 0 ||
+                myAssignments.length > 0,
+            passengers
+        };
+    }, [localUser, menuItems, assignments, participants, currentEvent?.organizerId]);
+
+    // Withdrawing from one event, as opposed to deleting everything
+    // everywhere. Somebody who put a phone number on a ride and wants it back
+    // should not have to give up every other event they ever joined to get it.
+    // See DOCS/PLANING/24-anonymous-visitor-cannot-delete-account.md.
+    const handleRemoveMyselfFromEvent = async () => {
+        if (!eventId || !localUser) return;
+
+        const confirmMsg = myFootprint.passengers > 0
+            ? t('eventPage.messages.confirmLeaveEventWithPassengers', { count: myFootprint.passengers })
+            : t('eventPage.messages.confirmLeaveEvent');
+
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            await FirebaseService.removeMyselfFromEvent(eventId, localUser.uid);
+            toast.success(t('eventPage.messages.leftEvent'));
+        } catch (error) {
+            console.error('❌ Error leaving event:', error);
+            toast.error(t('eventPage.messages.leaveEventError'));
+        }
+    };
+
     const handleModalConfirmAction = async (cancelBoth: boolean) => {
         if (!cancelModalData || !eventId) return;
         const { assignment, twinAssignment } = cancelModalData;
@@ -493,6 +587,25 @@ const EventPage: React.FC = () => {
         const availableItems = baseItems.filter(item => !assignments.some(a => a.menuItemId === item.id));
         return [...availableItems, ...assignedItems];
     }, [debouncedSearchTerm, selectedCategory, localUser, menuItems, assignments]);
+
+    // Ahead of the spinner, because this is the one state the spinner can
+    // never leave on its own.
+    if (signInFailed) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background text-center p-4">
+                <AlertCircle size={64} className="text-error" />
+                <h1 className="mt-6 text-3xl font-bold text-neutral-800">{t('eventPage.status.connectionFailed')}</h1>
+                <p className="mt-2 text-lg text-neutral-600">{t('eventPage.status.connectionFailedSubtitle')}</p>
+                <button
+                    type="button"
+                    onClick={attemptAnonymousSignIn}
+                    className="mt-8 inline-block bg-accent-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent-dark/90 transition-colors"
+                >
+                    {t('eventPage.status.connectionFailedRetry')}
+                </button>
+            </div>
+        );
+    }
 
     if (isLoading || isEventLoading) {
         return <LoadingSpinner />;
@@ -626,6 +739,22 @@ const EventPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Offered only to somebody who is in this event, and kept
+                    quiet: it is a way out, not something to invite people to
+                    take. The button that removes everything everywhere lives
+                    in the footer of every page, including this one. */}
+                {myFootprint.isInEvent && (
+                    <div className="flex justify-end mb-4">
+                        <button
+                            type="button"
+                            onClick={handleRemoveMyselfFromEvent}
+                            className="text-xs text-neutral-500 hover:text-red-600 underline transition-colors"
+                        >
+                            {t('eventPage.leaveEvent.button')}
+                        </button>
+                    </div>
+                )}
 
                 <div className="bg-white rounded-xl shadow-md p-3 mb-6">
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">

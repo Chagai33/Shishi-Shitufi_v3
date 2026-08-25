@@ -26,9 +26,13 @@ import { useTranslation } from 'react-i18next';
 
 function App() {
   const { t } = useTranslation();
-  const { isLoading: isAuthLoading } = useAuth();
+  const { user: authUser, isLoading: isAuthLoading, logout } = useAuth();
   const { user, isDeleteAccountModalOpen, toggleDeleteAccountModal } = useStore();
   const location = useLocation(); // <-- Get location
+
+  // A guest has no user record any more, so the signed-in identity is the only
+  // thing that knows they are here at all.
+  const isAnonymousVisitor = !!authUser?.isAnonymous;
 
   // Account deletion logic
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -39,6 +43,18 @@ function App() {
     try {
       await FirebaseService.deleteCurrentUserAccount();
       toast.success(t('account.delete.success'), { id: 'delete-toast' });
+
+      // The account is gone on the server, but the browser is still holding a
+      // session for it and will keep acting as though it works. Every write
+      // after this point fails, with nothing on screen to explain why. Sign
+      // out and start the app again from nothing.
+      //
+      // It matters more for a guest than for anybody else: signing out is also
+      // what lets the event page hand them a fresh identity next time, instead
+      // of leaving them attached to one that has been deleted.
+      await logout();
+      window.location.href = '/';
+      return;
     } catch (error: any) {
       toast.error(error.message || t('account.delete.error'), { id: 'delete-toast' });
     } finally {
@@ -92,15 +108,32 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
-      <Footer />
+      <Footer isAnonymousVisitor={isAnonymousVisitor} />
       {/* Adding the modal here */}
       {isDeleteAccountModalOpen && (
         <ConfirmationModal
-          message={t('account.delete.confirmMessage')}
+          /* The wording for an account holder describes deleting an account
+             and the events they organised. A guest has neither, and what they
+             do have - no way back to this identity once it is gone - is the
+             part they have to be told before they press the button. */
+          message={isAnonymousVisitor
+            ? t('account.delete.confirmMessageGuest')
+            /* Naming the account, because "your account" is not enough to
+               identify one. Somebody signed in as one identity while
+               believing they are another gets no signal from the old
+               wording, and the button that acts on it sits in the footer of
+               every page. It happened, to the one account in the database
+               that a guard happens to protect.
+               See DOCS/PLANING/39-delete-account-never-says-which-account.md. */
+            : t('account.delete.confirmMessage', { email: user?.email || authUser?.email || '' })}
           onClose={toggleDeleteAccountModal}
           options={[
             {
-              label: isDeletingAccount ? t('common.loading') : t('account.delete.confirmButton'),
+              label: isDeletingAccount
+                ? t('common.loading')
+                : (isAnonymousVisitor
+                  ? t('account.delete.confirmButtonGuest')
+                  : t('account.delete.confirmButton')),
               onClick: handleDeleteAccount,
               className: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300'
             }

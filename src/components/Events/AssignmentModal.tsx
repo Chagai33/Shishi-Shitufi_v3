@@ -185,8 +185,17 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
       setShowNameInput(true);
       setIsEditingName(true);
     } else {
-      setCurrentUserName(user.displayName || t('common.user'));
-      setTempUserName(user.displayName || t('common.user'));
+      // A registered user is not asked anything: they told us their name when
+      // they signed up, and asking again would put a dialog in the middle of
+      // the most common path in the product. Registration refuses to proceed
+      // without a name and writes it to both the auth profile and the user's
+      // own record, so the first of these two almost always answers. The
+      // second covers an account created outside the app, straight in the
+      // Firebase console, which never passed through that form.
+      const registeredName =
+        user.displayName || useStore.getState().user?.name || t('common.user');
+      setCurrentUserName(registeredName);
+      setTempUserName(registeredName);
       setShowNameInput(false);
     }
   }, [user.uid, user.isAnonymous, t]);
@@ -241,7 +250,22 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
 
     setIsLoading(true);
     try {
-      if (isEditingName || showNameInput) {
+      // Joining the event used to be tied to having been asked for a name,
+      // which only ever happened to anonymous visitors. A registered user
+      // taking on an item was therefore never added to the participant list at
+      // all - the list answered "what do we call this guest" rather than "who
+      // is coming". The condition is now the question the list is actually
+      // for: is this person on it yet.
+      //
+      // The organiser counts too, on their own event, once they sign up for
+      // something: they are bringing it like anybody else.
+      // See DOCS/PLANING/23-registered-users-never-counted-as-participants.md.
+      // Editing keeps its own reason to write: somebody already on the list
+      // who changes their name has to have the list changed too, or the name
+      // on the item and the name on the list drift apart.
+      const alreadyAParticipant =
+        !!useStore.getState().currentEvent?.participants?.[user.uid];
+      if (finalUserName && (!alreadyAParticipant || isEditingName)) {
         await FirebaseService.joinEvent(eventId, user.uid, finalUserName);
       }
 

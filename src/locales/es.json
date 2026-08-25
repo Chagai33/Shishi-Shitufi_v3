@@ -361,7 +361,7 @@
                 "processing": "Eliminando cuenta y datos...",
                 "success": "Cuenta eliminada con éxito. ¡Gracias por usar nuestro servicio!",
                 "error": "Error al eliminar la cuenta.",
-                "confirmMessage": "¿Estás seguro de que quieres eliminar tu cuenta?\nEsta acción es **irreversible** y eliminará todos tus eventos, artículos y asignaciones.",
+                "confirmMessage": "¿Eliminar la cuenta {{email}}?\n\nEsta acción es irreversible y eliminará todos tus eventos, artículos y asignaciones.\n\nSi no es la cuenta que querías eliminar, cierra esta ventana e inicia sesión con la cuenta correcta.",
                 "confirmButton": "Sí, eliminar cuenta"
             }
         },

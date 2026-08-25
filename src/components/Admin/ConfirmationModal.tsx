@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useId } from 'react';
+import { useTranslation } from 'react-i18next';
 import FocusTrap from 'focus-trap-react';
 
 interface ConfirmationModalProps {
@@ -20,6 +21,12 @@ interface ConfirmationModalProps {
 }
 
 export function ConfirmationModal({ title, message, children, options, onClose }: ConfirmationModalProps) {
+  // The heading and the Cancel button were written in Hebrew inside this
+  // file, and this is the dialog that asks somebody to confirm deleting
+  // their account. An English speaker was asked, in English, to type their
+  // email address to confirm, under a Hebrew heading and beside a Hebrew
+  // button. See DOCS/PLANING/47-translation-gaps-in-the-delete-flow.md.
+  const { t } = useTranslation();
   // Accessibility: Unique ID for ARIA labeling
   const titleId = useId();
 
@@ -68,7 +75,7 @@ export function ConfirmationModal({ title, message, children, options, onClose }
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6">
-            <h2 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">{title || 'אישור פעולה'}</h2>
+            <h2 id={titleId} className="text-lg font-semibold text-gray-900 mb-4">{title || t('common.confirmAction')}</h2>
             <p className="text-gray-700 whitespace-pre-wrap">{message}</p>
             {children && <div className="mt-4">{children}</div>}
           </div>
@@ -89,7 +96,7 @@ export function ConfirmationModal({ title, message, children, options, onClose }
               type="button"
               className="px-4 py-2 rounded-md bg-gray-200 text-gray-800"
             >
-              ביטול
+              {t('common.cancel')}
             </button>
           </div>
         </div>

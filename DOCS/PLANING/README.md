@@ -26,6 +26,7 @@
 | — | ~~המכסה ניתנת לעקיפה, ויוצר הפריט אינו מאומת~~ | ✅ נפרס ואומת | 24/08/2026 | [30-item-rules-trust-the-client.md](30-item-rules-trust-the-client.md) |
 | — | ~~טרמפים אוכלים את מכסת הפריטים במסך~~ | ✅ נפרס ואומת | 24/08/2026 | [31-rides-consume-the-item-quota.md](31-rides-consume-the-item-quota.md) |
 | — | ~~יוצר הפריט אינו יכול למחוק, וכפתורי הנוסע חסרי תווית~~ | ✅ מיושם, טרם נפרס | 24/08/2026 | [34-item-owner-cannot-delete-and-unlabelled-controls.md](34-item-owner-cannot-delete-and-unlabelled-controls.md) |
+| 1ג | למידע של מבקרים אנונימיים אין תפוגה | 🟠 חשיפה משפטית | אין | [35-anonymous-data-never-expires.md](35-anonymous-data-never-expires.md) |
 | 2 | הסיווג האוטומטי מזרים הכל ל"אחר" | 🟠 באג במוצר | אין | [17-ai-classification-after-migration.md](17-ai-classification-after-migration.md) |
 | 3 | "אירוע" רפאים עם מידע אישי שלא יימחק | 🟠 חשיפה | אין | [15-phantom-event-node.md](15-phantom-event-node.md) |
 | 3א | כל מבקר יכול ליצור "אירוע" חדש במסד | 🟠 חשיפה | אין | [20-anyone-can-create-an-event-node.md](20-anyone-can-create-an-event-node.md) |
@@ -42,6 +43,7 @@
 | 13 | גודל ה-bundle | 🟢 שיפור | אין | [07-performance.md](07-performance.md) |
 | 14 | רקב הקישורים ב-README שבשורש | 🟢 תיעוד | אין | [22-readme-rot.md](22-readme-rot.md) |
 | 15 | פרופילים ריקים של מבקרים אנונימיים | 🟢 היגיינת נתונים | אין | [26-anonymous-visitors-leave-empty-profiles.md](26-anonymous-visitors-leave-empty-profiles.md) |
+| 17 | מסך "ניהול משתמשים זמניים" נשבר בפתיחה | 🟢 קוד מת או תיקון | אין | [36-temporary-user-management-screen-is-dead.md](36-temporary-user-management-screen-is-dead.md) |
 | 💡 | כמות בלי יחידת מידה — גרמים ומנות | 💡 רעיון מוצר | אין | [33-quantity-units.md](33-quantity-units.md) |
 | — | ~~ניקוי ענפים~~ | ✅ סבב שני הושלם ואומת | 24/08/2026 | [05-branch-cleanup.md](05-branch-cleanup.md) |
 

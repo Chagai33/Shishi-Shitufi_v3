@@ -27,6 +27,10 @@
 | — | ~~טרמפים אוכלים את מכסת הפריטים במסך~~ | ✅ נפרס ואומת | 24/08/2026 | [31-rides-consume-the-item-quota.md](31-rides-consume-the-item-quota.md) |
 | — | ~~יוצר הפריט אינו יכול למחוק, וכפתורי הנוסע חסרי תווית~~ | ✅ מיושם, טרם נפרס | 24/08/2026 | [34-item-owner-cannot-delete-and-unlabelled-controls.md](34-item-owner-cannot-delete-and-unlabelled-controls.md) |
 | 1ג | למידע של מבקרים אנונימיים אין תפוגה | 🟠 חשיפה משפטית | אין | [35-anonymous-data-never-expires.md](35-anonymous-data-never-expires.md) |
+| 1ג | מסך האירוע מהבהב "לא קיים" בזמן טעינה | 🟠 מסך שמשקר | אין | [35-event-page-flashes-false-answers.md](35-event-page-flashes-false-answers.md) |
+| 1ד | אין "שכחתי סיסמה" — מי ששכח נעול לנצח | 🟠 באג במוצר | אין | [36-no-password-reset.md](36-no-password-reset.md) |
+| 1ה | אין אימות מייל — אפשר לתפוס כתובת של אחר | 🟠 חשיפה | אין | [37-no-email-verification.md](37-no-email-verification.md) |
+| 1ו | בהרשמה לא כתוב לאן שם התצוגה הולך | 🟢 ניסוח | אין | [38-display-name-copy.md](38-display-name-copy.md) |
 | 2 | הסיווג האוטומטי מזרים הכל ל"אחר" | 🟠 באג במוצר | אין | [17-ai-classification-after-migration.md](17-ai-classification-after-migration.md) |
 | 3 | "אירוע" רפאים עם מידע אישי שלא יימחק | 🟠 חשיפה | אין | [15-phantom-event-node.md](15-phantom-event-node.md) |
 | 3א | כל מבקר יכול ליצור "אירוע" חדש במסד | 🟠 חשיפה | אין | [20-anyone-can-create-an-event-node.md](20-anyone-can-create-an-event-node.md) |

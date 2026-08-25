@@ -133,26 +133,40 @@ export function useAuth() {
         const state = await accountState(user);
         if (cancelled) return;
 
-        if (state !== 'alive') {
+        // Only an answer that says the account is gone ends the session.
+        //
+        // The library normally gets to the sign-out first - it clears the
+        // session itself on two of the three codes, and the listener sees
+        // that - so this is belt and braces for the third, and for any
+        // version that stops doing it. Signing out a session that is already
+        // gone was measured as a no-op with no side effects. It is skipped
+        // only if somebody else has signed in during the wait, which happens
+        // on an event page, where a guest identity is handed out the moment
+        // the old one goes.
+        if (state === 'gone') {
           forgetTheUser();
-
-          // Only an answer that says the account is gone ends the session. A
-          // network fault must leave a live person exactly where they were,
-          // and it does: nothing is written, nobody is signed out, and the
-          // next time this runs it asks again.
-          //
-          // The library normally gets to the sign-out first - it clears the
-          // session itself on two of the three codes, and the listener sees
-          // that - so this is belt and braces for the third, and for any
-          // version that stops doing it. Signing out a session that is already
-          // gone was measured as a no-op with no side effects. It is skipped
-          // only if somebody else has signed in during the wait, which happens
-          // on an event page, where a guest identity is handed out the moment
-          // the old one goes.
           const somebodyElseIsHereNow = !!auth.currentUser && auth.currentUser.uid !== user.uid;
-          if (state === 'gone' && !somebodyElseIsHereNow) {
+          if (!somebodyElseIsHereNow) {
             await auth.signOut();
           }
+          return;
+        }
+
+        // No answer either way. Nothing is written and nobody is signed out: a
+        // network fault has to leave a live person exactly where they were,
+        // and it is the worse of the two harms to get wrong.
+        //
+        // One more look before giving up, because the commonest way to be
+        // standing here is not a deleted account at all. Registration lands in
+        // this branch every single time - the account exists a moment before
+        // its record does - and the record usually arrives while the question
+        // above is still in the air. Without this, one dropped request during
+        // sign-up left somebody with a working account looking at the login
+        // form, and nothing re-runs on its own to get them out of it.
+        if (state === 'unknown') {
+          const settled = await get(userProfileRef);
+          if (cancelled) return;
+          if (settled.exists()) setUser(settled.val() as User);
           return;
         }
 
@@ -173,12 +187,22 @@ export function useAuth() {
         // person actually typed. A plain write would land last and replace it
         // with "new user". This one steps aside instead, and the store takes
         // whichever record ended up in the database.
-        const outcome = await runTransaction(userProfileRef, (existing: User | null) =>
-          existing === null ? newUserProfile : undefined
-        );
+        let stored: User | null;
+        try {
+          const outcome = await runTransaction(userProfileRef, (existing: User | null) =>
+            existing === null ? newUserProfile : undefined
+          );
+          stored = outcome.snapshot.val() as User | null;
+        } catch {
+          // A plain write landing on this same node while the transaction is
+          // outstanding cancels it outright, and registration is a plain write
+          // landing on this same node. Read what it left rather than treating
+          // somebody's successful sign-up as a failure.
+          stored = (await get(userProfileRef)).val() as User | null;
+        }
         if (cancelled) return;
 
-        setUser((outcome.snapshot.val() as User | null) ?? newUserProfile);
+        if (stored) setUser(stored);
       } catch (error) {
         // Deliberately only a record and a lowered flag. Whatever failed here
         // says nothing about who is signed in, so clearing the store would

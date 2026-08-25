@@ -31,7 +31,7 @@
 | 1ד | אין "שכחתי סיסמה" — מי ששכח נעול לנצח | 🟠 באג במוצר | אין | [36-no-password-reset.md](36-no-password-reset.md) |
 | 1ה | אין אימות מייל — אפשר לתפוס כתובת של אחר | 🟠 חשיפה | אין | [37-no-email-verification.md](37-no-email-verification.md) |
 | 1ו | בהרשמה לא כתוב לאן שם התצוגה הולך | 🟢 ניסוח | אין | [38-display-name-copy.md](38-display-name-copy.md) |
-| 1ז2 | שלושה פגמים נשלחו עם "הסר אותי מהאירוע" | 🔴 תוקן, טרם נדחף | אין | [43-three-defects-shipped-with-the-withdrawal-feature.md](43-three-defects-shipped-with-the-withdrawal-feature.md) |
+| — | ~~שלושה פגמים נשלחו עם "הסר אותי מהאירוע"~~ | ✅ תוקן ונדחף | 25/08/2026 | [43-three-defects-shipped-with-the-withdrawal-feature.md](43-three-defects-shipped-with-the-withdrawal-feature.md) |
 | 1ח | חשבון שנמחק חוזר למסד כפרופיל עם האימייל | 🔴 חשיפה משפטית | אין | [40-deleted-account-comes-back-as-a-profile.md](40-deleted-account-comes-back-as-a-profile.md) |
 | 1ט | חלון המחיקה, שתי שאריות | 🟠 חשיפה | אין | [39-delete-account-never-says-which-account.md](39-delete-account-never-says-which-account.md) |
 | 2 | הסיווג האוטומטי מזרים הכל ל"אחר" | 🟠 באג במוצר | אין | [17-ai-classification-after-migration.md](17-ai-classification-after-migration.md) |

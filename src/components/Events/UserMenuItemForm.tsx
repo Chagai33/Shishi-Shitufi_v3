@@ -503,7 +503,19 @@ export function UserMenuItemForm({
         joinedInThisSubmission = true;
       } else {
         const existingParticipant = event.participants?.[authUser.uid];
-        finalUserName = existingParticipant?.name || authUser.displayName || t('header.guest');
+        finalUserName = existingParticipant?.name || authUser.displayName || useStore.getState().user?.name || t('header.guest');
+
+        // The name input is only ever shown to an anonymous visitor, so this
+        // branch is where a registered user adding their own item ended up -
+        // named on the item, and on the participant list nowhere. They are
+        // added now, with the name they registered under and without being
+        // asked for it a second time. Anyone already on the list is left
+        // alone, so this costs one write per person per event.
+        // See DOCS/PLANING/23-registered-users-never-counted-as-participants.md.
+        if (!existingParticipant && finalUserName) {
+          await FirebaseService.joinEvent(event.id, authUser.uid, finalUserName);
+          joinedInThisSubmission = true;
+        }
       }
 
       // Dynamic Category Creation & Repair

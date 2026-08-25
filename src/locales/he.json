@@ -532,7 +532,10 @@
             "status": {
                 "ended": "האירוע הסתיים",
                 "inactive": "האירוע אינו פעיל",
-                "inactiveSubtitle": "לא ניתן לשבץ פריטים חדשים."
+                "inactiveSubtitle": "לא ניתן לשבץ פריטים חדשים.",
+                "connectionFailed": "לא הצלחנו להתחבר לאירוע",
+                "connectionFailedSubtitle": "נראה שיש בעיה בחיבור לאינטרנט. האירוע עצמו בסדר — רק לא הצלחנו להגיע אליו.",
+                "connectionFailedRetry": "נסה שוב"
             },
             "welcome": {
                 "title": "ברוכים הבאים!",

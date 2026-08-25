@@ -180,13 +180,32 @@ const EventPage: React.FC = () => {
 
     // Getting an identity, and nothing else. It has to finish before the
     // subscriptions below are allowed to start.
+    //
+    // If it cannot be got, that has to be said. Nothing here can run without
+    // one - the rules refuse every read - so the page would otherwise sit on a
+    // spinner for as long as somebody is willing to watch it, which is worse
+    // than a wrong answer because it never becomes an answer at all.
+    const [signInFailed, setSignInFailed] = useState(false);
+
+    const attemptAnonymousSignIn = useCallback(() => {
+        setSignInFailed(false);
+        signInAnonymously(auth).catch(err => {
+            console.error("Anonymous sign-in failed:", err);
+            setSignInFailed(true);
+        });
+    }, []);
+
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, (user) => {
-            if (user) setLocalUser(user);
-            else signInAnonymously(auth).catch(err => console.error("Anonymous sign-in failed:", err));
+            if (user) {
+                setSignInFailed(false);
+                setLocalUser(user);
+            } else {
+                attemptAnonymousSignIn();
+            }
         });
         return () => unsubAuth();
-    }, []);
+    }, [attemptAnonymousSignIn]);
 
     // Reading the event, once there is somebody to read it as. Every rule on
     // this data requires a signed-in caller, so a listener opened before the
@@ -568,6 +587,25 @@ const EventPage: React.FC = () => {
         const availableItems = baseItems.filter(item => !assignments.some(a => a.menuItemId === item.id));
         return [...availableItems, ...assignedItems];
     }, [debouncedSearchTerm, selectedCategory, localUser, menuItems, assignments]);
+
+    // Ahead of the spinner, because this is the one state the spinner can
+    // never leave on its own.
+    if (signInFailed) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-background text-center p-4">
+                <AlertCircle size={64} className="text-error" />
+                <h1 className="mt-6 text-3xl font-bold text-neutral-800">{t('eventPage.status.connectionFailed')}</h1>
+                <p className="mt-2 text-lg text-neutral-600">{t('eventPage.status.connectionFailedSubtitle')}</p>
+                <button
+                    type="button"
+                    onClick={attemptAnonymousSignIn}
+                    className="mt-8 inline-block bg-accent-dark text-white px-6 py-3 rounded-lg font-semibold hover:bg-accent-dark/90 transition-colors"
+                >
+                    {t('eventPage.status.connectionFailedRetry')}
+                </button>
+            </div>
+        );
+    }
 
     if (isLoading || isEventLoading) {
         return <LoadingSpinner />;

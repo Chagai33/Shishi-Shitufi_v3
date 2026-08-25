@@ -536,7 +536,10 @@
             "status": {
                 "ended": "Event Ended",
                 "inactive": "Event Inactive",
-                "inactiveSubtitle": "New items cannot be assigned."
+                "inactiveSubtitle": "New items cannot be assigned.",
+                "connectionFailed": "We could not connect to the event",
+                "connectionFailedSubtitle": "This looks like a connection problem. The event itself is fine — we just could not reach it.",
+                "connectionFailedRetry": "Try again"
             },
             "welcome": {
                 "title": "Welcome!",

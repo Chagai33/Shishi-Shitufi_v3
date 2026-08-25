@@ -396,7 +396,14 @@
                 "confirmMessage": "Delete the account {{email}}?\n\nThis action is irreversible and will delete every event you organised, along with all items and assignments belonging to this account.\n\nIf this is not the account you meant to delete, close this window and sign in to the right one.",
                 "confirmButton": "Yes, delete account",
                 "confirmMessageGuest": "Delete all of your information?\nYour name, any phone numbers you entered, and everything you signed up to bring will be removed from every event you joined from this device.\n\nThis cannot be undone, and this identity cannot be restored, because it has no password.\nIf you joined an event from another device, the information there will remain.",
-                "confirmButtonGuest": "Yes, delete my information"
+                "confirmButtonGuest": "Yes, delete my information",
+                "confirmEmailLabel": "To confirm, type the account's email address here.",
+                "confirmEmailPlaceholder": "Type the address",
+                "confirmEmailMismatch": "That address does not match the account shown above.",
+                "errorGuest": "We could not delete your information.",
+                "errorProtected": "This account cannot be deleted. It is protected from deletion.",
+                "errorSessionEnded": "This session is no longer valid. Reload the page and try again.",
+                "errorUnconfirmed": "We got no answer back, so we do not know whether the deletion went through. Reload the page and check before trying again."
             }
         },
         "categories": {

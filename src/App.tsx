@@ -16,13 +16,45 @@ import { Header } from './components/Layout/Header'; // <-- Import Header
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import { ConfirmationModal } from './components/Admin/ConfirmationModal';
-import { useState } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { FirebaseService } from './services/firebaseService';
 
 import { useTranslation } from 'react-i18next';
 
 
+
+// What the server's answer means, put into words somebody can act on.
+//
+// It is decided here and not in the service layer because only this screen
+// knows whether it is talking to an account holder or to a guest, and telling
+// a guest that their account could not be deleted invites exactly the question
+// the deletion wording was rewritten to avoid: which account?
+//
+// Three of these do not say the deletion failed. They say nobody knows. A
+// request that timed out, a server that never answered and a connection that
+// dropped all arrive here looking the same, and in every one of them the
+// deletion may well have gone through. So none of them tells anyone to try
+// again, because trying again would be asking somebody to delete twice.
+//
+// What the server wrote is never shown. It is English only, and for the one
+// person whose account has just ceased to exist it says they must be logged
+// in, which reads as a wrong password.
+// See DOCS/PLANING/19-permission-denied-message.md.
+function deleteAccountErrorKey(code: unknown, isGuest: boolean): string {
+  switch (code) {
+    case 'functions/permission-denied':
+      return isGuest ? 'account.delete.errorGuest' : 'account.delete.errorProtected';
+    case 'functions/unauthenticated':
+      return 'account.delete.errorSessionEnded';
+    case 'functions/internal':
+    case 'functions/unavailable':
+    case 'functions/deadline-exceeded':
+      return 'account.delete.errorUnconfirmed';
+    default:
+      return isGuest ? 'account.delete.errorGuest' : 'account.delete.error';
+  }
+}
 
 function App() {
   const { t } = useTranslation();
@@ -36,8 +68,41 @@ function App() {
 
   // Account deletion logic
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [typedEmail, setTypedEmail] = useState('');
+  const confirmEmailId = useId();
+
+  // The address of the account that is about to go. It comes from the signed-in
+  // session first, because that is what the server deletes: the stored record
+  // is written once at registration and never resynced, so if the two ever
+  // disagree the session is the one telling the truth. One expression feeds
+  // both the sentence and the field, because naming one address and accepting
+  // another would leave the person unable to delete anything at all.
+  const accountEmail = authUser?.email || user?.email || '';
+
+  // Typing the address is the guard against deleting the wrong account, and it
+  // is the only one most people have: the server protects exactly one account,
+  // the super-admin, and everybody else who presses this by mistake loses their
+  // events with it. It happened, and only that one guard stopped it.
+  // See DOCS/PLANING/39-delete-account-never-says-which-account.md.
+  //
+  // A guest has no address, so there is nothing to ask them for and nothing
+  // here changes for them.
+  const mustTypeEmail = !isAnonymousVisitor && accountEmail !== '';
+  const typedEmailMatches = typedEmail.trim().toLowerCase() === accountEmail.trim().toLowerCase();
+  const canConfirmDelete = !isDeletingAccount && (!mustTypeEmail || typedEmailMatches);
+  const showEmailMismatch = mustTypeEmail && !isDeletingAccount && typedEmail.trim() !== '' && !typedEmailMatches;
+
+  // Cleared from the flag rather than from the dialog's own close handler,
+  // because the dialog is also closed straight from the block below, which
+  // never goes through that handler. Without this, a second attempt would open
+  // with the address still typed and the button already unlocked, and the
+  // guard would work exactly once.
+  useEffect(() => {
+    if (!isDeleteAccountModalOpen) setTypedEmail('');
+  }, [isDeleteAccountModalOpen]);
 
   const handleDeleteAccount = async () => {
+    if (isDeletingAccount) return;
     setIsDeletingAccount(true);
     // The dialog and the button were already careful not to tell a guest they
     // have an account. These two were not, so the same person read a question
@@ -67,7 +132,7 @@ function App() {
       window.location.href = '/';
       return;
     } catch (error: any) {
-      toast.error(error.message || t('account.delete.error'), { id: 'delete-toast' });
+      toast.error(t(deleteAccountErrorKey(error?.code, isAnonymousVisitor)), { id: 'delete-toast' });
     } finally {
       toggleDeleteAccountModal();
       setIsDeletingAccount(false);
@@ -136,8 +201,13 @@ function App() {
                every page. It happened, to the one account in the database
                that a guard happens to protect.
                See DOCS/PLANING/39-delete-account-never-says-which-account.md. */
-            : t('account.delete.confirmMessage', { email: user?.email || authUser?.email || '' })}
-          onClose={toggleDeleteAccountModal}
+            : t('account.delete.confirmMessage', { email: accountEmail })}
+          /* Closing is refused while the deletion is running. The flag behind
+             this dialog is a toggle rather than a setter, so a Cancel or an
+             Escape mid-flight would close it and the block that runs when the
+             call finishes would toggle it straight back open, on top of the
+             error. Neither one stops the server anyway. */
+          onClose={() => { if (!isDeletingAccount) toggleDeleteAccountModal(); }}
           options={[
             {
               label: isDeletingAccount
@@ -146,10 +216,46 @@ function App() {
                   ? t('account.delete.confirmButtonGuest')
                   : t('account.delete.confirmButton')),
               onClick: handleDeleteAccount,
+              disabled: !canConfirmDelete,
               className: 'bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300'
             }
           ]}
-        />
+        >
+          {mustTypeEmail && (
+            <div>
+              <label htmlFor={confirmEmailId} className="block text-sm font-medium text-gray-700">
+                {t('account.delete.confirmEmailLabel')}
+              </label>
+              <input
+                id={confirmEmailId}
+                type="email"
+                /* An email address reads left to right whichever way the page
+                   does, and a phone would otherwise capitalise the first
+                   letter of it by itself. */
+                dir="ltr"
+                inputMode="email"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={typedEmail}
+                onChange={(e) => setTypedEmail(e.target.value)}
+                /* No Enter key here on purpose. Finishing an address and
+                   pressing Enter out of habit is not the same as deciding to
+                   destroy an account, and this is the one field in the product
+                   where those two must not be the same gesture. */
+                aria-describedby={showEmailMismatch ? `${confirmEmailId}-mismatch` : undefined}
+                placeholder={t('account.delete.confirmEmailPlaceholder')}
+                className="mt-1 w-full px-3 py-2 text-left border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+              {showEmailMismatch && (
+                <p id={`${confirmEmailId}-mismatch`} className="mt-1 text-xs text-error">
+                  {t('account.delete.confirmEmailMismatch')}
+                </p>
+              )}
+            </div>
+          )}
+        </ConfirmationModal>
       )}
     </div>
   );

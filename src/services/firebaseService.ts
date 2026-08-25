@@ -51,10 +51,19 @@ export class FirebaseService {
   static async deleteCurrentUserAccount(): Promise<void> {
     const deleteUser = httpsCallable(functions, 'deleteUserAccount');
     try {
-      const result = await deleteUser();
+      await deleteUser();
     } catch (error) {
+      // Thrown on exactly as it arrived. It used to be swallowed here and
+      // replaced with one fixed Hebrew sentence, which erased the reason the
+      // server had gone to the trouble of returning, made the translated key
+      // for that sentence unreachable, and put Hebrew in front of every
+      // English and Spanish user in the product.
+      //
+      // The wording lives on the screen instead, because only the screen knows
+      // whether it is talking to an account holder or to a guest.
+      // See DOCS/PLANING/39-delete-account-never-says-which-account.md.
       console.error("Error calling deleteUserAccount function:", error);
-      throw new Error('שגיאה במחיקת החשבון.');
+      throw error;
     }
   }
 

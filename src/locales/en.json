@@ -399,7 +399,11 @@
                 "confirmButtonGuest": "Yes, delete my information",
                 "confirmEmailLabel": "To confirm, type the account's email address here.",
                 "confirmEmailPlaceholder": "Type the address",
-                "confirmEmailMismatch": "That address does not match the account shown above."
+                "confirmEmailMismatch": "That address does not match the account shown above.",
+                "errorGuest": "We could not delete your information.",
+                "errorProtected": "This account cannot be deleted. It is protected from deletion.",
+                "errorSessionEnded": "This session is no longer valid. Reload the page and try again.",
+                "errorUnconfirmed": "We got no answer back, so we do not know whether the deletion went through. Reload the page and check before trying again."
             }
         },
         "categories": {

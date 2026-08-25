@@ -24,6 +24,38 @@ import { useTranslation } from 'react-i18next';
 
 
 
+// What the server's answer means, put into words somebody can act on.
+//
+// It is decided here and not in the service layer because only this screen
+// knows whether it is talking to an account holder or to a guest, and telling
+// a guest that their account could not be deleted invites exactly the question
+// the deletion wording was rewritten to avoid: which account?
+//
+// Three of these do not say the deletion failed. They say nobody knows. A
+// request that timed out, a server that never answered and a connection that
+// dropped all arrive here looking the same, and in every one of them the
+// deletion may well have gone through. So none of them tells anyone to try
+// again, because trying again would be asking somebody to delete twice.
+//
+// What the server wrote is never shown. It is English only, and for the one
+// person whose account has just ceased to exist it says they must be logged
+// in, which reads as a wrong password.
+// See DOCS/PLANING/19-permission-denied-message.md.
+function deleteAccountErrorKey(code: unknown, isGuest: boolean): string {
+  switch (code) {
+    case 'functions/permission-denied':
+      return isGuest ? 'account.delete.errorGuest' : 'account.delete.errorProtected';
+    case 'functions/unauthenticated':
+      return 'account.delete.errorSessionEnded';
+    case 'functions/internal':
+    case 'functions/unavailable':
+    case 'functions/deadline-exceeded':
+      return 'account.delete.errorUnconfirmed';
+    default:
+      return isGuest ? 'account.delete.errorGuest' : 'account.delete.error';
+  }
+}
+
 function App() {
   const { t } = useTranslation();
   const { user: authUser, isLoading: isAuthLoading, logout } = useAuth();
@@ -100,7 +132,7 @@ function App() {
       window.location.href = '/';
       return;
     } catch (error: any) {
-      toast.error(error.message || t('account.delete.error'), { id: 'delete-toast' });
+      toast.error(t(deleteAccountErrorKey(error?.code, isAnonymousVisitor)), { id: 'delete-toast' });
     } finally {
       toggleDeleteAccountModal();
       setIsDeletingAccount(false);

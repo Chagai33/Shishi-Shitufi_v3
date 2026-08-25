@@ -365,7 +365,11 @@
                 "confirmButton": "Sí, eliminar cuenta",
                 "confirmEmailLabel": "Para confirmar, escribe aquí la dirección de correo de la cuenta.",
                 "confirmEmailPlaceholder": "Escribe la dirección",
-                "confirmEmailMismatch": "Esa dirección no coincide con la cuenta que se muestra arriba."
+                "confirmEmailMismatch": "Esa dirección no coincide con la cuenta que se muestra arriba.",
+                "errorGuest": "No pudimos eliminar tu información.",
+                "errorProtected": "Esta cuenta no se puede eliminar. Está protegida contra el borrado.",
+                "errorSessionEnded": "Esta sesión ya no es válida. Recarga la página e inténtalo de nuevo.",
+                "errorUnconfirmed": "No recibimos respuesta, así que no sabemos si la eliminación se completó. Recarga la página y compruébalo antes de volver a intentarlo."
             }
         },
         "categories": {

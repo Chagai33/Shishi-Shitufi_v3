@@ -403,7 +403,11 @@
                 "confirmButtonGuest": "כן, מחק את המידע שלי",
                 "confirmEmailLabel": "כדי לאשר, הקלד כאן את כתובת המייל של החשבון.",
                 "confirmEmailPlaceholder": "הקלד את הכתובת",
-                "confirmEmailMismatch": "הכתובת אינה תואמת לחשבון שמוצג למעלה."
+                "confirmEmailMismatch": "הכתובת אינה תואמת לחשבון שמוצג למעלה.",
+                "errorGuest": "לא הצלחנו למחוק את המידע שלך.",
+                "errorProtected": "לא ניתן למחוק את החשבון הזה. הוא מוגן מפני מחיקה.",
+                "errorSessionEnded": "החיבור הזה כבר אינו תקף. רענן את הדף ונסה שוב.",
+                "errorUnconfirmed": "לא קיבלנו תשובה, ולכן איננו יודעים אם המחיקה בוצעה. רענן את הדף ובדוק לפני שתנסה שוב."
             }
         },
         "categories": {

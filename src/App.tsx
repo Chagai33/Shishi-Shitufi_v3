@@ -118,7 +118,14 @@ function App() {
              part they have to be told before they press the button. */
           message={isAnonymousVisitor
             ? t('account.delete.confirmMessageGuest')
-            : t('account.delete.confirmMessage')}
+            /* Naming the account, because "your account" is not enough to
+               identify one. Somebody signed in as one identity while
+               believing they are another gets no signal from the old
+               wording, and the button that acts on it sits in the footer of
+               every page. It happened, to the one account in the database
+               that a guard happens to protect.
+               See DOCS/PLANING/39-delete-account-never-says-which-account.md. */
+            : t('account.delete.confirmMessage', { email: user?.email || authUser?.email || '' })}
           onClose={toggleDeleteAccountModal}
           options={[
             {

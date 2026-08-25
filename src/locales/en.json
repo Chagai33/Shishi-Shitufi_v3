@@ -603,7 +603,7 @@
                 "itemDeleted": "Item and assignment deleted",
                 "deleteItemError": "Error deleting item",
                 "confirmLeaveEvent": "Remove yourself from this event?\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
-                "confirmLeaveEventWithPassengers": "Remove yourself from this event?\nNote: {{count}} people are signed up to the ride you offered, and removing yourself cancels their ride too.\n\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
+                "confirmLeaveEventWithPassengers": "Remove yourself from this event?\nNote: {{count}} people are signed up to items you added, and removing yourself cancels their sign-ups. If any of it is a ride, they will be left without one.\n\nYour name, any phone number you entered, and everything you signed up to bring will be deleted from this event.\nThis cannot be undone. Other events you joined are not affected.",
                 "leftEvent": "You have been removed from the event and your information deleted",
                 "leaveEventError": "Could not remove you from the event. Refresh the page and try again",
                 "cancelAssignmentConfirm": "Are you sure you want to cancel the assignment?",

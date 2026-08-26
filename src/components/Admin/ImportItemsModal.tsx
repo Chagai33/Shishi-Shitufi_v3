@@ -36,6 +36,11 @@ interface ImportItem {
   isRequired: boolean;
   selected: boolean;
   error?: string;
+  // On a Smart Migration only: the item this row already is in the event. A row
+  // that carries one is written back under its own id, so the item keeps who
+  // signed up for it. Without it the migration builds a brand new item and the
+  // sign-up is gone even though the item looks identical on screen.
+  existingItem?: MenuItem;
 }
 
 type ImportMethod = 'file' | 'preset' | 'smart';
@@ -63,6 +68,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   // How the last AI run actually went. The screen used to report success
   // whatever came back, including when nothing at all had been classified.
   const [classificationSummary, setClassificationSummary] = useState<{ classified: number; total: number } | null>(null);
+  // How many of the event's own items the model did not return at all on a Smart
+  // Migration. They are kept, and the organiser is told so before approving.
+  const [migrationKeptCount, setMigrationKeptCount] = useState(0);
 
   // Auto-run AI if requested
   const hasAutoRunRef = useRef(false);
@@ -110,17 +118,31 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     return catchAll?.value || categoryOptions[0]?.value || 'other';
   }, [categoryOptions]);
 
+  // The items the event already holds, keyed by name. The id lives in the map key
+  // rather than on the item, so it has to be carried across here.
+  const existingItemsByName = React.useMemo(() => {
+    const byName = new Map<string, MenuItem[]>();
+    if (!event.menuItems) return byName;
+    Object.entries(event.menuItems).forEach(([id, item]) => {
+      const key = item.name.trim().toLowerCase();
+      const full = { ...item, id, eventId: event.id } as MenuItem;
+      const bucket = byName.get(key);
+      if (bucket) bucket.push(full);
+      else byName.set(key, [full]);
+    });
+    return byName;
+  }, [event.menuItems, event.id]);
+
   // The categories the items already carry in the event, keyed by name. On a
   // Smart Migration these are exactly what the organiser stands to lose when the
   // model has no answer for an item.
   const existingCategoryByName = React.useMemo(() => {
     const byName = new Map<string, string>();
-    const eventMenuItems = event.menuItems ? Object.values(event.menuItems) : [];
-    eventMenuItems.forEach(item => {
-      byName.set(item.name.trim().toLowerCase(), item.category);
+    existingItemsByName.forEach((items, key) => {
+      byName.set(key, items[0].category);
     });
     return byName;
-  }, [event.menuItems]);
+  }, [existingItemsByName]);
 
   // One place decides what the screen says about a classification run, so the
   // two paths cannot describe the same outcome differently. Nothing is called a
@@ -181,6 +203,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     setIsAnalyzing(true);
     setClassificationSummary(null);
+    setMigrationKeptCount(0);
 
     try {
       let imageBase64 = null;
@@ -206,6 +229,21 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       }
 
       let classifiedCount = 0;
+
+      // On a Smart Migration the event's own items are the subject of the run, and
+      // the answer is only allowed to move them between categories. Each returned
+      // row claims the item it matches by name, so that item is written back under
+      // its own id, with the people who signed up for it. Whatever the model failed
+      // to return is claimed by nobody and is added back below instead of dropped.
+      const unclaimed = new Map<string, MenuItem[]>();
+      if (migrationStartTime) {
+        existingItemsByName.forEach((existing, key) => unclaimed.set(key, [...existing]));
+      }
+      const claimExisting = (name: string): MenuItem | undefined => {
+        const bucket = unclaimed.get(name.trim().toLowerCase());
+        return bucket && bucket.length > 0 ? bucket.shift() : undefined;
+      };
+
       const items: ImportItem[] = data.items.map(item => {
         // Validate returned category
         const isValidCategory = !!item.category && allowedCategoryIds.has(item.category);
@@ -216,18 +254,43 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
         const keptCategory = previousCategory && allowedCategoryIds.has(previousCategory)
           ? previousCategory
           : fallbackCategoryId;
+        const existing = claimExisting(item.name);
         return {
-          name: item.name,
+          // A migration changes categories, so everything except the category comes
+          // from the item as the organiser left it. The model's own reading of the
+          // name and the quantity is used only for an item that is genuinely new.
+          name: existing ? existing.name : item.name,
           category: (isValidCategory ? item.category : keptCategory) as MenuCategory,
-          quantity: item.quantity,
-          isRequired: false,
-          selected: true
+          quantity: existing ? existing.quantity : item.quantity,
+          notes: existing?.notes,
+          isRequired: existing ? !!existing.isRequired : false,
+          selected: true,
+          existingItem: existing
         };
       });
 
-      setImportItems(items);
+      // Items the model never returned. Until now they vanished from the event the
+      // moment the organiser approved the preview, and took the sign-ups with them.
+      const keptItems: ImportItem[] = [];
+      unclaimed.forEach(bucket => {
+        bucket.forEach(existing => {
+          keptItems.push({
+            name: existing.name,
+            category: (allowedCategoryIds.has(existing.category) ? existing.category : fallbackCategoryId) as MenuCategory,
+            quantity: existing.quantity,
+            notes: existing.notes,
+            isRequired: !!existing.isRequired,
+            selected: true,
+            existingItem: existing
+          });
+        });
+      });
+
+      const previewItems = [...items, ...keptItems];
+      setImportItems(previewItems);
+      setMigrationKeptCount(keptItems.length);
       setShowPreview(true);
-      announceClassification(classifiedCount, items.length);
+      announceClassification(classifiedCount, previewItems.length);
 
     } catch (error: any) {
       console.error("Smart Import Error:", error);
@@ -371,6 +434,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       else { toast.error(t('importModal.file.unsupportedType')); return; }
       setImportItems(items);
       setClassificationSummary(null);
+      setMigrationKeptCount(0);
       setShowPreview(true);
       if (items.length === 0) { toast.error(t('importModal.preview.noItems')); } else { toast.success(t('importModal.preset.loadedSuccess', { count: items.length })); }
     } catch (error) {
@@ -386,6 +450,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
     setImportItems(items);
     setClassificationSummary(null);
+    setMigrationKeptCount(0);
     setShowPreview(true);
     setShowPresetManager(false);
     toast.success(t('importModal.preset.loadedSuccess', { count: items.length }));
@@ -411,18 +476,31 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     // ATOMIC MIGRATION MODE
     if (migrationStartTime) {
       try {
-        const itemsForDb: Omit<MenuItem, 'id'>[] = itemsToProcess.map(item => ({
-          eventId: event.id,
-          name: item.name,
-          category: item.category,
-          quantity: item.quantity,
-          notes: item.notes || '',
-          isRequired: item.isRequired,
-          creatorId: authUser?.uid || 'admin',
-          creatorName: authUser?.displayName || 'Admin',
-          createdAt: Date.now(),
-          isSplittable: item.quantity > 1
-        }));
+        const itemsForDb: (Omit<MenuItem, 'id'> & { id?: string })[] = itemsToProcess.map(item => {
+          const edited = {
+            name: item.name,
+            category: item.category,
+            quantity: item.quantity,
+            notes: item.notes || '',
+            isRequired: item.isRequired
+          };
+
+          // An item the event already holds goes back under its own id, carrying
+          // everything the organiser never asked to change: who created it, when,
+          // and who signed up to bring it. Only what the preview shows is edited.
+          if (item.existingItem) {
+            return { ...item.existingItem, ...edited, eventId: event.id };
+          }
+
+          return {
+            ...edited,
+            eventId: event.id,
+            creatorId: authUser?.uid || 'admin',
+            creatorName: authUser?.displayName || 'Admin',
+            createdAt: Date.now(),
+            isSplittable: item.quantity > 1
+          };
+        });
 
         await FirebaseService.replaceAllMenuItems(event.id, itemsForDb, authUser?.uid || 'admin', migrationStartTime);
 
@@ -870,7 +948,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                       </button>
 
                       <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
-                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
+                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setMigrationKeptCount(0); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
                     </div>
                   </div>
                   {classificationSummary && classificationSummary.total > 0 && classificationSummary.classified < classificationSummary.total && (

@@ -325,10 +325,16 @@ export class FirebaseService {
    * and the organizer may write anywhere under their own event, so the
    * tightened rules do not block it. Converting it would lose the protection
    * against items added while the migration is running.
+   *
+   * An item that carries an id is one the event already holds. It is written back
+   * under that id, keeps its creator and its creation time, and keeps the sign-ups
+   * pointing at it. Without that, a migration rebuilt every item from scratch and
+   * cancelled every sign-up in the event, even for items that came through the
+   * classification untouched.
    */
   static async replaceAllMenuItems(
     eventId: string,
-    newItems: Omit<MenuItem, 'id'>[],
+    newItems: (Omit<MenuItem, 'id'> & { id?: string })[],
     creatorId: string,
     migrationStartTime: number
   ): Promise<void> {
@@ -354,16 +360,20 @@ export class FirebaseService {
 
         // 3. Process the Admin's Migrated Items
         let adminItemCount = 0;
+        const keptItemIds = new Set<string>();
         newItems.forEach((item) => {
-          // Generate ID inside transaction
-          const newItemId = `migrated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          // An item that already exists in the event keeps its id, so everything
+          // that points at it keeps pointing at it. Only a genuinely new item gets
+          // an id generated here, inside the transaction.
+          const isExisting = !!item.id;
+          const newItemId = item.id || `migrated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
           const itemData: any = {
             ...item,
             id: newItemId,
-            createdAt: Date.now(),
-            creatorId: creatorId,
-            creatorName: 'Admin',
+            createdAt: isExisting ? item.createdAt : Date.now(),
+            creatorId: isExisting ? item.creatorId : creatorId,
+            creatorName: isExisting ? item.creatorName : 'Admin',
             notes: item.notes || null,
             isRequired: item.isRequired ?? false,
             isSplittable: item.isSplittable ?? false
@@ -371,19 +381,33 @@ export class FirebaseService {
           Object.keys(itemData).forEach(key => itemData[key] === undefined && delete itemData[key]);
 
           newMenuItemsMap[newItemId] = itemData;
-          adminItemCount++;
+
+          if (isExisting) {
+            keptItemIds.add(newItemId);
+            // The item belongs to whoever created it, so it counts against their
+            // own item limit and not against the organizer's. A ride never counts,
+            // the same exemption addMenuItem applies when the ride is offered.
+            if (itemData.creatorId && !isRideCategory(itemData.category)) {
+              newUserItemCounts[itemData.creatorId] = (newUserItemCounts[itemData.creatorId] || 0) + 1;
+            }
+          } else {
+            adminItemCount++;
+          }
         });
 
         // 4. Re-add Concurrent Items (Preserved)
         concurrentItems.forEach(cItem => {
           const cId = cItem.id;
+          // Already counted above if the organizer's list happened to include it.
+          const alreadyCounted = keptItemIds.has(cId);
           newMenuItemsMap[cId] = {
             ...cItem,
             category: 'other',
             notes: (cItem.notes || '') + ' (נוסף תוך כדי הגירה)'
           };
+          keptItemIds.add(cId);
 
-          if (cItem.creatorId) {
+          if (cItem.creatorId && !alreadyCounted) {
             newUserItemCounts[cItem.creatorId] = (newUserItemCounts[cItem.creatorId] || 0) + 1;
           }
         });
@@ -393,9 +417,21 @@ export class FirebaseService {
           newUserItemCounts[creatorId] = (newUserItemCounts[creatorId] || 0) + adminItemCount;
         }
 
+        // Sign-ups survive for every item that survived. An item the organizer
+        // dropped from the preview takes its sign-ups with it, which is what
+        // dropping it means.
+        const keptAssignments: { [key: string]: any } = {};
+        if (currentEventData.assignments) {
+          Object.entries(currentEventData.assignments).forEach(([assignmentId, assignment]: [string, any]) => {
+            if (assignment?.menuItemId && keptItemIds.has(assignment.menuItemId)) {
+              keptAssignments[assignmentId] = assignment;
+            }
+          });
+        }
+
         // 5. Apply New Items to State
         currentEventData.menuItems = newMenuItemsMap;
-        currentEventData.assignments = {};
+        currentEventData.assignments = keptAssignments;
         currentEventData.userItemCounts = newUserItemCounts;
 
         return currentEventData;

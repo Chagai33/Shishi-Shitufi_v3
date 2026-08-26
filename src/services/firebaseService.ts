@@ -2,8 +2,8 @@
 
 import { ref, push, set, get, onValue, off, remove, update, query, equalTo, orderByChild, runTransaction } from 'firebase/database';
 
-import { createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import type { ActionCodeSettings } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, sendEmailVerification as sendVerificationMail } from 'firebase/auth';
+import type { ActionCodeSettings, User as AuthUser } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added import
 import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
@@ -94,7 +94,39 @@ export class FirebaseService {
     };
 
     await set(ref(database, `users/${newUser.uid}`), userObject);
+
+    // Nothing up to this line proves the address belongs to the person who
+    // typed it, and until somebody opens this mail nothing does. Anyone could
+    // register with anyone else's address and hold it, and anyone who mistyped
+    // their own would never find out.
+    //
+    // Registration does not depend on the mail going out. An account that
+    // exists and a person already inside it matter more than the mail, and the
+    // notice on the dashboard carries a button that sends it again, which is
+    // the way back from a send that failed here.
+    // See DOCS/PLANING/37-no-email-verification.md.
+    try {
+      await FirebaseService.sendEmailVerification(newUser);
+    } catch (error) {
+      console.error('Could not send the address verification mail:', error);
+    }
+
     return userObject;
+  }
+
+  /**
+   * Sends the mail that proves the address belongs to whoever is signed in.
+   *
+   * Nothing in the product waits on it. It is what turns an address somebody
+   * typed into an address somebody owns, and it is the only thing that lets a
+   * person whose address was taken by somebody else get it back, because from
+   * here on whoever holds the mailbox can ask for a new password.
+   */
+  static async sendEmailVerification(user: AuthUser | null = auth.currentUser): Promise<void> {
+    // A guest has no address, so there is nothing to verify and nowhere to
+    // send it.
+    if (!user || user.isAnonymous) return;
+    await sendReturningTo('/dashboard', (settings) => sendVerificationMail(user, settings));
   }
 
   /**

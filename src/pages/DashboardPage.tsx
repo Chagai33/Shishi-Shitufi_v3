@@ -14,6 +14,7 @@ import FocusTrap from 'focus-trap-react';
 
 import { useTranslation } from 'react-i18next';
 import { EventForm } from '../components/Admin/EventForm';
+import EmailVerificationNotice from '../components/Common/EmailVerificationNotice';
 
 // --- Event card component ---
 const EventCard: React.FC<{
@@ -352,6 +353,8 @@ const DashboardPage: React.FC = () => {
         <div className="min-h-screen bg-gray-50">
 
             <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                <EmailVerificationNotice />
+
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 px-4 sm:px-0 space-y-4 sm:space-y-0">
                     <div className="flex items-center space-x-4 rtl:space-x-reverse">
                         <div className="flex rounded-lg bg-gray-100 p-1">

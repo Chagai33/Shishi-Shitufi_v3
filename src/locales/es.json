@@ -389,6 +389,16 @@
                 "errorProtected": "Esta cuenta no se puede eliminar. Está protegida contra el borrado.",
                 "errorSessionEnded": "Esta sesión ya no es válida. Recarga la página e inténtalo de nuevo.",
                 "errorUnconfirmed": "No recibimos respuesta, así que no sabemos si la eliminación se completó. Recarga la página y compruébalo antes de volver a intentarlo."
+            },
+            "emailVerification": {
+                "title": "Tu dirección de correo aún no está verificada",
+                "body": "Hemos enviado un enlace de verificación a {{email}}. Al abrirlo confirmas que la dirección es tuya. Puedes seguir usando el producto con normalidad.",
+                "resend": "Enviar de nuevo",
+                "sending": "Enviando...",
+                "resent": "Enviado",
+                "sent": "Enlace de verificación enviado. Conviene revisar también la carpeta de spam.",
+                "tooMany": "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo.",
+                "error": "No pudimos enviar el correo de verificación."
             }
         },
         "categories": {

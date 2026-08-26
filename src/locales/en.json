@@ -111,6 +111,10 @@
                 "importAll": "Import All ({{count}} items)",
                 "importNew": "Import New Only ({{count}} items)",
                 "cancel": "Cancel"
+            },
+            "migration": {
+                "done": "The migration is done. The items are sorted into the new categories.",
+                "doneWithConcurrent": "The migration is done. Items participants added while it ran: {{count}}. They were kept with their sign-ups, and carry a note saying so."
             }
         },
         "presetList": {

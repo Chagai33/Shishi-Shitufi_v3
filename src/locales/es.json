@@ -103,6 +103,10 @@
                 "importAll": "Importar Todo ({{count}} artículos)",
                 "importNew": "Importar Solo Nuevos ({{count}} artículos)",
                 "cancel": "Cancelar"
+            },
+            "migration": {
+                "done": "La migración terminó. Los artículos quedaron ordenados en las nuevas categorías.",
+                "doneWithConcurrent": "La migración terminó. Artículos que los participantes añadieron mientras corría: {{count}}. Se conservaron con sus asignaciones, y llevan una nota que lo indica."
             }
         },
         "presetList": {

@@ -341,23 +341,40 @@ export class FirebaseService {
     // database holds beyond this set was invisible to the organizer, so it is
     // kept. An empty set means "trust nothing the screen did not send", which
     // is the safe reading.
-    knownItemIds: string[] = []
-  ): Promise<void> {
+    knownItemIds: string[] = [],
+    // The categories the event has after the change. Without them the only place
+    // to put an item added mid-migration is a hardcoded id, and a hardcoded id is
+    // not in the list of every template: "on the fire" and "picnic" have no
+    // catch-all at all, so the item landed in a category that does not exist and
+    // its dropdown came up empty. See 17-ai-classification-after-migration.md.
+    categoryRules: { allowedIds: string[]; fallbackId: string } | null = null
+  ): Promise<{ concurrentItemCount: number }> {
     const eventRef = ref(database, `events/${eventId}`);
+    // Set by the updater, which may run more than once. The last run is the one
+    // that commits, so an assignment rather than an increment is what is wanted.
+    let concurrentItemCount = 0;
 
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
         if (currentEventData === null) return currentEventData;
 
         // 1. Identify "Concurrent Items" - items created AFTER we started the migration process
+        const allowedIds = categoryRules ? new Set(categoryRules.allowedIds) : null;
         const concurrentItems: MenuItem[] = [];
         if (currentEventData.menuItems) {
           Object.values(currentEventData.menuItems).forEach((item: any) => {
             if ((item.createdAt || 0) > migrationStartTime) {
-              concurrentItems.push({ ...item, category: 'other' }); // Move to safe 'other' category
+              // Its own category if the event still has one, and only otherwise the
+              // event's catch-all. Nobody chose to move this item, so moving it is
+              // a last resort and not the default.
+              const category = (!allowedIds || allowedIds.has(item.category))
+                ? item.category
+                : (categoryRules ? categoryRules.fallbackId : 'other');
+              concurrentItems.push({ ...item, category });
             }
           });
         }
+        concurrentItemCount = concurrentItems.length;
 
         // 2. Clear existing structure (Items, Assignments, Counts) for fresh slate
         const newMenuItemsMap: { [key: string]: any } = {};
@@ -438,8 +455,7 @@ export class FirebaseService {
           const alreadyCounted = keptItemIds.has(cId);
           newMenuItemsMap[cId] = {
             ...cItem,
-            category: 'other',
-            notes: (cItem.notes || '') + ' (נוסף תוך כדי הגירה)'
+            notes: cItem.notes ? `${cItem.notes} (נוסף תוך כדי הגירה)` : '(נוסף תוך כדי הגירה)'
           };
           keptItemIds.add(cId);
 
@@ -473,6 +489,7 @@ export class FirebaseService {
         return currentEventData;
       });
 
+      return { concurrentItemCount };
     } catch (error) {
       console.error('❌ Error in replaceAllMenuItems transaction:', error);
       throw error;

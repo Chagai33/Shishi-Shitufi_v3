@@ -521,9 +521,21 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
           };
         });
 
-        await FirebaseService.replaceAllMenuItems(event.id, itemsForDb, authUser?.uid || 'admin', migrationStartTime, migrationKnownIds);
+        const { concurrentItemCount } = await FirebaseService.replaceAllMenuItems(
+          event.id,
+          itemsForDb,
+          authUser?.uid || 'admin',
+          migrationStartTime,
+          migrationKnownIds,
+          { allowedIds: Array.from(allowedCategoryIds), fallbackId: fallbackCategoryId }
+        );
 
-        toast.success('מיגרציה הושלמה! פריטים חדשים שנוספו במקביל נשמרו בקטגוריית "כללי"');
+        // The screen used to announce, on every migration, that items added
+        // alongside it were saved in a category named "general". Usually nothing
+        // was added at all, and no event has a category by that name.
+        toast.success(concurrentItemCount > 0
+          ? t('importModal.migration.doneWithConcurrent', { count: concurrentItemCount })
+          : t('importModal.migration.done'));
         onClose();
         return;
       } catch (error: any) {

@@ -23,7 +23,13 @@
             "back": "חזור",
             "moreActions": "פעולות נוספות",
             "me": "(אני)",
-            "add": "הוסף"
+            "add": "הוסף",
+            "showPassword": "הצג סיסמה",
+            "hidePassword": "הסתר סיסמה",
+            "opensInNewTab": "נפתח בכרטיסייה חדשה",
+            "skipToContent": "דלג לתוכן הראשי",
+            "pasted": "הודבק מהלוח",
+            "permissionDenied": "אין לך הרשאה לפעולה הזו"
         },
         "errors": {
             "auth": {
@@ -167,7 +173,17 @@
                 "errorAdding": "שגיאה בהוספת הפריט",
                 "selectToSave": "בחר פריטים לשמירה",
                 "enterListNameError": "שגיאה: נא להזין שם לרשימה",
-                "errorSavingList": "שגיאה בשמירת הרשימה"
+                "errorSavingList": "שגיאה בשמירת הרשימה",
+                "confirmDelete": "למחוק {{count}} פריטים?",
+                "successDelete": "{{count}} פריטים נמחקו",
+                "successCategory": "{{count}} פריטים עברו לקטגוריה החדשה",
+                "successRequired": "{{count}} פריטים סומנו כחובה",
+                "successCancelAssignments": "{{count}} שיבוצים בוטלו",
+                "failure": "{{count}} פריטים נכשלו",
+                "itemsUpdated": "{{count}} פריטים עודכנו",
+                "itemsUpdateFailed": "{{count}} פריטים לא עודכנו",
+                "enterListName": "שם לרשימה של {{count}} פריטים:",
+                "listSaved": "הרשימה \"{{name}}\" נשמרה עם {{count}} פריטים"
             },
             "actions": {
                 "selected": "נבחרו",
@@ -345,6 +361,9 @@
                 "p1": "\"לפעמים הרעיונות הכי טובים נולדים לא במשרד, אלא סביב שולחן שבת. כמי שיצא בשאלה ומשתתף בארוחות קהילתיות, חוויתי את הקסם של הארוחות השיתופיות - אבל גם את הכאב ראש הלוגיסטי.\"",
                 "p2": "\"ניהול ה'מי מביא מה' דרך Google Sheets היה מסורבל, לא מותאם לנייד וגרר תקלות. מישהו מחק בטעות שורה, אחרים הסתבכו עם העריכה בטלפון, ומנהלת האירוע עבדה קשה מדי.\"",
                 "p3": "\"שישי שיתופי נולד כדי לפתור בדיוק את זה. בנינו פתרון ייעודי שמייצר חוויה חלקה, אפס תקלות ושקט נפשי למנהלי האירוע.\""
+            },
+            "nav": {
+                "main": "ניווט ראשי"
             }
         },
         "login": {
@@ -397,7 +416,8 @@
             "subtitle": "ניהול ארוחות קהילתיות",
             "nav": {
                 "events": "אירועים",
-                "admin": "נהל אירועים"
+                "admin": "נהל אירועים",
+                "dashboard": "לוח הניהול"
             },
             "guest": "אורח",
             "logout": "התנתק",
@@ -457,7 +477,15 @@
             "assigned": "שובצו",
             "null": "כללי",
             "ride_offers": "הצעות טרמפ",
-            "ride_requests": "בקשות טרמפ"
+            "ride_requests": "בקשות טרמפ",
+            "meat": "בשר",
+            "pitas": "פיתות/לחם",
+            "drinks": "שתייה",
+            "healthy": "ירקות/פירות",
+            "atmosphere": "אווירה",
+            "dairy": "גבינות/מאפים",
+            "sweets": "מתוקים/שתייה",
+            "food": "אוכל"
         },
         "eventPage": {
             "assignment": {
@@ -504,7 +532,8 @@
                 "phoneLabel": "מספר טלפון (חובה לתיאום הנסיעה)",
                 "phoneHelp": "המספר יוצג לנהג בלבד לתיאום הנסיעה",
                 "toEventSuffix": "(הלוך)",
-                "fromEventSuffix": "(חזור)"
+                "fromEventSuffix": "(חזור)",
+                "quantityExceedsAvailable": "אפשר לשבץ עד {{maxQuantity}}"
             },
             "adminPanelTooltip": "פאנל ניהול",
             "adminPanel": "נהל אירועים",
@@ -587,7 +616,8 @@
             "details": {
                 "organizer": "מארגן",
                 "navigate": "נווט למיקום",
-                "navigateTooltip": "בחר אפליקציית ניווט"
+                "navigateTooltip": "בחר אפליקציית ניווט",
+                "addToCalendar": "הוסף ליומן גוגל"
             },
             "navigation": {
                 "title": "נווט באמצעות",
@@ -595,7 +625,6 @@
                 "googleMaps": "Google Maps",
                 "appleMaps": "Apple Maps"
             },
-            "addToCalendar": "הוסף ליומן גוגל",
             "search": {
                 "placeholder": "חפש פריט...",
                 "clear": "נקה חיפוש"
@@ -606,7 +635,8 @@
                 "assigned": "שובצו",
                 "unassigned": "לא שובצו",
                 "backToCategories": "חזור לקטגוריות",
-                "searchResults": "תוצאות חיפוש"
+                "searchResults": "תוצאות חיפוש",
+                "myAssignments": "השיבוצים שלי"
             },
             "rides": {
                 "available": "נסיעות פנויות",
@@ -720,7 +750,9 @@
                 "notes": "הערות (אופציונלי)",
                 "notesPlaceholder": "לדוגמה: כשר, ללא גלוטן, טבעוני...",
                 "requestNotesPlaceholder": "לדוגמה: מחכה ליד בית הכנסת הגדול...",
-                "offerNotesPlaceholder": "לדוגמה: אין מקום למזוודות גדולות, רק תיקי גב..."
+                "offerNotesPlaceholder": "לדוגמה: אין מקום למזוודות גדולות, רק תיקי גב...",
+                "decrease": "הקטן",
+                "increase": "הגדל"
             },
             "submit": "שמור שינויים",
             "submitting": "שומר...",
@@ -850,6 +882,10 @@
                 "beverages": "לדוגמה: מיץ תפוזים, סודה",
                 "default": "לדוגמה: שם הפריט",
                 "pattern": "לדוגמה: פריט ל{{category}}"
+            },
+            "stepper": {
+                "decrease": "הקטן",
+                "increase": "הגדל"
             }
         },
         "participantsList": {
@@ -987,7 +1023,8 @@
                 "quantityMax": "הכמות לא יכולה להיות יותר מ-100"
             },
             "success": "השיבוץ עודכן בהצלחה!",
-            "updating": "מעדכן..."
+            "updating": "מעדכן...",
+            "rideSuccess": "הנסיעה עודכנה בהצלחה!"
         }
     }
 }

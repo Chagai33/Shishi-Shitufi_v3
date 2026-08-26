@@ -71,6 +71,10 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   // How many of the event's own items the model did not return at all on a Smart
   // Migration. They are kept, and the organiser is told so before approving.
   const [migrationKeptCount, setMigrationKeptCount] = useState(0);
+  // The items this screen actually had when it built the preview. What the event
+  // holds beyond these was never on screen, so the organiser cannot have decided
+  // to drop it, and the write leaves it alone.
+  const [migrationKnownIds, setMigrationKnownIds] = useState<string[]>([]);
 
   // Auto-run AI if requested
   const hasAutoRunRef = useRef(false);
@@ -204,6 +208,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     setIsAnalyzing(true);
     setClassificationSummary(null);
     setMigrationKeptCount(0);
+    setMigrationKnownIds([]);
 
     try {
       let imageBase64 = null;
@@ -236,8 +241,12 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       // its own id, with the people who signed up for it. Whatever the model failed
       // to return is claimed by nobody and is added back below instead of dropped.
       const unclaimed = new Map<string, MenuItem[]>();
+      const knownIds: string[] = [];
       if (migrationStartTime) {
-        existingItemsByName.forEach((existing, key) => unclaimed.set(key, [...existing]));
+        existingItemsByName.forEach((existing, key) => {
+          unclaimed.set(key, [...existing]);
+          existing.forEach(one => knownIds.push(one.id));
+        });
       }
       const claimExisting = (name: string): MenuItem | undefined => {
         const bucket = unclaimed.get(name.trim().toLowerCase());
@@ -289,6 +298,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       const previewItems = [...items, ...keptItems];
       setImportItems(previewItems);
       setMigrationKeptCount(keptItems.length);
+      setMigrationKnownIds(knownIds);
       setShowPreview(true);
       announceClassification(classifiedCount, previewItems.length);
 
@@ -435,6 +445,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       setImportItems(items);
       setClassificationSummary(null);
       setMigrationKeptCount(0);
+      setMigrationKnownIds([]);
       setShowPreview(true);
       if (items.length === 0) { toast.error(t('importModal.preview.noItems')); } else { toast.success(t('importModal.preset.loadedSuccess', { count: items.length })); }
     } catch (error) {
@@ -451,6 +462,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     setImportItems(items);
     setClassificationSummary(null);
     setMigrationKeptCount(0);
+    setMigrationKnownIds([]);
     setShowPreview(true);
     setShowPresetManager(false);
     toast.success(t('importModal.preset.loadedSuccess', { count: items.length }));
@@ -509,7 +521,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
           };
         });
 
-        await FirebaseService.replaceAllMenuItems(event.id, itemsForDb, authUser?.uid || 'admin', migrationStartTime);
+        await FirebaseService.replaceAllMenuItems(event.id, itemsForDb, authUser?.uid || 'admin', migrationStartTime, migrationKnownIds);
 
         toast.success('מיגרציה הושלמה! פריטים חדשים שנוספו במקביל נשמרו בקטגוריית "כללי"');
         onClose();
@@ -955,7 +967,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                       </button>
 
                       <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
-                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setMigrationKeptCount(0); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
+                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setMigrationKeptCount(0); setMigrationKnownIds([]); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
                     </div>
                   </div>
                   {migrationKeptCount > 0 && (

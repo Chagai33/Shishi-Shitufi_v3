@@ -336,7 +336,12 @@ export class FirebaseService {
     eventId: string,
     newItems: (Omit<MenuItem, 'id'> & { id?: string })[],
     creatorId: string,
-    migrationStartTime: number
+    migrationStartTime: number,
+    // The ids the screen actually had when it built the preview. Anything the
+    // database holds beyond this set was invisible to the organizer, so it is
+    // kept. An empty set means "trust nothing the screen did not send", which
+    // is the safe reading.
+    knownItemIds: string[] = []
   ): Promise<void> {
     const eventRef = ref(database, `events/${eventId}`);
 
@@ -361,6 +366,7 @@ export class FirebaseService {
         // 3. Process the Admin's Migrated Items
         let adminItemCount = 0;
         const keptItemIds = new Set<string>();
+        const knownIds = new Set(knownItemIds);
         newItems.forEach((item) => {
           // An item that already exists in the event keeps its id, so everything
           // that points at it keeps pointing at it. Only a genuinely new item gets
@@ -368,15 +374,28 @@ export class FirebaseService {
           const isExisting = !!item.id;
           const newItemId = item.id || `migrated_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+          // The base is the item as the database holds it right now, not the copy
+          // the screen has been carrying since it loaded. A sign-up made after that
+          // screen opened lives on the live item and nowhere else, and taking the
+          // screen's copy instead is what cancelled it.
+          const live: any = (isExisting && currentEventData.menuItems)
+            ? (currentEventData.menuItems as any)[newItemId]
+            : null;
+          const base: any = live || item;
+
           const itemData: any = {
-            ...item,
+            ...base,
             id: newItemId,
-            createdAt: isExisting ? item.createdAt : Date.now(),
-            creatorId: isExisting ? item.creatorId : creatorId,
-            creatorName: isExisting ? item.creatorName : 'Admin',
+            // The five fields the preview lets the organizer edit, and nothing else.
+            name: item.name,
+            category: item.category,
+            quantity: item.quantity,
             notes: item.notes || null,
             isRequired: item.isRequired ?? false,
-            isSplittable: item.isSplittable ?? false
+            isSplittable: base.isSplittable ?? item.quantity > 1,
+            createdAt: isExisting ? (base.createdAt || Date.now()) : Date.now(),
+            creatorId: isExisting ? base.creatorId : creatorId,
+            creatorName: isExisting ? base.creatorName : 'Admin'
           };
           Object.keys(itemData).forEach(key => itemData[key] === undefined && delete itemData[key]);
 
@@ -394,6 +413,23 @@ export class FirebaseService {
             adminItemCount++;
           }
         });
+
+        // Items the database holds that the screen never had. The screen could not
+        // have offered them to the organizer, so their absence from the list is not
+        // a decision the organizer made, and they stay exactly as they are. This is
+        // the gap a sign-up fell into: the dashboard reads the organizer's events
+        // once when it loads, and anything added after that read was invisible to
+        // the migration and was wiped by it.
+        if (currentEventData.menuItems) {
+          Object.entries(currentEventData.menuItems).forEach(([id, liveItem]: [string, any]) => {
+            if (newMenuItemsMap[id] || knownIds.has(id)) return;
+            newMenuItemsMap[id] = liveItem;
+            keptItemIds.add(id);
+            if (liveItem?.creatorId && !isRideCategory(liveItem.category)) {
+              newUserItemCounts[liveItem.creatorId] = (newUserItemCounts[liveItem.creatorId] || 0) + 1;
+            }
+          });
+        }
 
         // 4. Re-add Concurrent Items (Preserved)
         concurrentItems.forEach(cItem => {

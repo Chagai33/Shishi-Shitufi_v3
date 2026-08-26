@@ -347,8 +347,16 @@
                     "invalidCredential": "Email o contraseña inválidos.",
                     "emailInUse": "El correo ya está en uso.",
                     "weakPassword": "Contraseña muy débil. Mínimo 6 caracteres.",
-                    "invalidEmail": "Dirección de correo inválida."
+                    "invalidEmail": "Dirección de correo inválida.",
+                    "tooManyRequests": "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo."
                 }
+            },
+            "forgotPassword": "¿Olvidaste tu contraseña?",
+            "reset": {
+                "subtitle": "Introduce la dirección de correo de tu cuenta y te enviaremos un enlace para elegir una contraseña nueva.",
+                "submit": "Enviar enlace",
+                "back": "Volver a iniciar sesión",
+                "sent": "Si esa dirección está registrada, le hemos enviado un enlace para elegir una contraseña nueva. Conviene revisar también la carpeta de spam."
             }
         },
         "header": {

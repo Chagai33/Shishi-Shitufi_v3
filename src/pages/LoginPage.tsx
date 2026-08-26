@@ -12,7 +12,16 @@ import LanguageSwitcher from '../components/Common/LanguageSwitcher';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
-  const [isLoginView, setIsLoginView] = useState(true);
+  // Three named states, and not one flag with an opposite. The screen had two,
+  // and every place that asked for "not login" meant "register". With a third
+  // state those places would have shown the display name field, the terms
+  // checkbox, and a submit button locked behind them, to somebody who only
+  // asked to be sent a reset link.
+  const [view, setView] = useState<'login' | 'register' | 'reset'>('login');
+  const [resetRequested, setResetRequested] = useState(false);
+  const isLoginView = view === 'login';
+  const isRegisterView = view === 'register';
+  const isResetView = view === 'reset';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -31,7 +40,13 @@ const LoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      if (isLoginView) {
+      if (isResetView) {
+        // --- Password reset logic ---
+        // The service answers the same way whether or not the address is
+        // registered, so this branch has nothing to decide.
+        await FirebaseService.sendPasswordReset(email);
+        setResetRequested(true);
+      } else if (isLoginView) {
         // --- Login logic ---
         await signInWithEmailAndPassword(auth, email, password);
         toast.success(t('login.messages.loginSuccess'));
@@ -71,12 +86,20 @@ const LoginPage: React.FC = () => {
           case 'auth/invalid-email':
             errorMessage = t('login.messages.authErrors.invalidEmail');
             break;
+          case 'auth/too-many-requests':
+            errorMessage = t('login.messages.authErrors.tooManyRequests');
+            break;
         }
       }
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const backToLogin = () => {
+    setView('login');
+    setResetRequested(false);
   };
 
   return (
@@ -91,13 +114,28 @@ const LoginPage: React.FC = () => {
             {t('header.title')}
           </h1>
           <p className="mt-2 text-sm text-gray-600">
-            {isLoginView ? t('login.subtitle.login') : t('login.subtitle.register')}
+            {isResetView
+              ? t('login.reset.subtitle')
+              : isLoginView
+                ? t('login.subtitle.login')
+                : t('login.subtitle.register')}
           </p>
         </div>
 
         <div className="bg-white p-8 shadow-lg rounded-xl">
+          {/* Once the request has gone out the form is replaced and not left
+              standing next to a confirmation, so that nobody sends the same
+              mail four times while waiting for the first one. */}
+          {isResetView && resetRequested ? (
+            // Announced, because this replaces the form rather than joining
+            // it: without a live region somebody using a screen reader presses
+            // the button and hears nothing at all.
+            <p role="status" className="text-sm leading-relaxed text-gray-700">
+              {t('login.reset.sent')}
+            </p>
+          ) : (
           <form onSubmit={handleAuthAction} className="space-y-6">
-            {!isLoginView && (
+            {isRegisterView && (
               <div>
                 <label htmlFor={displayNameId} className="block text-sm font-medium text-gray-700">
                   {t('login.fields.displayName')}
@@ -132,32 +170,52 @@ const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label htmlFor={passwordId} className="block text-sm font-medium text-gray-700">
-                {t('login.fields.password')}
-              </label>
-              <div className="mt-1 relative">
-                <input
-                  id={passwordId}
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={isLoginView ? "current-password" : "new-password"}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? t('common.hidePassword') : t('common.showPassword')}
-                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
-                </button>
+            {/* Taken off the page and not merely hidden. The field is marked
+                required, and a required field the person cannot see stops the
+                browser from submitting while pointing at nothing: a button
+                that is pressed and does nothing at all. */}
+            {!isResetView && (
+              <div>
+                <label htmlFor={passwordId} className="block text-sm font-medium text-gray-700">
+                  {t('login.fields.password')}
+                </label>
+                <div className="mt-1 relative">
+                  <input
+                    id={passwordId}
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={isLoginView ? "current-password" : "new-password"}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('common.hidePassword') : t('common.showPassword')}
+                    className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+                  </button>
+                </div>
+                {isLoginView && (
+                  <div className="mt-2 text-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetRequested(false);
+                        setView('reset');
+                      }}
+                      className="text-sm font-medium text-accent hover:text-accent/80 focus:outline-none focus:underline"
+                    >
+                      {t('login.forgotPassword')}
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
-            {!isLoginView && (
+            {isRegisterView && (
               <div className="flex items-center space-x-2 rtl:space-x-reverse">
                 <input
                   id="terms-agree"
@@ -183,11 +241,13 @@ const LoginPage: React.FC = () => {
             <div>
               <button
                 type="submit"
-                disabled={isLoading || (!isLoginView && !agreedToTerms)}
+                disabled={isLoading || (isRegisterView && !agreedToTerms)}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-accent-dark hover:bg-accent-dark/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:bg-accent/40 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : isResetView ? (
+                  t('login.reset.submit')
                 ) : isLoginView ? (
                   t('login.submit.login')
                 ) : (
@@ -196,14 +256,19 @@ const LoginPage: React.FC = () => {
               </button>
             </div>
           </form>
+          )}
 
           <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => setIsLoginView(!isLoginView)}
+              onClick={isResetView ? backToLogin : () => setView(isLoginView ? 'register' : 'login')}
               className="text-sm font-medium text-accent hover:text-accent/80 focus:outline-none focus:underline"
             >
-              {isLoginView ? t('login.toggle.toRegister') : t('login.toggle.toLogin')}
+              {isResetView
+                ? t('login.reset.back')
+                : isLoginView
+                  ? t('login.toggle.toRegister')
+                  : t('login.toggle.toLogin')}
             </button>
           </div>
         </div>

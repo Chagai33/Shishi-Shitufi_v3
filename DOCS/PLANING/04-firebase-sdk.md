@@ -96,7 +96,7 @@ firebase emulators:start --only functions
 ### שלב 5 — פריסה
 
 ```powershell
-$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt
 ```
 
 ## בדיקות אחרי פריסה

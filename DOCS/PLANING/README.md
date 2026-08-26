@@ -132,19 +132,23 @@
 | מה | איך נפרס | מופעל על ידי |
 |---|---|---|
 | פרונטאנד (`src/`) | Netlify | אוטומטי בכל push ל-`main` |
-| Cloud Functions (`functions/`) | `firebase deploy --only functions` | **ידני בלבד** |
+| Cloud Functions (`functions/`) | `firebase deploy --only functions --project shishi-shitufimt` | **ידני בלבד** |
 
 דחיפה ל-GitHub **לא** מעדכנת את הפונקציות. זו הייתה הסיבה לתקלה ב-23/08 — הפרונטאנד
 החדש דיבר עם פונקציה ישנה.
 
 **וצינור שלישי, שנבנה ב-23/08/2026:** חוקי האבטחה של המסד נפרסים מ-`database.rules.json`
-בפקודה `firebase deploy --only database`, **ידנית בלבד** — בדיוק כמו הפונקציות.
+בפקודה `firebase deploy --only database --project shishi-shitufimt`, **ידנית בלבד** — בדיוק כמו הפונקציות.
 דחיפה ל-GitHub לא מעדכנת אותם. ראה [02-database-rules.md](02-database-rules.md).
 
 **מלכודת פריסה שנמצאה ב-24/08/2026:** בקובץ ההגדרות של Firebase יש כינוי
 פרויקט בשם `shishi-shitufi` שמצביע על **פרויקט אחר לגמרי**, ולא על הפרויקט של
 המוצר. פריסה בטעות עם הכינוי הזה מגיעה ליעד הלא נכון. **הכלל: לציין את הפרויקט
 במפורש בכל פקודת פריסה.**
+
+**הפרויקט הנכון הוא `shishi-shitufimt`**, וכל פקודות הפריסה במסמך הזה נושאות אותו
+מ-26/08/2026. **רשומות ופרומפטים ישנים עדיין מציגים את הפקודה בלי הדגל**, ולכן
+כדאי להעתיק מכאן ולא משם.
 
 **⚠️ ולכן: מיזוג לענף הראשי הוא כשלעצמו שחרור לפרודקשן.** אין שלב נפרד ואין
 אישור — הדחיפה היא הפריסה, לצד הלקוח בלבד. הפונקציות והחוקים נשארים מאחור עד
@@ -167,7 +171,7 @@ scaffolding שכמעט תקעו deploy.
 **3. פריסת פונקציות דורשת timeout מוגדל.**
 
 ```powershell
-$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt
 ```
 
 בלי זה הפריסה נכשלת עם `Timeout after 10000`. הסיבה: טעינת `firebase-admin` איטית

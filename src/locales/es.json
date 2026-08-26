@@ -70,7 +70,7 @@
                 "csv": "CSV"
             },
             "smart": {
-                "migrationKept": "{{count}} artículos no volvieron del análisis. Se quedan en el evento tal como están, con las asignaciones que ya se hicieron sobre ellos, y aparecen en la tabla de abajo.",
+                "migrationKept": "Artículos que el análisis no devolvió: {{count}}. Lo que no volvió se queda en el evento tal como está, con las asignaciones que ya se hicieron sobre ello, y aparece en la tabla de abajo.",
                 "resultAll": "Clasificación completa. Todos los artículos recibieron una categoría.",
                 "resultPartial": "Se clasificaron {{classified}} de {{total}} artículos. El resto quedó en la categoría que aparece en la tabla, y puedes cambiarla ahí.",
                 "resultNone": "No se pudo clasificar ningún artículo. Quedaron en la categoría que aparece en la tabla, y puedes cambiarla ahí.",

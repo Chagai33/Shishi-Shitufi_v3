@@ -489,7 +489,14 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
           // everything the organiser never asked to change: who created it, when,
           // and who signed up to bring it. Only what the preview shows is edited.
           if (item.existingItem) {
-            return { ...item.existingItem, ...edited, eventId: event.id };
+            return {
+              ...item.existingItem,
+              ...edited,
+              eventId: event.id,
+              // An item old enough to have no flag at all falls back to the same
+              // rule every other path uses, rather than to "not splittable".
+              isSplittable: item.existingItem.isSplittable ?? item.quantity > 1
+            };
           }
 
           return {

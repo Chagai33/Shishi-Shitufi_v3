@@ -78,7 +78,7 @@
                 "analyzing": "AI is analyzing your list...",
                 "classifyBtn": "Smart Classify (AI)",
                 "autoDetect": "System will automatically detect items and quantities (including handwriting).",
-                "migrationKept": "{{count}} items did not come back from the analysis. They stay in the event exactly as they are, with the sign-ups already made on them, and they appear in the table below.",
+                "migrationKept": "Items the analysis did not return: {{count}}. Whatever did not come back stays in the event exactly as it is, with the sign-ups already made on it, and appears in the table below.",
                 "resultAll": "Classification complete. Every item got a category.",
                 "resultPartial": "{{classified}} of {{total}} items were classified. The rest are in the category shown in the table, and you can change it there.",
                 "resultNone": "No item could be classified. They are in the category shown in the table, and you can change it there.",

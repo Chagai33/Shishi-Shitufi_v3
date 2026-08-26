@@ -17,19 +17,19 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ location }) => {
 
     const navigationOptions = [
         {
-            name: t('navigation.waze'),
+            name: t('eventPage.navigation.waze'),
             url: `https://waze.com/ul?q=${encodedLocation}&navigate=yes`,
             icon: "/Icons/waze.png",
             bgColor: "bg-[#33CCFF]/10 hover:bg-[#33CCFF]/20"
         },
         {
-            name: t('navigation.googleMaps'),
+            name: t('eventPage.navigation.googleMaps'),
             url: `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`,
             icon: "/Icons/google-maps.png",
             bgColor: "bg-red-50 hover:bg-red-100"
         },
         {
-            name: t('navigation.appleMaps'),
+            name: t('eventPage.navigation.appleMaps'),
             url: `http://maps.apple.com/?q=${encodedLocation}`,
             icon: "/Icons/apple.png",
             bgColor: "bg-gray-100 hover:bg-gray-200"

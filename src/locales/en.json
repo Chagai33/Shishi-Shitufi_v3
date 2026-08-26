@@ -20,7 +20,13 @@
             "close": "Close",
             "confirm": "Confirm",
             "confirmAction": "Confirm action",
-            "back": "Back"
+            "back": "Back",
+            "showPassword": "Show password",
+            "hidePassword": "Hide password",
+            "opensInNewTab": "opens in a new tab",
+            "skipToContent": "Skip to main content",
+            "pasted": "Pasted from clipboard",
+            "permissionDenied": "You do not have permission for this action"
         },
         "errors": {
             "auth": {
@@ -163,7 +169,17 @@
                 "errorAdding": "Error adding item",
                 "selectToSave": "Select items to save",
                 "enterListNameError": "Error: Please enter list name",
-                "errorSavingList": "Error saving list"
+                "errorSavingList": "Error saving list",
+                "confirmDelete": "Delete {{count}} items?",
+                "successDelete": "{{count}} items deleted",
+                "successCategory": "Category changed for {{count}} items",
+                "successRequired": "{{count}} items marked as required",
+                "successCancelAssignments": "{{count}} assignments cancelled",
+                "failure": "{{count}} items failed",
+                "itemsUpdated": "{{count}} items updated",
+                "itemsUpdateFailed": "Failed to update {{count}} items",
+                "enterListName": "Name for a list of {{count}} items:",
+                "listSaved": "List \"{{name}}\" saved with {{count}} items"
             },
             "actions": {
                 "selected": "Selected",
@@ -341,6 +357,9 @@
                 "p1": "\"Sometimes the best ideas are born not in the office, but around a Shabbat table. As someone who participates in community meals, I experienced the magic of shared meals - but also the logistical headache.\"",
                 "p2": "\"Managing 'who brings what' via Google Sheets was cumbersome, not mobile-friendly, and prone to errors. Someone accidentally deleted a row, others struggled with editing on the phone, and the event manager worked too hard.\"",
                 "p3": "\"Shishi-Shitufi was born to solve exactly this. We built a dedicated solution that creates a seamless experience, zero errors, and peace of mind for event managers.\""
+            },
+            "nav": {
+                "main": "Main navigation"
             }
         },
         "login": {
@@ -393,7 +412,8 @@
             "subtitle": "Community Meal Management",
             "nav": {
                 "events": "Events",
-                "admin": "Admin Panel"
+                "admin": "Admin Panel",
+                "dashboard": "Dashboard"
             },
             "guest": "Guest",
             "logout": "Logout",
@@ -508,7 +528,8 @@
                 "phoneLabel": "Phone Number (Required for coordination)",
                 "phoneHelp": "Number will be shown to driver only for ride coordination",
                 "toEventSuffix": "(To)",
-                "fromEventSuffix": "(From)"
+                "fromEventSuffix": "(From)",
+                "quantityExceedsAvailable": "You can assign up to {{maxQuantity}}"
             },
             "adminPanelTooltip": "Admin Panel",
             "adminPanel": "Admin Panel",
@@ -717,7 +738,9 @@
                 "notes": "Notes (Optional)",
                 "notesPlaceholder": "e.g. Kosher, Gluten free, Vegan...",
                 "requestNotesPlaceholder": "e.g. Waiting near the main synagogue...",
-                "offerNotesPlaceholder": "e.g. No room for large suitcases, backpacks only..."
+                "offerNotesPlaceholder": "e.g. No room for large suitcases, backpacks only...",
+                "decrease": "Decrease",
+                "increase": "Increase"
             },
             "submit": "Save Changes",
             "submitting": "Saving...",
@@ -879,6 +902,10 @@
                 "success": "Item added successfully!",
                 "generalError": "Error adding item",
                 "permissionDenied": "The item was not added and nothing was saved. Refresh the page and try again; if it keeps happening, contact the event organizer"
+            },
+            "stepper": {
+                "decrease": "Decrease",
+                "increase": "Increase"
             }
         },
         "rideCard": {
@@ -982,7 +1009,8 @@
                 "quantityMax": "Quantity cannot exceed 100"
             },
             "success": "Assignment updated successfully!",
-            "updating": "Updating..."
+            "updating": "Updating...",
+            "rideSuccess": "Ride updated successfully!"
         }
     }
 }

@@ -2,7 +2,8 @@
 
 import { ref, push, set, get, onValue, off, remove, update, query, equalTo, orderByChild, runTransaction } from 'firebase/database';
 
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail, sendEmailVerification as sendVerificationMail } from 'firebase/auth';
+import type { ActionCodeSettings, User as AuthUser } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added import
 import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
@@ -12,6 +13,57 @@ import { toast } from 'react-hot-toast';
 import i18n from '../i18n';
 
 const functions = getFunctions(); // <-- Functions service initialization
+
+// Firebase sends the password reset and the address verification mails itself,
+// in whatever language it was last told to use, so the language of the screen
+// has to be handed to it before every send. Hebrew travels under the legacy
+// code "iw" and not "he", and a code the service does not recognise falls back
+// to the project default rather than failing, so the worst this can cost is a
+// mail in the wrong language and never a mail that was not sent.
+const MAIL_LANGUAGES: Record<string, string> = { he: 'iw', en: 'en', es: 'es' };
+
+/**
+ * Where the link in the mail leaves the person once the service is done.
+ *
+ * Both destinations correct themselves. Somebody who is not signed in and
+ * lands on the dashboard is moved to the login screen, and somebody who is
+ * signed in and lands on the login screen is moved to the dashboard. So a mail
+ * opened on a phone that is not signed in still ends somewhere that makes
+ * sense.
+ */
+function returnTo(path: string): ActionCodeSettings {
+  return { url: `${window.location.origin}${path}`, handleCodeInApp: false };
+}
+
+// A return address is only accepted for a domain listed as authorised in the
+// console. When it is not - a domain that was renamed, a preview build of the
+// site, a setting that was undone - the service does not quietly drop it. It
+// refuses the request outright and no mail goes anywhere, which is a silent
+// and total failure of the one thing somebody reaches for when they are
+// already locked out. A refusal is therefore answered by sending the same mail
+// again without a return address, through the service's own page.
+const RETURN_ADDRESS_REFUSED = new Set([
+  'auth/invalid-continue-uri',
+  'auth/unauthorized-continue-uri',
+  'auth/missing-continue-uri',
+]);
+
+async function sendReturningTo(
+  path: string,
+  send: (settings?: ActionCodeSettings) => Promise<void>
+): Promise<void> {
+  const language = (i18n.language || 'he').split('-')[0];
+  auth.languageCode = MAIL_LANGUAGES[language] ?? MAIL_LANGUAGES.he;
+
+  try {
+    await send(returnTo(path));
+  } catch (error) {
+    const code = (error as { code?: string })?.code ?? '';
+    if (!RETURN_ADDRESS_REFUSED.has(code)) throw error;
+    console.warn('The return address was refused, sending without one:', code);
+    await send();
+  }
+}
 
 /**
  * Firebase service adapted for flat model (Flat Model)
@@ -42,7 +94,67 @@ export class FirebaseService {
     };
 
     await set(ref(database, `users/${newUser.uid}`), userObject);
+
+    // Nothing up to this line proves the address belongs to the person who
+    // typed it, and until somebody opens this mail nothing does. Anyone could
+    // register with anyone else's address and hold it, and anyone who mistyped
+    // their own would never find out.
+    //
+    // Registration does not depend on the mail going out. An account that
+    // exists and a person already inside it matter more than the mail, and the
+    // notice on the dashboard carries a button that sends it again, which is
+    // the way back from a send that failed here.
+    // See DOCS/PLANING/37-no-email-verification.md.
+    try {
+      await FirebaseService.sendEmailVerification(newUser);
+    } catch (error) {
+      console.error('Could not send the address verification mail:', error);
+    }
+
     return userObject;
+  }
+
+  /**
+   * Sends the mail that proves the address belongs to whoever is signed in.
+   *
+   * Nothing in the product waits on it. It is what turns an address somebody
+   * typed into an address somebody owns, and it is the only thing that lets a
+   * person whose address was taken by somebody else get it back, because from
+   * here on whoever holds the mailbox can ask for a new password.
+   */
+  static async sendEmailVerification(user: AuthUser | null = auth.currentUser): Promise<void> {
+    // A guest has no address, so there is nothing to verify and nowhere to
+    // send it.
+    if (!user || user.isAnonymous) return;
+    await sendReturningTo('/dashboard', (settings) => sendVerificationMail(user, settings));
+  }
+
+  /**
+   * Sends the mail that lets somebody choose a new password.
+   */
+  static async sendPasswordReset(email: string): Promise<void> {
+    try {
+      await sendReturningTo('/login', (settings) => sendPasswordResetEmail(auth, email, settings));
+    } catch (error) {
+      const code = (error as { code?: string })?.code ?? '';
+
+      // The one answer that is deliberately thrown away: this address has no
+      // account. The screen says the same sentence either way, so that asking
+      // it about an address tells nobody whether that address is registered
+      // here. Every other failure travels on intact, because a mail that was
+      // not sent because the network fell over must not be reported as a mail
+      // that is on its way.
+      //
+      // It is dropped here rather than on the screen, which is the opposite of
+      // where the wording of a failed deletion was put. That was a choice of
+      // words, and only the screen knows whether it is talking to a guest or
+      // to an account holder. This is a choice about what the product
+      // discloses, and it must not depend on every future screen remembering
+      // to make the same one.
+      // See DOCS/PLANING/36-no-password-reset.md.
+      if (code === 'auth/user-not-found') return;
+      throw error;
+    }
   }
 
   /**

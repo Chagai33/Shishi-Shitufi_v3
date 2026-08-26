@@ -19,7 +19,8 @@
             "edit": "Editar",
             "close": "Cerrar",
             "confirm": "Confirmar",
-            "back": "Atrás"
+            "back": "Atrás",
+            "confirmAction": "Confirmar acción"
         },
         "errors": {
             "auth": {
@@ -347,8 +348,16 @@
                     "invalidCredential": "Email o contraseña inválidos.",
                     "emailInUse": "El correo ya está en uso.",
                     "weakPassword": "Contraseña muy débil. Mínimo 6 caracteres.",
-                    "invalidEmail": "Dirección de correo inválida."
+                    "invalidEmail": "Dirección de correo inválida.",
+                    "tooManyRequests": "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo."
                 }
+            },
+            "forgotPassword": "¿Olvidaste tu contraseña?",
+            "reset": {
+                "subtitle": "Introduce la dirección de correo de tu cuenta y te enviaremos un enlace para elegir una contraseña nueva.",
+                "submit": "Enviar enlace",
+                "back": "Volver a iniciar sesión",
+                "sent": "Si esa dirección está registrada, le hemos enviado un enlace para elegir una contraseña nueva. Conviene revisar también la carpeta de spam."
             }
         },
         "header": {
@@ -380,7 +389,21 @@
                 "errorGuest": "No pudimos eliminar tu información.",
                 "errorProtected": "Esta cuenta no se puede eliminar. Está protegida contra el borrado.",
                 "errorSessionEnded": "Esta sesión ya no es válida. Recarga la página e inténtalo de nuevo.",
-                "errorUnconfirmed": "No recibimos respuesta, así que no sabemos si la eliminación se completó. Recarga la página y compruébalo antes de volver a intentarlo."
+                "errorUnconfirmed": "No recibimos respuesta, así que no sabemos si la eliminación se completó. Recarga la página y compruébalo antes de volver a intentarlo.",
+                "processingGuest": "Eliminando tu información...",
+                "successGuest": "Tu información ha sido eliminada. ¡Gracias por participar!",
+                "confirmButtonGuest": "Sí, eliminar mi información",
+                "confirmMessageGuest": "¿Eliminar toda tu información?\nTu nombre, los teléfonos que hayas introducido y todo lo que te comprometiste a traer se eliminarán de todos los eventos a los que te uniste desde este dispositivo.\n\nEsta acción es irreversible, y esta identidad no se puede recuperar, porque no tiene contraseña.\nSi te uniste a un evento desde otro dispositivo, la información allí se mantendrá."
+            },
+            "emailVerification": {
+                "title": "Tu dirección de correo aún no está verificada",
+                "body": "Hemos enviado un enlace de verificación a {{email}}. Al abrirlo confirmas que la dirección es tuya. Puedes seguir usando el producto con normalidad.",
+                "resend": "Enviar de nuevo",
+                "sending": "Enviando...",
+                "resent": "Enviado",
+                "sent": "Enlace de verificación enviado. Conviene revisar también la carpeta de spam.",
+                "tooMany": "Demasiadas solicitudes. Espera un minuto e inténtalo de nuevo.",
+                "error": "No pudimos enviar el correo de verificación."
             }
         },
         "categories": {
@@ -561,7 +584,8 @@
             "feedback": "Comentarios",
             "deleteAccount": "Eliminar Cuenta",
             "developedBy": "Desarrollado por",
-            "iconsBy": "Iconos por"
+            "iconsBy": "Iconos por",
+            "deleteMyData": "Eliminar mi información"
         },
         "items": {
             "tables": "Mesas",

@@ -376,8 +376,16 @@
                     "invalidCredential": "Invalid email or password.",
                     "emailInUse": "Email is already in use.",
                     "weakPassword": "Password too weak. Min 6 chars required.",
-                    "invalidEmail": "Invalid email address."
+                    "invalidEmail": "Invalid email address.",
+                    "tooManyRequests": "Too many requests. Wait a minute and try again."
                 }
+            },
+            "forgotPassword": "Forgot your password?",
+            "reset": {
+                "subtitle": "Enter the email address of your account and we will send it a link to choose a new password.",
+                "submit": "Send link",
+                "back": "Back to login",
+                "sent": "If that address is registered with us, we have sent it a link to choose a new password. It is worth checking your spam folder too."
             }
         },
         "header": {
@@ -414,6 +422,16 @@
                 "errorProtected": "This account cannot be deleted. It is protected from deletion.",
                 "errorSessionEnded": "This session is no longer valid. Reload the page and try again.",
                 "errorUnconfirmed": "We got no answer back, so we do not know whether the deletion went through. Reload the page and check before trying again."
+            },
+            "emailVerification": {
+                "title": "Your email address is not verified yet",
+                "body": "We have sent a verification link to {{email}}. Opening it confirms the address is really yours. You can keep using the product as usual.",
+                "resend": "Send again",
+                "sending": "Sending...",
+                "resent": "Sent",
+                "sent": "Verification link sent. It is worth checking your spam folder too.",
+                "tooMany": "Too many requests. Wait a minute and try again.",
+                "error": "We could not send the verification email."
             }
         },
         "categories": {

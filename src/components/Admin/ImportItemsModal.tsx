@@ -951,6 +951,12 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                       <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setMigrationKeptCount(0); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
                     </div>
                   </div>
+                  {migrationKeptCount > 0 && (
+                    <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <span>{t('importModal.smart.migrationKept', { count: migrationKeptCount })}</span>
+                    </div>
+                  )}
                   {classificationSummary && classificationSummary.total > 0 && classificationSummary.classified < classificationSummary.total && (
                     <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />

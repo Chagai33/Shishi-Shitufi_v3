@@ -397,7 +397,7 @@
             },
             "emailVerification": {
                 "title": "Tu dirección de correo aún no está verificada",
-                "body": "Hemos enviado un enlace de verificación a {{email}}. Al abrirlo confirmas que la dirección es tuya. Puedes seguir usando el producto con normalidad.",
+                "body": "Hemos enviado un enlace de verificación a {{email}}. Si no ha llegado, conviene revisar la carpeta de spam. Al abrirlo confirmas que la dirección es tuya, y puedes seguir usando el producto con normalidad.",
                 "resend": "Enviar de nuevo",
                 "sending": "Enviando...",
                 "resent": "Enviado",

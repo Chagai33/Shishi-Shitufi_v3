@@ -425,7 +425,7 @@
             },
             "emailVerification": {
                 "title": "Your email address is not verified yet",
-                "body": "We have sent a verification link to {{email}}. Opening it confirms the address is really yours. You can keep using the product as usual.",
+                "body": "We have sent a verification link to {{email}}. If it has not arrived, it is worth checking your spam folder. Opening it confirms the address is really yours, and you can keep using the product as usual.",
                 "resend": "Send again",
                 "sending": "Sending...",
                 "resent": "Sent",

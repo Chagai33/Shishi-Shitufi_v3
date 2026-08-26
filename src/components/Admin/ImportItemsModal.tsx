@@ -60,6 +60,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const [smartImage, setSmartImage] = useState<File | null>(null);
   const [smartImagePreview, setSmartImagePreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  // How the last AI run actually went. The screen used to report success
+  // whatever came back, including when nothing at all had been classified.
+  const [classificationSummary, setClassificationSummary] = useState<{ classified: number; total: number } | null>(null);
 
   // Auto-run AI if requested
   const hasAutoRunRef = useRef(false);
@@ -86,6 +89,60 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     return cats.map(c => ({ value: c.id, label: c.name }));
   }, [event.details.categories, categoriesOverride, t]);
+
+  // An AI answer counts as a classification only when it names a category this
+  // event actually has. Anything else means the model did not classify the item,
+  // and the item then keeps whatever category it already had. The automatic run
+  // used to force "other" instead, which is what wiped the categories an
+  // organiser had already sorted whenever the answer did not come back clean.
+  const allowedCategoryIds = React.useMemo(
+    () => new Set(categoryOptions.map(opt => opt.value)),
+    [categoryOptions]
+  );
+
+  // Where an item goes when there is no earlier category to keep, which is the
+  // case for a brand new item in a plain Smart Import. The event's own catch-all
+  // if it has one, otherwise its first category. Never a hardcoded id: templates
+  // such as BBQ and Picnic have no "other" category, so the old hardcoded value
+  // was not even in their list and the dropdown came up empty.
+  const fallbackCategoryId = React.useMemo(() => {
+    const catchAll = categoryOptions.find(opt => opt.value === 'other' || opt.value === 'general');
+    return catchAll?.value || categoryOptions[0]?.value || 'other';
+  }, [categoryOptions]);
+
+  // The categories the items already carry in the event, keyed by name. On a
+  // Smart Migration these are exactly what the organiser stands to lose when the
+  // model has no answer for an item.
+  const existingCategoryByName = React.useMemo(() => {
+    const byName = new Map<string, string>();
+    const eventMenuItems = event.menuItems ? Object.values(event.menuItems) : [];
+    eventMenuItems.forEach(item => {
+      byName.set(item.name.trim().toLowerCase(), item.category);
+    });
+    return byName;
+  }, [event.menuItems]);
+
+  // One place decides what the screen says about a classification run, so the
+  // two paths cannot describe the same outcome differently. Nothing is called a
+  // success on the strength of having finished.
+  const announceClassification = (classified: number, total: number, toastId?: string) => {
+    setClassificationSummary({ classified, total });
+    const options = toastId ? { id: toastId } : {};
+
+    if (total === 0) {
+      toast.error(t('importModal.preview.noItems'), options);
+      return;
+    }
+    if (classified === 0) {
+      toast.error(t('importModal.smart.resultNone'), options);
+      return;
+    }
+    if (classified < total) {
+      toast(t('importModal.smart.resultPartial', { classified, total }), { ...options, icon: '⚠️' });
+      return;
+    }
+    toast.success(t('importModal.smart.resultAll'), options);
+  };
 
   // Handle active listening transcript
   useEffect(() => {
@@ -123,6 +180,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     }
 
     setIsAnalyzing(true);
+    setClassificationSummary(null);
 
     try {
       let imageBase64 = null;
@@ -147,12 +205,20 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
         throw new Error('התקבל מבנה נתונים לא תקין מהשרת');
       }
 
+      let classifiedCount = 0;
       const items: ImportItem[] = data.items.map(item => {
         // Validate returned category
-        const isValidCategory = allowedCats.some(c => c.id === item.category);
+        const isValidCategory = !!item.category && allowedCategoryIds.has(item.category);
+        if (isValidCategory) classifiedCount++;
+        // Not classified: keep the category the item already has in the event, and
+        // use the fallback only for an item that has no earlier category at all.
+        const previousCategory = existingCategoryByName.get(item.name.trim().toLowerCase());
+        const keptCategory = previousCategory && allowedCategoryIds.has(previousCategory)
+          ? previousCategory
+          : fallbackCategoryId;
         return {
           name: item.name,
-          category: (isValidCategory ? item.category : 'other') as MenuCategory,
+          category: (isValidCategory ? item.category : keptCategory) as MenuCategory,
           quantity: item.quantity,
           isRequired: false,
           selected: true
@@ -161,7 +227,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
       setImportItems(items);
       setShowPreview(true);
-      toast.success('הרשימה פוענחה בהצלחה!');
+      announceClassification(classifiedCount, items.length);
 
     } catch (error: any) {
       console.error("Smart Import Error:", error);
@@ -304,6 +370,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       else if (file.name.endsWith('.csv')) { items = await parseCSVFile(file); }
       else { toast.error(t('importModal.file.unsupportedType')); return; }
       setImportItems(items);
+      setClassificationSummary(null);
       setShowPreview(true);
       if (items.length === 0) { toast.error(t('importModal.preview.noItems')); } else { toast.success(t('importModal.preset.loadedSuccess', { count: items.length })); }
     } catch (error) {
@@ -318,6 +385,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const handlePresetListSelect = (presetItems: { name: string; category: MenuCategory; quantity: number; notes?: string; isRequired: boolean; }[]) => {
     const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
     setImportItems(items);
+    setClassificationSummary(null);
     setShowPreview(true);
     setShowPresetManager(false);
     toast.success(t('importModal.preset.loadedSuccess', { count: items.length }));
@@ -460,6 +528,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     if (importItems.length === 0) return;
 
     setIsAnalyzing(true);
+    setClassificationSummary(null);
     const toastId = toast.loading(t('importModal.smart.analyzing'));
 
     try {
@@ -485,9 +554,13 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       // We create a map of Name -> Category for O(1) lookup
       const classificationMap = new Map(data.items.map(i => [i.name.trim().toLowerCase(), i.category]));
 
+      let classifiedCount = 0;
       const updatedItems = importItems.map(item => {
         const aiCategory = classificationMap.get(item.name.trim().toLowerCase());
-        const isValidCategory = aiCategory && allowedCats.some(c => c.id === aiCategory);
+        // The same acceptance test the automatic run applies, so the two paths can
+        // no longer disagree about what an unrecognised answer means.
+        const isValidCategory = !!aiCategory && allowedCategoryIds.has(aiCategory);
+        if (isValidCategory) classifiedCount++;
 
         return {
           ...item,
@@ -496,7 +569,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       });
 
       setImportItems(updatedItems);
-      toast.success(t('importModal.smart.success'), { id: toastId });
+      announceClassification(classifiedCount, updatedItems.length, toastId);
 
     } catch (error) {
       console.error("Smart Classify Error:", error);
@@ -797,9 +870,19 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                       </button>
 
                       <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
-                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
+                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
                     </div>
                   </div>
+                  {classificationSummary && classificationSummary.total > 0 && classificationSummary.classified < classificationSummary.total && (
+                    <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <span>
+                        {classificationSummary.classified === 0
+                          ? t('importModal.smart.resultNone')
+                          : t('importModal.smart.resultPartial', { classified: classificationSummary.classified, total: classificationSummary.total })}
+                      </span>
+                    </div>
+                  )}
                   {importItems.length === 0 ? (<div className="text-center py-8"><AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" /><p className="text-gray-500">{t('importModal.preview.noItems')}</p></div>) : (
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       {/* Desktop View: Table */}

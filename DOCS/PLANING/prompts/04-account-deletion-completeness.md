@@ -161,7 +161,7 @@
 פריסה עם הארכת פסק־הזמן:
 
 ```powershell
-$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt
 ```
 
 עם תיעוד פלט של כל צעד:

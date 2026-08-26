@@ -111,7 +111,7 @@ firebase emulators:start --only functions
 ### שלב 4 — הרצה יבשה לפני הפריסה האמיתית
 
 ```powershell
-$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --dry-run
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt --dry-run
 ```
 
 **נוסף 23/08/2026.** מאמת את הפריסה בלי לבצע אותה. זו ההזדמנות לתפוס את סיכון
@@ -120,7 +120,7 @@ $env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --dry-run
 ### שלב 5 — פריסה
 
 ```powershell
-$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt
 ```
 
 ## בדיקות אחרי פריסה — כולן עברו, 23–24/08/2026

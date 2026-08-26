@@ -216,7 +216,7 @@
 מחכות לפריסה ידנית:
 
 ```powershell
-$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt
 ```
 
 **תכנן את שניהם לאותו חלון זמן**, ואל תשאיר חצי פרוס ליום.

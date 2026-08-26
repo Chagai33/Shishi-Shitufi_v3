@@ -177,7 +177,7 @@
 - **אין עריכת קוד מוצר ב-`src/`** בקמפיין הזה בכלל.
 - פקודות ההרצה של הפרויקט: `npm run dev`, `npm run build`, `npm run lint`.
 - פריסת פונקציות (לא נדרשת כאן, לידיעה בלבד) מחייבת הארכת פסק־זמן:
-  `$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions`
+  `$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt`
 
 ## 12. זמני ריצה
 

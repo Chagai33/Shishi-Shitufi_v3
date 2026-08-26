@@ -106,7 +106,7 @@
 ב-`functions/smartImport.js`, נדרשת פריסה ידנית:
 
 ```powershell
-$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions
+$env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project shishi-shitufimt
 ```
 
 ## 9. אימות עצמי וסגירת מסמכים

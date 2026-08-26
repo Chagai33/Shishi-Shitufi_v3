@@ -151,7 +151,7 @@ Firebase שגם פג תוקפה. הוא הוסר לפני שהזיק, אבל ז�
 ### שלב 5 — פריסה שאינה משנה התנהגות
 
 ```bash
-firebase deploy --only database
+firebase deploy --only database --project shishi-shitufimt
 ```
 
 בנקודה הזו נפרסים בדיוק אותם חוקים שכבר רצים. **ההתנהגות לא משתנה בכלום** — וזו

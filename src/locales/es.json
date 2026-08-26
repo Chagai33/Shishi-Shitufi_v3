@@ -19,7 +19,8 @@
             "edit": "Editar",
             "close": "Cerrar",
             "confirm": "Confirmar",
-            "back": "Atrás"
+            "back": "Atrás",
+            "confirmAction": "Confirmar acción"
         },
         "errors": {
             "auth": {
@@ -388,7 +389,11 @@
                 "errorGuest": "No pudimos eliminar tu información.",
                 "errorProtected": "Esta cuenta no se puede eliminar. Está protegida contra el borrado.",
                 "errorSessionEnded": "Esta sesión ya no es válida. Recarga la página e inténtalo de nuevo.",
-                "errorUnconfirmed": "No recibimos respuesta, así que no sabemos si la eliminación se completó. Recarga la página y compruébalo antes de volver a intentarlo."
+                "errorUnconfirmed": "No recibimos respuesta, así que no sabemos si la eliminación se completó. Recarga la página y compruébalo antes de volver a intentarlo.",
+                "processingGuest": "Eliminando tu información...",
+                "successGuest": "Tu información ha sido eliminada. ¡Gracias por participar!",
+                "confirmButtonGuest": "Sí, eliminar mi información",
+                "confirmMessageGuest": "¿Eliminar toda tu información?\nTu nombre, los teléfonos que hayas introducido y todo lo que te comprometiste a traer se eliminarán de todos los eventos a los que te uniste desde este dispositivo.\n\nEsta acción es irreversible, y esta identidad no se puede recuperar, porque no tiene contraseña.\nSi te uniste a un evento desde otro dispositivo, la información allí se mantendrá."
             },
             "emailVerification": {
                 "title": "Tu dirección de correo aún no está verificada",
@@ -579,7 +584,8 @@
             "feedback": "Comentarios",
             "deleteAccount": "Eliminar Cuenta",
             "developedBy": "Desarrollado por",
-            "iconsBy": "Iconos por"
+            "iconsBy": "Iconos por",
+            "deleteMyData": "Eliminar mi información"
         },
         "items": {
             "tables": "Mesas",

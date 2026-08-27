@@ -30,7 +30,15 @@ export function Footer({ isAnonymousVisitor = false }: FooterProps) {
   return (
     <footer className="bg-neutral-100 border-t border-neutral-200 mt-auto py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-neutral-600">
-        <div className="flex justify-center items-center space-x-4 rtl:space-x-reverse">
+        {/* The row wraps to a second line on a phone. It used to be forbidden
+            to wrap, so once the links stopped fitting each one shrank instead
+            and its words stacked up: at 375px the row grew from one line to
+            three of broken words. It was already happening in English before
+            the fifth link was added here.
+            gap replaces space-x because space-x puts its margin on every child
+            but the first, which lands in the wrong place once a line wraps,
+            and because gap needs no right-to-left reversal. */}
+        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-1">
           <Link to="/terms" className="hover:text-neutral-900 transition-colors">
             {t('footer.terms')}
           </Link>
@@ -47,6 +55,14 @@ export function Footer({ isAnonymousVisitor = false }: FooterProps) {
           >
             {t('footer.feedback')}
           </button>
+          <span>|</span>
+          {/* The only entrance to the page that says what changed in the
+              product. The product owner decided it lives here and nowhere
+              else: not in the menu, not in the header.
+              See DOCS/PLANING/61-whats-new-page.md. */}
+          <Link to="/updates" className="hover:text-neutral-900 transition-colors">
+            {t('footer.whatsNew')}
+          </Link>
           {/* Adding condition for displaying the button */}
           {canDeleteOwnData && (
             <>

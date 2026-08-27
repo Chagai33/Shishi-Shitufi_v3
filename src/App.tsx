@@ -15,6 +15,7 @@ import { Footer } from './components/Layout/Footer';
 import { Header } from './components/Layout/Header'; // <-- Import Header
 import TermsPage from './pages/TermsPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import WhatsNewPage from './pages/WhatsNewPage';
 import { ConfirmationModal } from './components/Admin/ConfirmationModal';
 import { useState, useEffect, useId } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -173,6 +174,12 @@ function App() {
           {/* --- Adding routing to new pages --- */}
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
+
+          {/* What changed in the product. Open to everybody, signed in or not,
+              and reached from the footer only. The address describes the thing
+              and not the wording on screen, so it survives a rename.
+              See DOCS/PLANING/61-whats-new-page.md. */}
+          <Route path="/updates" element={<WhatsNewPage />} />
 
 
 

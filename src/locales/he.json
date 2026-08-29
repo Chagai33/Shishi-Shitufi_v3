@@ -569,7 +569,9 @@
                 "rideOffersDisabled": "המארגן לא איפשר הצעת טרמפים באירוע הזה",
                 "rideRequestsDisabled": "המארגן לא איפשר בקשת טרמפים באירוע הזה",
                 "limitReached": "הגעת ל-{{limit}} הפריטים שניתן להוסיף באירוע הזה",
-                "addItem": "הוסף פריט"
+                "addItem": "הוסף פריט",
+                "rideOfferAlreadyPosted": "כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת.",
+                "rideRequestAlreadyPosted": "כבר פרסמת בקשת טרמפ. ניתן לערוך את הבקשה הקיימת."
             },
             "promo": {
                 "register": "הירשם",

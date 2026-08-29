@@ -8,7 +8,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added i
 import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
 
-import { RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS, isRideCategory } from '../utils/eventUtils';
+import { RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS, RIDES_PER_PERSON, isRideCategory } from '../utils/eventUtils';
 import { toast } from 'react-hot-toast';
 import i18n from '../i18n';
 
@@ -421,6 +421,9 @@ export class FirebaseService {
       updates[`events/${eventId}/menuItems`] = null;
       updates[`events/${eventId}/assignments`] = null;
       updates[`events/${eventId}/userItemCounts`] = null;
+      updates[`events/${eventId}/rideOfferCounts`] = null;
+      updates[`events/${eventId}/rideRequestCounts`] = null;
+      updates[`events/${eventId}/itemRemovals`] = null;
 
       await update(ref(database), updates);
     } catch (error) {
@@ -593,10 +596,34 @@ export class FirebaseService {
           });
         }
 
+        // The ride counters, rebuilt from what the event actually holds when
+        // the migration is done. A counter left standing for rides the
+        // migration dropped would tell their owner they had already offered a
+        // lift that is no longer there, with no way to withdraw it. Rebuilding
+        // them here is the same repair the item counters above get, and for the
+        // same reason.
+        // See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
+        const newRideOfferCounts: { [key: string]: number } = {};
+        const newRideRequestCounts: { [key: string]: number } = {};
+        Object.values(newMenuItemsMap).forEach((item: any) => {
+          if (!item?.creatorId) return;
+          if (RIDE_OFFER_CATEGORY_IDS.includes(item.category)) {
+            newRideOfferCounts[item.creatorId] = (newRideOfferCounts[item.creatorId] || 0) + 1;
+          }
+          if (RIDE_REQUEST_CATEGORY_IDS.includes(item.category)) {
+            newRideRequestCounts[item.creatorId] = (newRideRequestCounts[item.creatorId] || 0) + 1;
+          }
+        });
+
         // 5. Apply New Items to State
         currentEventData.menuItems = newMenuItemsMap;
         currentEventData.assignments = keptAssignments;
         currentEventData.userItemCounts = newUserItemCounts;
+        currentEventData.rideOfferCounts = newRideOfferCounts;
+        currentEventData.rideRequestCounts = newRideRequestCounts;
+        // Nothing reads this and it only ever backs one write, so a migration
+        // that has just rewritten every counter has no reason to keep it.
+        delete currentEventData.itemRemovals;
 
         return currentEventData;
       });
@@ -717,6 +744,39 @@ export class FirebaseService {
         throw new Error(i18n.t('eventPage.category.limitReached', { limit: details.userItemLimit ?? 3 }));
       }
 
+      // Check 3: the ride, if this is one. The event screen has always said one
+      // lift offered and one asked for per person, and the server never held
+      // anybody to it. That is what made "call it a ride" a way past the item
+      // quota altogether: an ordinary item with a ride category on it was
+      // exempt, and ten in a row went into an event whose quota is three.
+      //
+      // The ceiling is two and not one because a round trip is two items: the
+      // form below writes the outward leg and the return leg as two separate
+      // rides, one after the other. A ceiling of one would have created the
+      // first and refused the second.
+      //
+      // The organizer is outside this, exactly as they are outside the item
+      // quota: bulk management and the round trip conversion both write rides
+      // in somebody else's name, and neither should spend that person's place.
+      // See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
+      const isRideOffer = RIDE_OFFER_CATEGORY_IDS.includes(itemData.category);
+      const isRideRequest = RIDE_REQUEST_CATEGORY_IDS.includes(itemData.category);
+      const claimsRidePlace = !isOrganizer && !!creatorId && (isRideOffer || isRideRequest);
+      const ridePlacePath = isRideOffer ? 'rideOfferCounts' : 'rideRequestCounts';
+      let ridePlaceCount = 0;
+
+      if (claimsRidePlace) {
+        const takenSnapshot = await get(ref(database, `events/${eventId}/${ridePlacePath}/${creatorId}`));
+        ridePlaceCount = takenSnapshot.val() || 0;
+        if (ridePlaceCount >= RIDES_PER_PERSON) {
+          throw new Error(
+            i18n.t(isRideOffer
+              ? 'eventPage.category.rideOfferAlreadyPosted'
+              : 'eventPage.category.rideRequestAlreadyPosted')
+          );
+        }
+      }
+
       // --- Prepare Data ---
       const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
       const newItemId = newItemRef.key!;
@@ -743,6 +803,10 @@ export class FirebaseService {
       // could use up a quota of three and grey out the add button for food.
       if (creatorId && !isRide) {
         updates[`events/${eventId}/userItemCounts/${creatorId}`] = userItemCount + 1;
+      }
+      // And the ride takes one of its two places.
+      if (claimsRidePlace) {
+        updates[`events/${eventId}/${ridePlacePath}/${creatorId}`] = ridePlaceCount + 1;
       }
 
       await update(ref(database), updates);
@@ -892,8 +956,44 @@ export class FirebaseService {
         }
       });
 
-      const itemRef = ref(database, `events/${eventId}/menuItems/${itemId}`);
-      await update(itemRef, sanitizedUpdates);
+      // Moving an item across the line between a ride and an ordinary item is
+      // something only the organizer may do, and bulk item management does it
+      // in batches. When it happens, the ride place that item was holding has
+      // to go back to its owner, or they are told they have already offered a
+      // lift that is no longer a lift and have no way to withdraw it.
+      // See DOCS/PLANING/66-a-ride-can-be-edited-into-an-ordinary-item.md.
+      const releases: { [key: string]: number } = {};
+      if (updates.category !== undefined) {
+        const itemSnapshot = await get(ref(database, `events/${eventId}/menuItems/${itemId}`));
+        const existing = itemSnapshot.val();
+        const creatorId = existing?.creatorId;
+        if (creatorId) {
+          const wasOffer = RIDE_OFFER_CATEGORY_IDS.includes(existing?.category);
+          const wasRequest = RIDE_REQUEST_CATEGORY_IDS.includes(existing?.category);
+          const isOffer = RIDE_OFFER_CATEGORY_IDS.includes(updates.category);
+          const isRequest = RIDE_REQUEST_CATEGORY_IDS.includes(updates.category);
+          for (const [path, gaveUpItsPlace] of [
+            ['rideOfferCounts', wasOffer && !isOffer],
+            ['rideRequestCounts', wasRequest && !isRequest],
+          ] as const) {
+            if (!gaveUpItsPlace) continue;
+            const heldSnapshot = await get(ref(database, `events/${eventId}/${path}/${creatorId}`));
+            const held = heldSnapshot.val() || 0;
+            if (held > 0) releases[`events/${eventId}/${path}/${creatorId}`] = held - 1;
+          }
+        }
+      }
+
+      if (Object.keys(releases).length > 0) {
+        const scoped: { [key: string]: any } = { ...releases };
+        Object.entries(sanitizedUpdates).forEach(([key, value]) => {
+          scoped[`events/${eventId}/menuItems/${itemId}/${key}`] = value;
+        });
+        await update(ref(database), scoped);
+      } else {
+        const itemRef = ref(database, `events/${eventId}/menuItems/${itemId}`);
+        await update(itemRef, sanitizedUpdates);
+      }
     } catch (error) {
       console.error('❌ Error in updateMenuItem:', error);
       console.groupEnd();
@@ -942,12 +1042,37 @@ export class FirebaseService {
       // Both halves of the counter move together or neither does. Lowering it
       // for a ride that never raised it would hand the creator a free slot
       // every time they deleted one.
+      //
+      // The step down now has to say what it is paying for. The rules cannot
+      // see which item a write deleted, so the write names it, and the step is
+      // allowed only when that item was the counter owner's, was not a ride,
+      // and is gone once the write lands. Without this the counter could simply
+      // be walked back to zero and the quota started over.
+      // See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
       if (creatorId && !isRideCategory(itemToDelete.category)) {
         const countSnapshot = await get(ref(database, `events/${eventId}/userItemCounts/${creatorId}`));
         const currentCount = countSnapshot.val() || 0;
         if (currentCount > 0) {
+          updates[`events/${eventId}/itemRemovals/${creatorId}`] = itemId;
           updates[`events/${eventId}/userItemCounts/${creatorId}`] = currentCount - 1;
           console.log(`📉 Decremented item count for user ${creatorId} to ${currentCount - 1}`);
+        }
+      }
+
+      // Step 2b: a ride gives its place back, so the person can offer another.
+      // It moves under the same condition the item counter does, and the write
+      // above already names the item that pays for it.
+      const ridePathForDeleted = RIDE_OFFER_CATEGORY_IDS.includes(itemToDelete.category)
+        ? 'rideOfferCounts'
+        : RIDE_REQUEST_CATEGORY_IDS.includes(itemToDelete.category)
+          ? 'rideRequestCounts'
+          : null;
+      if (creatorId && ridePathForDeleted) {
+        const heldSnapshot = await get(ref(database, `events/${eventId}/${ridePathForDeleted}/${creatorId}`));
+        const held = heldSnapshot.val() || 0;
+        if (held > 0) {
+          updates[`events/${eventId}/itemRemovals/${creatorId}`] = itemId;
+          updates[`events/${eventId}/${ridePathForDeleted}/${creatorId}`] = held - 1;
         }
       }
 

@@ -466,11 +466,16 @@ describe('adding items as a participant', () => {
     assert.equal(snap.val(), 'Quiche');
   });
 
+  // A ride now moves a counter of its own, which is what holds the one lift
+  // each way promise the event screen has always made and the server never did.
+  // See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
   test('a first ride offer is not refused either', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+    await seed(`events/${EVENT_A}/rideOfferCounts/${V}`, null);
 
     await update(ref(visitor.db), {
       [`events/${EVENT_A}/menuItems/-first-offer-by-v`]: firstItem('Ride there', 'ride_offers'),
+      [`events/${EVENT_A}/rideOfferCounts/${V}`]: 1,
       [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
     });
 
@@ -480,9 +485,11 @@ describe('adding items as a participant', () => {
 
   test('nor is a first ride request', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+    await seed(`events/${EVENT_A}/rideRequestCounts/${V}`, null);
 
     await update(ref(visitor.db), {
       [`events/${EVENT_A}/menuItems/-first-request-by-v`]: firstItem('Need a lift', 'ride_requests'),
+      [`events/${EVENT_A}/rideRequestCounts/${V}`]: 1,
       [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
     });
 
@@ -541,9 +548,13 @@ describe('adding items as a participant', () => {
   // See DOCS/PLANING/31-rides-consume-the-item-quota.md.
   test('a ride does not count against the quota, exactly as the screen behaves', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 3);
+    await seed(`events/${EVENT_A}/rideOfferCounts/${B}`, null);
 
-    await set(ref(bob.db, `events/${EVENT_A}/menuItems/-ride-by-b`), {
-      name: 'Ride to the event', creatorId: B, category: 'ride_offers', quantity: 3,
+    await update(ref(bob.db), {
+      [`events/${EVENT_A}/menuItems/-ride-by-b`]: {
+        name: 'Ride to the event', creatorId: B, category: 'ride_offers', quantity: 3,
+      },
+      [`events/${EVENT_A}/rideOfferCounts/${B}`]: 1,
     });
 
     const name = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-ride-by-b/name`));
@@ -558,9 +569,13 @@ describe('adding items as a participant', () => {
   // on the server, so the button was live and the write refused.
   test('the fourth, older ride category is exempt too', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 3);
+    await seed(`events/${EVENT_A}/rideOfferCounts/${B}`, null);
 
-    await set(ref(bob.db, `events/${EVENT_A}/menuItems/-legacy-ride-by-b`), {
-      name: 'Ride, old category', creatorId: B, category: 'rides', quantity: 3,
+    await update(ref(bob.db), {
+      [`events/${EVENT_A}/menuItems/-legacy-ride-by-b`]: {
+        name: 'Ride, old category', creatorId: B, category: 'rides', quantity: 3,
+      },
+      [`events/${EVENT_A}/rideOfferCounts/${B}`]: 1,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-legacy-ride-by-b/name`));
@@ -672,14 +687,20 @@ describe('rides follow their own switch, not the item switch', () => {
   const ride = (name, category) => ({ name, creatorId: B, category, quantity: 3 });
 
   test('B can offer a ride even though participant items are switched off', async () => {
-    await set(ref(bob.db, `events/${EVENT_OFFERS_ONLY}/menuItems/-offer-by-b`), ride('Ride there', 'ride_offers'));
+    await update(ref(bob.db), {
+      [`events/${EVENT_OFFERS_ONLY}/menuItems/-offer-by-b`]: ride('Ride there', 'ride_offers'),
+      [`events/${EVENT_OFFERS_ONLY}/rideOfferCounts/${B}`]: 1,
+    });
 
     const snap = await get(ref(bob.db, `events/${EVENT_OFFERS_ONLY}/menuItems/-offer-by-b/name`));
     assert.equal(snap.val(), 'Ride there');
   });
 
   test('B can ask for a ride in the event where that switch is the one left on', async () => {
-    await set(ref(bob.db, `events/${EVENT_REQUESTS_ONLY}/menuItems/-request-by-b`), ride('Need a lift', 'ride_requests'));
+    await update(ref(bob.db), {
+      [`events/${EVENT_REQUESTS_ONLY}/menuItems/-request-by-b`]: ride('Need a lift', 'ride_requests'),
+      [`events/${EVENT_REQUESTS_ONLY}/rideRequestCounts/${B}`]: 1,
+    });
 
     const snap = await get(ref(bob.db, `events/${EVENT_REQUESTS_ONLY}/menuItems/-request-by-b/name`));
     assert.equal(snap.val(), 'Need a lift');
@@ -709,13 +730,359 @@ describe('rides follow their own switch, not the item switch', () => {
   });
 });
 
+// The quota held against everybody who used the screens and against nobody who
+// did not. Two ways round it were measured against these very rules: the
+// counter could be walked back down with nothing deleted, and an ordinary item
+// that merely called itself a ride was exempt outright. Ten of each went into
+// an event whose quota is three.
+//
+// The counter never could be tied to a deletion, because a rule cannot know
+// which item a write removed. It can be told: the write names the item it is
+// removing, and the rule then checks that the named item was this person's, was
+// not a ride, and is gone once the write lands. Naming an item that is not being
+// deleted buys nothing, and the same name cannot be used twice because the
+// second time the item is no longer there to vouch for it.
+// See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
+describe('walking around the item quota', () => {
+  const EVENT_Q = '-EventQuotaWalk00000';
+
+  // A participant who has used their three places honestly: three items that
+  // are really theirs, and a counter that agrees. Plus one ride, which is
+  // exempt from the quota and therefore never raised the counter.
+  const atTheQuota = () =>
+    seed(`events/${EVENT_Q}`, {
+      organizerId: A,
+      organizerName: 'A',
+      createdAt: 9,
+      details: {
+        title: 'Quota', allowUserItems: true, userItemLimit: 3,
+        allowRideOffers: true, allowRideRequests: true,
+      },
+      participants: { [B]: { name: 'B', joinedAt: 1 } },
+      menuItems: {
+        '-q-1': { name: 'One', creatorId: B, category: 'starter', quantity: 1 },
+        '-q-2': { name: 'Two', creatorId: B, category: 'main', quantity: 1 },
+        '-q-3': { name: 'Three', creatorId: B, category: 'dessert', quantity: 1 },
+        '-q-ride': { name: 'A lift', creatorId: B, category: 'ride_offers', quantity: 3 },
+        '-q-not-mine': { name: 'Not mine', creatorId: C, category: 'starter', quantity: 1 },
+      },
+      assignments: {},
+      userItemCounts: { [B]: 3 },
+      rideOfferCounts: { [B]: 1 },
+    });
+
+  test('the counter cannot be stepped down with nothing deleted', async () => {
+    await atTheQuota();
+    assert.ok(await denied(set(ref(bob.db, `events/${EVENT_Q}/userItemCounts/${B}`), 2)));
+  });
+
+  test('nor by naming an item this write is not deleting', async () => {
+    await atTheQuota();
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-1',
+          [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+        }),
+      ),
+    );
+  });
+
+  test("nor by deleting somebody else's item and naming that", async () => {
+    await atTheQuota();
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_Q}/menuItems/-q-not-mine`]: null,
+          [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-not-mine',
+          [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+        }),
+      ),
+    );
+  });
+
+  // A ride never raised the counter, so letting it lower one would hand out a
+  // free place on every ride deleted. The product's own delete already knows
+  // this; now the server does too.
+  test('nor by deleting a ride, which never raised the counter', async () => {
+    await atTheQuota();
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_Q}/menuItems/-q-ride`]: null,
+          [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-ride',
+          [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+        }),
+      ),
+    );
+  });
+
+  // And the behaviour that must survive all of it: somebody who deletes one of
+  // their own items gets the place back and can use it.
+  test('but deleting your own item and stepping down together works', async () => {
+    await atTheQuota();
+    await update(ref(bob.db), {
+      [`events/${EVENT_Q}/menuItems/-q-1`]: null,
+      [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-1',
+      [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+    });
+
+    await update(ref(bob.db), {
+      [`events/${EVENT_Q}/menuItems/-q-replacement`]: {
+        name: 'Instead', creatorId: B, category: 'starter', quantity: 1,
+      },
+      [`events/${EVENT_Q}/userItemCounts/${B}`]: 3,
+    });
+
+    const snap = await get(ref(bob.db, `events/${EVENT_Q}/menuItems/-q-replacement/name`));
+    assert.equal(snap.val(), 'Instead');
+  });
+
+  test('and the same deletion cannot be claimed a second time', async () => {
+    await atTheQuota();
+    await update(ref(bob.db), {
+      [`events/${EVENT_Q}/menuItems/-q-1`]: null,
+      [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-1',
+      [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+    });
+
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-1',
+          [`events/${EVENT_Q}/userItemCounts/${B}`]: 1,
+        }),
+      ),
+    );
+  });
+
+  // A floor on its own does not close any of this, which was measured before it
+  // was written. It is still worth having: without it the counter goes negative
+  // and the quota opens without any round trip at all.
+  test('and the counter cannot go below zero', async () => {
+    await atTheQuota();
+    await seed(`events/${EVENT_Q}/userItemCounts/${B}`, 0);
+    assert.ok(await denied(set(ref(bob.db, `events/${EVENT_Q}/userItemCounts/${B}`), -1)));
+  });
+});
+
+// The second way round, and the cheaper one: nothing checked that an item
+// claiming the ride exemption was a ride. Ten ordinary items in a row were
+// accepted at a full quota because their category said "ride offer".
+//
+// Requiring the category to be one the organizer defined was the first
+// proposal and it cannot be built: the event's category list is stored as an
+// array, which the rule language cannot search, and the ride categories are
+// added on screen and never stored at all, so every genuine ride in a default
+// event would have been refused. What bounds it instead is the promise the
+// event screen already makes, that one person offers one lift and asks for one.
+//
+// The ceiling is two each way and not one, because a round trip is two items:
+// the ride form writes the outward leg and the return leg as two separate
+// rides, one write after the other. A ceiling of one would have created the
+// first leg and refused the second, leaving half a round trip behind.
+describe('an item that only says it is a ride', () => {
+  const EVENT_R = '-EventRideQuota00000';
+
+  const withRidesOn = () =>
+    seed(`events/${EVENT_R}`, {
+      organizerId: A,
+      organizerName: 'A',
+      createdAt: 10,
+      details: {
+        title: 'Rides', allowUserItems: true, userItemLimit: 3,
+        allowRideOffers: true, allowRideRequests: true,
+      },
+      participants: { [B]: { name: 'B', joinedAt: 1 } },
+      menuItems: {},
+      assignments: {},
+      userItemCounts: { [B]: 3 },
+    });
+
+  const fake = (id, category) => ({
+    name: 'An ordinary item', creatorId: B, category, quantity: 1, id,
+  });
+
+  // The flow the ride form actually runs when somebody offers a lift both ways.
+  const offerLeg = (id, count) =>
+    update(ref(bob.db), {
+      [`events/${EVENT_R}/menuItems/${id}`]: fake(id, 'ride_offers'),
+      [`events/${EVENT_R}/rideOfferCounts/${B}`]: count,
+    });
+
+  test('a round trip still goes in, both legs', async () => {
+    await withRidesOn();
+
+    await offerLeg('-leg-there', 1);
+    await offerLeg('-leg-back', 2);
+
+    const snap = await get(ref(bob.db, `events/${EVENT_R}/menuItems`));
+    assert.deepEqual(Object.keys(snap.val() || {}).sort(), ['-leg-back', '-leg-there']);
+  });
+
+  test('but a third ride offer does not', async () => {
+    await withRidesOn();
+
+    await offerLeg('-leg-there', 1);
+    await offerLeg('-leg-back', 2);
+
+    assert.ok(await denied(offerLeg('-leg-too-many', 3)));
+  });
+
+  test('and the same holds for ride requests', async () => {
+    await withRidesOn();
+
+    const askLeg = (id, count) =>
+      update(ref(bob.db), {
+        [`events/${EVENT_R}/menuItems/${id}`]: fake(id, 'ride_requests'),
+        [`events/${EVENT_R}/rideRequestCounts/${B}`]: count,
+      });
+
+    await askLeg('-ask-there', 1);
+    await askLeg('-ask-back', 2);
+
+    assert.ok(await denied(askLeg('-ask-too-many', 3)));
+  });
+
+  // A ride written without moving its counter is refused outright, the same way
+  // an ordinary item written without its counter is. This is the walk-around
+  // itself: ten of these were accepted before.
+  test('a ride written without its counter is refused', async () => {
+    await withRidesOn();
+    assert.ok(
+      await denied(
+        set(ref(bob.db, `events/${EVENT_R}/menuItems/-unclaimed`), fake('-unclaimed', 'ride_offers')),
+      ),
+    );
+  });
+
+  test('and a counter that opens above one is refused', async () => {
+    await withRidesOn();
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_R}/menuItems/-opening-high`]: fake('-opening-high', 'ride_offers'),
+          [`events/${EVENT_R}/rideOfferCounts/${B}`]: 2,
+        }),
+      ),
+    );
+  });
+
+  // Coming down costs a deletion, exactly as it does for the item counter.
+  test('the ride counter cannot be walked back down on its own', async () => {
+    await withRidesOn();
+    await offerLeg('-standing-ride', 1);
+
+    assert.ok(await denied(set(ref(bob.db, `events/${EVENT_R}/rideOfferCounts/${B}`), 0)));
+  });
+
+  test('deleting the ride makes room for another', async () => {
+    await withRidesOn();
+    await offerLeg('-first-ride', 1);
+
+    await update(ref(bob.db), {
+      [`events/${EVENT_R}/menuItems/-first-ride`]: null,
+      [`events/${EVENT_R}/itemRemovals/${B}`]: '-first-ride',
+      [`events/${EVENT_R}/rideOfferCounts/${B}`]: 0,
+    });
+
+    await offerLeg('-second-ride', 1);
+
+    const snap = await get(ref(bob.db, `events/${EVENT_R}/menuItems/-second-ride/name`));
+    assert.equal(snap.val(), 'An ordinary item');
+  });
+
+  // And a deletion cannot be spent on the wrong counter: deleting a ride offer
+  // must not free a place on the request side, any more than it frees one on
+  // the item quota.
+  test('deleting a ride offer does not free a ride request place', async () => {
+    await withRidesOn();
+    await offerLeg('-offer-to-delete', 1);
+    await seed(`events/${EVENT_R}/rideRequestCounts/${B}`, 1);
+
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_R}/menuItems/-offer-to-delete`]: null,
+          [`events/${EVENT_R}/itemRemovals/${B}`]: '-offer-to-delete',
+          [`events/${EVENT_R}/rideRequestCounts/${B}`]: 0,
+        }),
+      ),
+    );
+  });
+
+  // A third way round the quota, found while building the other two and not
+  // recorded anywhere before. A ride never touches the item counter, so an item
+  // created as a ride and then edited into an ordinary category is an item that
+  // never paid for its place. Nothing stopped that: the edit rule only cared
+  // that the creator field did not move.
+  //
+  // Crossing the line in either direction is refused for everybody except the
+  // organizer, who re-categorises items in bulk management as a matter of
+  // course. Changing an ordinary category for another ordinary one is
+  // untouched, which is the correction people actually make.
+  // See DOCS/PLANING/66-a-ride-can-be-edited-into-an-ordinary-item.md.
+  test('a ride cannot be edited into an ordinary item', async () => {
+    await withRidesOn();
+    await offerLeg('-ride-to-convert', 1);
+
+    assert.ok(
+      await denied(set(ref(bob.db, `events/${EVENT_R}/menuItems/-ride-to-convert/category`), 'main')),
+    );
+  });
+
+  test('nor can an ordinary item be edited into a ride', async () => {
+    await withRidesOn();
+    await seed(`events/${EVENT_R}/userItemCounts/${B}`, 1);
+    await seed(`events/${EVENT_R}/menuItems/-plain-to-convert`, {
+      name: 'Bread', creatorId: B, category: 'starter', quantity: 1,
+    });
+
+    assert.ok(
+      await denied(
+        set(ref(bob.db, `events/${EVENT_R}/menuItems/-plain-to-convert/category`), 'ride_offers'),
+      ),
+    );
+  });
+
+  test('but one ordinary category can still be corrected to another', async () => {
+    await withRidesOn();
+    await seed(`events/${EVENT_R}/userItemCounts/${B}`, 1);
+    await seed(`events/${EVENT_R}/menuItems/-plain-to-fix`, {
+      name: 'Bread', creatorId: B, category: 'starter', quantity: 1,
+    });
+
+    await set(ref(bob.db, `events/${EVENT_R}/menuItems/-plain-to-fix/category`), 'main');
+
+    const snap = await get(ref(bob.db, `events/${EVENT_R}/menuItems/-plain-to-fix/category`));
+    assert.equal(snap.val(), 'main');
+  });
+
+  // And the organizer keeps re-categorising anything, which is what bulk item
+  // management is for.
+  test('the organizer can still move an item across that line', async () => {
+    await withRidesOn();
+    await seed(`events/${EVENT_R}/menuItems/-ride-of-b`, {
+      name: 'A lift', creatorId: B, category: 'ride_offers', quantity: 3,
+    });
+
+    await set(ref(alice.db, `events/${EVENT_R}/menuItems/-ride-of-b/category`), 'main');
+
+    const snap = await get(ref(alice.db, `events/${EVENT_R}/menuItems/-ride-of-b/category`));
+    assert.equal(snap.val(), 'main');
+  });
+});
+
 describe('deleting an item you created', () => {
+  // The shape deleteMenuItem now sends: the item, the sign-ups on it, the
+  // counter coming down, and the name of the item that pays for the step.
   test("B can delete their own item together with somebody else's sign-up", async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 1);
 
     await update(ref(bob.db), {
       [`events/${EVENT_A}/menuItems/-item-by-b`]: null,
       [`events/${EVENT_A}/assignments/-assignment-by-c`]: null,
+      [`events/${EVENT_A}/itemRemovals/${B}`]: '-item-by-b',
       [`events/${EVENT_A}/userItemCounts/${B}`]: 0,
     });
 
@@ -754,11 +1121,31 @@ describe('the organizer still runs their own event', () => {
 
     await update(ref(alice.db), {
       [`events/${EVENT_A}/menuItems/-item-by-b-3`]: null,
+      [`events/${EVENT_A}/itemRemovals/${B}`]: '-item-by-b-3',
       [`events/${EVENT_A}/userItemCounts/${B}`]: 1,
     });
 
     const snap = await get(ref(alice.db, `events/${EVENT_A}/menuItems/-item-by-b-3`));
     assert.ok(!snap.exists());
+  });
+
+  // Bulk item management moves items between categories in batches, including
+  // out of a ride category. When it does, the ride place that item was holding
+  // has to go back to its owner while the item itself carries on existing -
+  // which is a release the participant themselves is never allowed to make.
+  test("A can release a participant's ride place while the item stays", async () => {
+    await seed(`events/${EVENT_A}/menuItems/-ride-of-b-2`, {
+      name: 'A lift', creatorId: B, category: 'ride_offers', quantity: 3,
+    });
+    await seed(`events/${EVENT_A}/rideOfferCounts/${B}`, 1);
+
+    await update(ref(alice.db), {
+      [`events/${EVENT_A}/menuItems/-ride-of-b-2/category`]: 'main',
+      [`events/${EVENT_A}/rideOfferCounts/${B}`]: 0,
+    });
+
+    const snap = await get(ref(alice.db, `events/${EVENT_A}/rideOfferCounts/${B}`));
+    assert.equal(snap.val(), 0);
   });
 
   test('A can replace the whole menu in one write - the migration', async () => {

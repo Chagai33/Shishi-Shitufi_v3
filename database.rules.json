@@ -98,8 +98,30 @@
             // had drifted apart, so an item in the name only one of them knew
             // was exempt from the quota on screen and counted against it here.
             // See DOCS/PLANING/31-rides-consume-the-item-quota.md.
+            //
+            // A ride now carries a counter of its own, stepped up exactly the
+            // way the item counter is, which is what keeps an ordinary item
+            // from taking the ride exemption without limit. Two offers and two
+            // requests each, and no more, because a round trip is two items:
+            // the ride form writes the outward leg and the return leg as two
+            // separate rides in two separate writes, so a ceiling of one would
+            // have created the first leg and refused the second.
+            // Defined under rideOfferCounts and rideRequestCounts below.
+            //
             // Editing and deleting: the organizer, or whoever created the item.
-            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (newData.child('creatorId').val() === auth.uid && (((newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'trempim' || newData.child('category').val() === 'rides') && root.child('events').child($eventId).child('details').child('allowRideOffers').val() === true) || (newData.child('category').val() === 'ride_requests' && root.child('events').child($eventId).child('details').child('allowRideRequests').val() === true) || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && ((!root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() && newData.parent().parent().child('userItemCounts').child(auth.uid).val() === 1 && 1 <= (root.child('events').child($eventId).child('details').child('userItemLimit').exists() ? root.child('events').child($eventId).child('details').child('userItemLimit').val() : 3)) || (root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() && newData.parent().parent().child('userItemCounts').child(auth.uid).val() === root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() + 1 && newData.parent().parent().child('userItemCounts').child(auth.uid).val() <= (root.child('events').child($eventId).child('details').child('userItemLimit').exists() ? root.child('events').child($eventId).child('details').child('userItemLimit').val() : 3)))))))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (data.child('creatorId').val() === auth.uid && (!newData.exists() || newData.child('creatorId').val() === data.child('creatorId').val())))))",
+            // An item may not cross the line between a ride and an ordinary
+            // item, in either direction, unless the organizer moves it.
+            //
+            // That was a third way round the quota and it was found while the
+            // other two were being closed. A ride never touches the item
+            // counter, so an item created as a ride and then edited into an
+            // ordinary category is an item that never paid for its place, and
+            // nothing here asked. The organizer stays exempt because bulk item
+            // management re-categorises items as a matter of course, and
+            // changing one ordinary category for another is untouched, which is
+            // the correction people actually make.
+            // See DOCS/PLANING/66-a-ride-can-be-edited-into-an-ordinary-item.md.
+            ".write": "auth != null && ((!data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (newData.child('creatorId').val() === auth.uid && (((newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'trempim' || newData.child('category').val() === 'rides') && root.child('events').child($eventId).child('details').child('allowRideOffers').val() === true && ((!root.child('events').child($eventId).child('rideOfferCounts').child(auth.uid).exists() && newData.parent().parent().child('rideOfferCounts').child(auth.uid).val() === 1) || (root.child('events').child($eventId).child('rideOfferCounts').child(auth.uid).exists() && newData.parent().parent().child('rideOfferCounts').child(auth.uid).val() === root.child('events').child($eventId).child('rideOfferCounts').child(auth.uid).val() + 1 && newData.parent().parent().child('rideOfferCounts').child(auth.uid).val() <= 2))) || (newData.child('category').val() === 'ride_requests' && root.child('events').child($eventId).child('details').child('allowRideRequests').val() === true && ((!root.child('events').child($eventId).child('rideRequestCounts').child(auth.uid).exists() && newData.parent().parent().child('rideRequestCounts').child(auth.uid).val() === 1) || (root.child('events').child($eventId).child('rideRequestCounts').child(auth.uid).exists() && newData.parent().parent().child('rideRequestCounts').child(auth.uid).val() === root.child('events').child($eventId).child('rideRequestCounts').child(auth.uid).val() + 1 && newData.parent().parent().child('rideRequestCounts').child(auth.uid).val() <= 2))) || (root.child('events').child($eventId).child('details').child('allowUserItems').val() === true && ((!root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() && newData.parent().parent().child('userItemCounts').child(auth.uid).val() === 1 && 1 <= (root.child('events').child($eventId).child('details').child('userItemLimit').exists() ? root.child('events').child($eventId).child('details').child('userItemLimit').val() : 3)) || (root.child('events').child($eventId).child('userItemCounts').child(auth.uid).exists() && newData.parent().parent().child('userItemCounts').child(auth.uid).val() === root.child('events').child($eventId).child('userItemCounts').child(auth.uid).val() + 1 && newData.parent().parent().child('userItemCounts').child(auth.uid).val() <= (root.child('events').child($eventId).child('details').child('userItemLimit').exists() ? root.child('events').child($eventId).child('details').child('userItemLimit').val() : 3)))))))) || (data.exists() && (root.child('events').child($eventId).child('organizerId').val() === auth.uid || (data.child('creatorId').val() === auth.uid && (!newData.exists() || (newData.child('creatorId').val() === data.child('creatorId').val() && (data.child('category').val() === 'ride_offers' || data.child('category').val() === 'trempim' || data.child('category').val() === 'rides' || data.child('category').val() === 'ride_requests') === (newData.child('category').val() === 'ride_offers' || newData.child('category').val() === 'trempim' || newData.child('category').val() === 'rides' || newData.child('category').val() === 'ride_requests')))))))",
             // Taking an item and giving it back. This is where the protection
             // against two people grabbing the same item now lives: the field
             // may be filled only while it is empty, and only with your own
@@ -148,8 +170,79 @@
           //
           // A first counter may only be one. Anything else would let a client
           // open at any number and step straight past the quota.
+          //
+          // Going up is free; coming down has to be paid for with a deletion.
+          // The counter used to accept a step in either direction without
+          // asking what the step was for, so a participant at three out of
+          // three walked it back to zero in three legal writes and carried on
+          // adding. Ten items went into an event whose quota is three.
+          //
+          // A rule cannot see which item a write deleted, but it can be told.
+          // The write names the item it is removing under itemRemovals, and the
+          // step down is allowed only when that item was this person's, was not
+          // a ride, and is gone once the write lands. Naming an item that is
+          // not being deleted buys nothing, and a name cannot be used twice
+          // because the second time the item is no longer there to vouch for it.
+          //
+          // Rides are excluded because a ride never raised the counter. Letting
+          // one lower it would hand out a free place on every ride deleted,
+          // which is the same reasoning the product's own delete already uses.
+          //
+          // And the floor. It closes nothing on its own - that was measured -
+          // but without it the counter goes negative and the quota opens with no
+          // round trip at all.
+          // See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1)) )"
+            ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'ride_offers' && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'ride_requests' && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'trempim' && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'rides' && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
+          }
+        },
+        // Which item the write above is paying with. It carries no meaning on
+        // its own and nothing reads it: it exists so that the counter rule has
+        // something to check the deletion against. Writing it freely is
+        // harmless, because it is only ever believed when the item it names
+        // really was yours and really is gone.
+        "itemRemovals": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid"
+          }
+        },
+        // One ride each way, offered and asked for, per person, per event.
+        //
+        // Rides are exempt from the item quota on purpose, because offering a
+        // lift is not something anybody brings to the meal. Nothing checked
+        // that an item claiming the exemption was a ride, so an ordinary item
+        // with a ride category written on it was exempt outright: ten in a row
+        // were accepted at a full quota.
+        //
+        // Requiring the category to be one the organizer defined was the first
+        // proposal and it cannot be built. The event's category list is stored
+        // as an array, which the rule language cannot search, and the ride
+        // categories are added on screen and never stored at all - so every
+        // genuine ride in a default event would have been refused.
+        //
+        // What bounds it instead is the promise the event screen already makes
+        // and the server never kept, that one person offers one lift and asks
+        // for one. The ceiling is two rather than one because a round trip is
+        // two items: the ride form writes the outward leg and the return leg as
+        // two separate rides, so a ceiling of one would have created the first
+        // and refused the second, leaving half a round trip behind.
+        //
+        // These are counters and not markers on purpose, so that they behave
+        // exactly like the item counter above and come down under exactly the
+        // same condition: the write names the ride it is deleting, and that
+        // ride has to have been this person's, to have been a ride of this
+        // kind, and to be gone once the write lands. The exemption is worth
+        // four items at the very most instead of an unlimited number.
+        // See DOCS/PLANING/64-item-quota-can-be-walked-around.md
+        // and DOCS/PLANING/31-rides-consume-the-item-quota.md.
+        "rideOfferCounts": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1 && newData.val() <= 2) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && (root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'ride_offers' || root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'trempim' || root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'rides') && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
+          }
+        },
+        "rideRequestCounts": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1 && newData.val() <= 2) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'ride_requests' && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
           }
         }
       }

@@ -141,7 +141,17 @@ export interface ShishiEvent {
   assignments: { [key: string]: Omit<Assignment, 'id' | 'eventId'> };
   participants: { [key: string]: Omit<Participant, 'id'> };
   userItemCounts?: { [key: string]: number };
-
+  // Bookkeeping the security rules read and no screen does.
+  //
+  // itemRemovals names the item a write is deleting, so that stepping a counter
+  // down can be tied to a real deletion instead of being free. The two ride
+  // counters hold how many lifts each person has offered and asked for in the
+  // event, which is what stops an ordinary item from claiming the ride
+  // exemption without limit.
+  // See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
+  itemRemovals?: { [key: string]: string };
+  rideOfferCounts?: { [key: string]: number };
+  rideRequestCounts?: { [key: string]: number };
 }
 
 // Types for the global Store (Zustand)

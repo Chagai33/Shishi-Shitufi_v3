@@ -181,8 +181,15 @@ exports.parseShoppingList = onCall(
     }
 
     // Security/Safety Checks
+    //
+    // Marked, because the screens have to tell this apart from the other things
+    // invalid-argument means. It is the one an organiser can walk into by having
+    // a large event rather than by sending something wrong, and being told the
+    // text is invalid does not help them.
     if (text && text.length > 2000) {
-      throw new HttpsError("invalid-argument", "Text too long. Max 2000 characters.");
+      throw new HttpsError("invalid-argument", "Text too long. Max 2000 characters.", {
+        originalError: "TEXT_TOO_LONG",
+      });
     }
 
     // Base64 string length check: 5MB image ≈ 6.7MB base64. 

@@ -17,6 +17,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
+import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
@@ -315,41 +316,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     } catch (error: any) {
       console.error("Smart Import Error:", error);
-
-      let userMessage = 'שגיאה בפענוח הרשימה. אנא נסה שוב.';
-
-      // Analyze Firebase HttpsError
-      if (error.code) {
-        switch (error.code) {
-          case 'functions/resource-exhausted':
-            userMessage = 'מכסת השימוש ב-AI הסתיימה זמנית. אנא נסה שוב מאוחר יותר.';
-            break;
-          case 'functions/failed-precondition':
-            userMessage = 'התוכן נחסם על ידי מסנני הבטיחות. נסה לנסח אחרת.';
-            break;
-          case 'functions/invalid-argument':
-            userMessage = 'יש לספק טקסט או תמונה תקינים.';
-            break;
-          case 'functions/data-loss':
-            userMessage = 'ה-AI התקשה להבין את הפלט. נסה לכתוב בצורה ברורה יותר.';
-            break;
-          case 'functions/unavailable':
-            userMessage = 'שירות ה-AI אינו זמין כרגע. ניתן להוסיף פריטים ידנית.';
-            break;
-          case 'functions/internal': // Often generic, check details if possible, otherwise default
-            userMessage = 'שגיאה פנימית בשרת. נסה שוב מאוחר יותר.';
-            break;
-        }
-      }
-
-      // Fallback: Check raw message if code isn't helpful
-      if (error.message?.includes('quota')) {
-        userMessage = 'מכסת השימוש ב-AI הסתיימה זמנית.';
-      } else if (error.message?.includes('network')) {
-        userMessage = 'בעיית תקשורת. בדוק את החיבור לאינטרנט.';
-      }
-
-      toast.error(userMessage);
+      toast.error(getSmartImportErrorMessage(error));
     } finally {
       setIsAnalyzing(false);
     }
@@ -700,7 +667,10 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     } catch (error) {
       console.error("Smart Classify Error:", error);
-      toast.error(t('importModal.smart.error'), { id: toastId });
+      // The same sentence the other call point would give for the same failure.
+      // This one used to answer every failure with "classification failed",
+      // which said nothing about a limit, a length or a quota.
+      toast.error(getSmartImportErrorMessage(error), { id: toastId });
     } finally {
       setIsAnalyzing(false);
     }

@@ -16,7 +16,7 @@ const TermsPage: React.FC = () => (
       </Link>
 
       <h1 className="text-3xl font-bold mb-4">תקנון ותנאי שימוש - שישי שיתופי</h1>
-      <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: פברואר 2026</p>
+      <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: אוגוסט 2026</p>
 
       <div className="prose">
         <p>ברוכים הבאים ל"שישי שיתופי" (להלן: "<strong>האפליקציה</strong>" או "<strong>השירות</strong>"), פלטפורמת תכנון האירועים הקהילתיים שפותחה במסגרת פרויקט Web Coding על ידי חגי יחיאל (להלן: "<strong>המפתח</strong>").</p>
@@ -52,6 +52,7 @@ const TermsPage: React.FC = () => (
               <li>תוכן שאתה מזין לשירות "ייבוא חכם" נשלח לצד שלישי ויכול לשמש את גוגל כדי לשפר ולפתח את מוצריה. גישה אנושית מטעם גוגל עשויה להתבצע לטקסטים אלו.</li>
               <li>לפיכך, <strong>חל עליך איסור מוחלט</strong> להזין למערכת פרטים אישיים, שמות אנשים, טלפונים, פרטים פיננסיים, מידע רפואי או כל מידע רגיש ואישי אחר אודות משתתפים. הכלי נועד אך ורק לניתוח שמות מוצרי מזון.</li>
               <li>טכנולוגיית ה-AI ניסיונית ועשויה לספק תוצאות שגויות. מנהל האירוע נדרש לאמת את נכונות הרשימה בטרם פרסומה.</li>
+              <li><strong>שימוש הוגן ומגבלת קצב:</strong> השימוש ב"ייבוא חכם" מוגבל למספר פעולות לכל משתמש בשעה וביום. המגבלה נאכפת בשרת, ונועדה למנוע שימוש לרעה ולשמור על עלות השירות. כשמגיעים אליה האפליקציה אומרת זאת ומציינת מתי אפשר לנסות שוב, והוספת פריטים וסיווגם ידנית נשארים זמינים ללא הגבלה. המפתח רשאי לשנות את המגבלה, להשעות את הפיצ'ר או להפסיקו בכל עת, לרבות כלפי משתמש שעושה בו שימוש לרעה.</li>
             </ul>
           </li>
         </ul>
@@ -68,6 +69,7 @@ const TermsPage: React.FC = () => (
           <li><strong>תכונת הטרמפים (טלפונים):</strong> על מנת לקשר בין נהגים לנוסעים באירוע מסוים, מערכת הטרמפים דורשת הזנת <strong>מספר טלפון</strong>. הוספת מספר טלפון לאפליקציה מהווה הסכמה שפרט זה ייאסף על ידי המערכת וייחשף אך ורק למשתתפים הרלוונטיים באותו אירוע ולמנהל הקבוצה, לשם תיאום הנסיעה. אם אינך מעוניין בחשיפת מספר הטלפון שלך - אל תשתמש במערכת תיאום הטרמפים.</li>
           <li><strong>Cookies ו-Local Storage:</strong> האפליקציה עושה שימוש בטכנולוגיית Local Storage של הדפדפן ובשירותי הזיהוי של Firebase כדי לאפשר למשתמש להישאר מחובר למערכת ולשמור על העדפות שפה.</li>
           <li><strong>נתונים טכניים (אנליטיקה):</strong> האפליקציה משתמשת בשירות Google Analytics כדי לאסוף מידע סטטיסטי-אנונימי לשיפור ביצועיה. האפליקציה אינה אוספת נתוני מיקום (GPS).</li>
+          <li><strong>מונה השימוש בייבוא החכם:</strong> כדי לאכוף את מגבלת הקצב, המערכת שומרת לכל מזהה משתמש את מספר הפעולות שביצע ב"ייבוא חכם" ואת מועד תחילת חלון הספירה. מידע זה אינו גלוי לאף משתמש באפליקציה, אינו כולל את תוכן הרשימות עצמן, ואינו משמש לשום מטרה אחרת.</li>
         </ul>
 
         <h3>2. היכן אנחנו שומרים את המידע שלך?</h3>
@@ -99,7 +101,7 @@ const TermsPage: React.FC = () => (
 
         <hr className="my-10" />
         <h1 className="text-3xl font-bold mt-12 mb-4" lang="en">Terms of Use & Privacy Policy - Shishi Shitufi</h1>
-        <p className="text-sm text-neutral-500 mb-6" lang="en">Last Updated: February 2026</p>
+        <p className="text-sm text-neutral-500 mb-6" lang="en">Last Updated: August 2026</p>
 
         <div lang="en">
           <p>Welcome to "Shishi Shitufi" (hereinafter: "<strong>The Application</strong>" or "<strong>The Service</strong>"), a community potluck event planning platform developed by Chagai Yechiel (hereinafter: "<strong>The Developer</strong>").</p>
@@ -135,6 +137,7 @@ const TermsPage: React.FC = () => (
                 <li>Content (Prompts) that you enter into the "Smart Import" service is sent to a third party and may be used by Google to improve and develop its products (in accordance with Google API Terms for Unpaid services). Human reviewers on behalf of Google may read these inputs.</li>
                 <li>Therefore, <strong>you are strictly prohibited</strong> from entering names of people, phone numbers, financial details, medical records, or any other sensitive and personal information about participants into the Smart Import (AI) system. The tool is intended solely for analyzing generic grocery lists.</li>
                 <li>AI technology is experimental and may provide incorrect results (Hallucinations). The event manager is required to review the extracted items and verify their accuracy before publishing them to the participants.</li>
+                <li><strong>Fair Use and Rate Limit:</strong> Use of the "Smart Import" is limited to a number of operations per user per hour and per day. The limit is enforced on the server, and exists to prevent abuse and to keep the cost of the service under control. When you reach it the Application says so and states when you may try again, while adding and classifying items by hand remain available without any limit. The Developer may change the limit, suspend the feature, or discontinue it at any time, including for a user who abuses it.</li>
               </ul>
             </li>
           </ul>
@@ -151,6 +154,7 @@ const TermsPage: React.FC = () => (
             <li><strong>The Rides Feature (Phone Numbers):</strong> In order to connect drivers and passengers in a specific event, the rides system requires the entry of a <strong>phone number</strong> of the ride creator and the passenger. Adding a phone number to the Application constitutes consent that this detail will be collected by the system and exposed solely to the relevant participants in that event and the group manager, for the purpose of resolving the voluntary ride process. The Developer is not responsible for harassment, spam, or any misuse made by participants who were exposed to this information. If you do not wish to expose your phone number - do not join or offer rides in the system.</li>
             <li><strong>Cookies and Local Storage:</strong> The Application uses the browser's Local Storage technology and Firebase authentication services to allow the user to stay connected to the system and maintain language preferences.</li>
             <li><strong>Technical Data (Analytics):</strong> The Application uses the Google Analytics cloud service to collect anonymous-statistical information (such as errors, browser type, and application visits) to improve its performance. The Application <strong>does not</strong> collect GPS location data of the users at all.</li>
+            <li><strong>Smart Import Usage Counter:</strong> In order to enforce the rate limit, the system stores for each user identifier the number of "Smart Import" operations performed and the time the counting window started. This information is not visible to any user of the Application, does not include the content of the lists themselves, and is not used for any other purpose.</li>
           </ul>
 
           <h3>2. Where Do We Store Your Information?</h3>

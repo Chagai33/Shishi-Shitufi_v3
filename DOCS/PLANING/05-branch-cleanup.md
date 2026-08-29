@@ -114,3 +114,13 @@ git fetch --prune && git branch -r --merged origin/main
 - **הפעם הענף כן נדחף לענן**, ולכן נדרשה מחיקה בשני המקומות, מקומית ומרוחקת.
 - אומת מול השרת אחרי המחיקה: **`main` הוא הענף היחיד**, מקומית ומרוחקת.
 - `main` מסונכרן עם `origin/main`, בלי קומיטים תלויים.
+
+## סבב חמישי, 29/08/2026. נמחק בתוך הקמפיין
+
+הענף `limits-policy-and-quota-enforcement` (קמפיין
+[57](57-central-limits-policy.md), [64](64-item-quota-can-be-walked-around.md),
+[66](66-a-ride-can-be-edited-into-an-ordinary-item.md)) **נמחק מיד אחרי
+המיזוג**, לפי הכלל שנרשם כאן.
+
+- הענף מעולם לא נדחף לענן, ולכן לא נדרשה מחיקה מרוחקת.
+- אומת אחרי המחיקה: **`main` הוא הענף היחיד**, והוא מסונכרן עם `origin/main`.

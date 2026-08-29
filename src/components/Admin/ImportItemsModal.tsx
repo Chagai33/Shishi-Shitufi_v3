@@ -1,7 +1,7 @@
 // src/components/Admin/ImportItemsModal.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
-import { ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
+import { AI_TEXT_MAX, ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
 import FocusTrap from 'focus-trap-react';
 import { X, Upload, Table, AlertCircle, CheckCircle, Trash2, List, Wand2, Mic, MicOff, Loader2, Clipboard as ClipboardIcon, Plus } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -17,6 +17,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
+import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
@@ -206,6 +207,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       return;
     }
 
+    // The function refuses text past this length, and it is reached here without
+    // anything unusual happening: a smart migration sends every item in the
+    // event as one line each, and an event may now hold 120 of them. Saying so
+    // before the call is the difference between a limit and a failure. The check
+    // in the function stays where it is; this one only makes it speakable.
+    if (smartInputText.length > AI_TEXT_MAX) {
+      toast.error(t('importModal.smart.tooLong', { length: smartInputText.length, max: AI_TEXT_MAX }));
+      return;
+    }
+
     setIsAnalyzing(true);
     setClassificationSummary(null);
     setMigrationKeptCount(0);
@@ -305,41 +316,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     } catch (error: any) {
       console.error("Smart Import Error:", error);
-
-      let userMessage = 'שגיאה בפענוח הרשימה. אנא נסה שוב.';
-
-      // Analyze Firebase HttpsError
-      if (error.code) {
-        switch (error.code) {
-          case 'functions/resource-exhausted':
-            userMessage = 'מכסת השימוש ב-AI הסתיימה זמנית. אנא נסה שוב מאוחר יותר.';
-            break;
-          case 'functions/failed-precondition':
-            userMessage = 'התוכן נחסם על ידי מסנני הבטיחות. נסה לנסח אחרת.';
-            break;
-          case 'functions/invalid-argument':
-            userMessage = 'יש לספק טקסט או תמונה תקינים.';
-            break;
-          case 'functions/data-loss':
-            userMessage = 'ה-AI התקשה להבין את הפלט. נסה לכתוב בצורה ברורה יותר.';
-            break;
-          case 'functions/unavailable':
-            userMessage = 'שירות ה-AI אינו זמין כרגע. ניתן להוסיף פריטים ידנית.';
-            break;
-          case 'functions/internal': // Often generic, check details if possible, otherwise default
-            userMessage = 'שגיאה פנימית בשרת. נסה שוב מאוחר יותר.';
-            break;
-        }
-      }
-
-      // Fallback: Check raw message if code isn't helpful
-      if (error.message?.includes('quota')) {
-        userMessage = 'מכסת השימוש ב-AI הסתיימה זמנית.';
-      } else if (error.message?.includes('network')) {
-        userMessage = 'בעיית תקשורת. בדוק את החיבור לאינטרנט.';
-      }
-
-      toast.error(userMessage);
+      toast.error(getSmartImportErrorMessage(error));
     } finally {
       setIsAnalyzing(false);
     }
@@ -637,14 +614,21 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const handleSmartClassify = async () => {
     if (importItems.length === 0) return;
 
+    // 1. Convert items to text list. Built before anything is set spinning,
+    // because its length decides whether there is a run at all: this is one
+    // string holding every item name in the event, and a full event of 120
+    // items goes past what the function accepts long before it looks unusual.
+    const listText = importItems.map(i => i.name).join(', ');
+    if (listText.length > AI_TEXT_MAX) {
+      toast.error(t('importModal.smart.tooLong', { length: listText.length, max: AI_TEXT_MAX }));
+      return;
+    }
+
     setIsAnalyzing(true);
     setClassificationSummary(null);
     const toastId = toast.loading(t('importModal.smart.analyzing'));
 
     try {
-      // 1. Convert items to text list
-      const listText = importItems.map(i => i.name).join(', ');
-
       // 2. Build allowed categories
       const allowedCats = categoryOptions.map(opt => ({ id: opt.value, name: opt.label }));
 
@@ -683,7 +667,10 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     } catch (error) {
       console.error("Smart Classify Error:", error);
-      toast.error(t('importModal.smart.error'), { id: toastId });
+      // The same sentence the other call point would give for the same failure.
+      // This one used to answer every failure with "classification failed",
+      // which said nothing about a limit, a length or a quota.
+      toast.error(getSmartImportErrorMessage(error), { id: toastId });
     } finally {
       setIsAnalyzing(false);
     }

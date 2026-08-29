@@ -23,6 +23,23 @@ import limits from './limits.json';
 /** How many items one event may hold, whoever adds them. */
 export const ITEMS_PER_EVENT = limits.itemsPerEvent;
 
+/**
+ * How long the text sent to the smart import may be, in characters.
+ *
+ * This one is not enforced in the database rules but in the cloud function, and
+ * it is the third place a number could split rather than the second: the
+ * function carries its own copy, because a deployed function can only read what
+ * is inside functions/. limits.test.mjs reads both and fails if they differ.
+ *
+ * The screens hold it because they build the text themselves and can say
+ * something true before sending it. A full event is what makes this real: 120
+ * items at the 50 characters a name may hold is around 6,000 characters, and
+ * even at ordinary 15 character names 120 items already crosses 2,000. The
+ * product would otherwise allow an event its own classifier cannot read.
+ * See DOCS/PLANING/53-ai-limits-and-costs.md.
+ */
+export const AI_TEXT_MAX = limits.aiTextMax;
+
 /** How many events one organizer may have. */
 export const EVENTS_PER_ORGANIZER = limits.eventsPerOrganizer;
 

@@ -1,4 +1,5 @@
 {
+  "aiTextMax": 2000,
   "itemsPerEvent": 120,
   "eventsPerOrganizer": 50,
   "ridesPerPerson": 2,

@@ -16,7 +16,7 @@ const PrivacyPolicyPage: React.FC = () => (
       </Link>
       
       <h1 className="text-3xl font-bold mb-4">מדיניות פרטיות לאפליקציית "שישי שיתופי"</h1>
-      <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: 14 באוגוסט 2025</p>
+      <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: 29 באוגוסט 2026</p>
 
       <div className="prose">
         <p>אנו מכבדים את פרטיות המשתמשים שלנו ("<strong>אתה</strong>", "<strong>המשתמש</strong>") ומחויבים להגן עליה. מדיניות פרטיות זו מתארת איזה מידע אישי אנו אוספים, כיצד אנו משתמשים בו, עם מי אנו חולקים אותו, ומהן זכויותיך בנוגע למידע זה.</p>
@@ -27,6 +27,7 @@ const PrivacyPolicyPage: React.FC = () => (
             <li><strong>עבור מנהלי אירועים:</strong> שם להצגה, כתובת דוא"ל וסיסמה מוצפנת.</li>
             <li><strong>עבור משתתפים (אורחים):</strong> שם להצגה. בעת כניסה ראשונה, מוקצה לך מזהה אנונימי וייחודי.</li>
             <li><strong>תוכן שנוצר על ידך:</strong> פרטי אירועים (כותרת, תאריך, מיקום), שמות פריטים והערות.</li>
+            <li><strong>מונה השימוש בייבוא החכם:</strong> מספר הפעולות שביצעת ב"ייבוא חכם" ומועד תחילת חלון הספירה, לצורך אכיפת מגבלת שימוש הוגן. המונה אינו מכיל תוכן של רשימות.</li>
         </ul>
 
         <h2>2. כיצד אנו משתמשים במידע?</h2>
@@ -37,6 +38,7 @@ const PrivacyPolicyPage: React.FC = () => (
         <ul>
             <li><strong>משתתפי האירוע:</strong> שמך להצגה והפריטים ששובצת אליהם יהיו גלויים לשאר המשתתפים באותו אירוע.</li>
             <li><strong>Google Firebase:</strong> האפליקציה בנויה על פלטפורמת Firebase של Google, המשמשת לאימות, אחסון נתונים ואבטחה. המידע שלך נשמר בשרתים של גוגל וכפוף למדיניות הפרטיות שלהם. שירותי Firebase עשויים לאסוף מזהים טכניים (כמו כתובת IP) לצורכי תפעול ואבטחה.</li>
+            <li><strong>שירותי הבינה המלאכותית של Google:</strong> כאשר נעשה שימוש ב"ייבוא חכם", הטקסט או התמונה שהוזנו נשלחים לשירות הבינה המלאכותית של Google לצורך זיהוי הפריטים, ועשויים לשמש את גוגל לשיפור מוצריה. אין להזין שם פרטים אישיים או מידע רגיש. הפירוט המלא נמצא בתנאי השימוש.</li>
         </ul>
 
         <h2>4. העברת נתונים בינלאומית</h2>
@@ -80,6 +82,7 @@ const PrivacyPolicyPage: React.FC = () => (
                 <li><strong>For Event Managers:</strong> Display name, email address, and an encrypted password.</li>
                 <li><strong>For Particip-ants (Guests):</strong> A display name. Upon first entry, you are assigned a unique anonymous identifier.</li>
                 <li><strong>Content You Create:</strong> Event details (title, date, location), item names, and notes.</li>
+                <li><strong>Smart Import Usage Counter:</strong> The number of "Smart Import" operations you performed and the time the counting window started, in order to enforce a fair use limit. The counter holds no list content.</li>
             </ul>
 
             <h2>2. How Do We Use the Information?</h2>
@@ -90,6 +93,7 @@ const PrivacyPolicyPage: React.FC = () => (
             <ul>
                 <li><strong>Event Participants:</strong> Your display name and the items you are assigned to will be visible to other participants in that specific event.</li>
                 <li><strong>Google Firebase:</strong> The Application is built on Google's Firebase platform, which is used for authentication, data storage, and security. Your information is stored on Google's servers and is subject to their privacy policy. Firebase services may collect technical identifiers (like IP addresses) for operational and security purposes.</li>
+                <li><strong>Google Artificial Intelligence Services:</strong> When the "Smart Import" is used, the text or image entered is sent to Google's artificial intelligence service in order to identify the items, and may be used by Google to improve its products. Personal details and sensitive information must not be entered there. Full details are in the Terms of Use.</li>
             </ul>
 
             <h2>4. International Data Transfer</h2>

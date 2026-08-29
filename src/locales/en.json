@@ -88,7 +88,23 @@
                 "resultAll": "Classification complete. Every item got a category.",
                 "resultPartial": "{{classified}} of {{total}} items were classified. The rest are in the category shown in the table, and you can change it there.",
                 "resultNone": "No item could be classified. They are in the category shown in the table, and you can change it there.",
-                "error": "Classification failed. Try again, or pick a category in the table."
+                "errors": {
+                    "rateLimitedMinutes": "You have reached the smart import limit. You can try again in {{minutes}} minutes, or add items by hand.",
+                    "rateLimitedHours": "You have reached the smart import limit. You can try again in {{hours}} hours, or add items by hand.",
+                    "rateLimitedLater": "You have reached the smart import limit. You can try again later, or add items by hand.",
+                    "quota": "The AI quota has run out for now. Please try again later.",
+                    "tooLong": "The list is too long for automatic classification. Shorten it, or classify the items by hand.",
+                    "invalidInput": "Please provide valid text or an image.",
+                    "safety": "The content was blocked by the safety filters. Try wording it differently.",
+                    "parse": "The AI could not make sense of the answer. Try writing it more clearly.",
+                    "unavailable": "The AI service is not available right now. You can add items by hand.",
+                    "internal": "Server error. Please try again later.",
+                    "network": "Connection problem. Check your internet connection.",
+                    "signedOut": "Your session has expired. Refresh the page and try again.",
+                    "tooSlow": "The request took too long. Try a shorter list, or without an image.",
+                    "general": "Reading the list failed. Try again, or add and classify items by hand."
+                },
+                "tooLong": "The list is too long for automatic classification: {{length}} characters out of {{max}}. Shorten it, or classify the items by hand."
             },
             "title": "Import Items",
             "preset": {

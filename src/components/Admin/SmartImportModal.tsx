@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ITEM_NAME_MAX } from '../../constants/limits';
+import { useTranslation } from 'react-i18next';
+import { AI_TEXT_MAX, ITEM_NAME_MAX } from '../../constants/limits';
 import { X, Mic, MicOff, Check, Edit2, Trash2, Wand2, Loader2, ArrowRight } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
+import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
 import { MenuItem } from '../../types';
 import toast from 'react-hot-toast';
 
@@ -19,6 +21,7 @@ interface SmartImportModalProps {
 }
 
 export function SmartImportModal({ onImport, onClose }: SmartImportModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<'INPUT' | 'PROCESSING' | 'REVIEW'>('INPUT');
   const [inputText, setInputText] = useState('');
   const [importedItems, setImportedItems] = useState<ImportedItem[]>([]);
@@ -47,6 +50,14 @@ export function SmartImportModal({ onImport, onClose }: SmartImportModalProps) {
       return;
     }
 
+    // The same ceiling the other screen states, said the same way. The function
+    // refuses this length, and being told why beats being told the text is
+    // invalid.
+    if (inputText.length > AI_TEXT_MAX) {
+      toast.error(t('importModal.smart.tooLong', { length: inputText.length, max: AI_TEXT_MAX }));
+      return;
+    }
+
     setStep('PROCESSING');
 
     try {
@@ -67,7 +78,10 @@ export function SmartImportModal({ onImport, onClose }: SmartImportModalProps) {
       setStep('REVIEW');
     } catch (error: any) {
       console.error("Smart Import Error:", error);
-      toast.error('שגיאה בפענוח הרשימה: ' + (error.message || 'נסה שוב'));
+      // error.message came straight from the server, which writes in English for
+      // its logs. A Hebrew speaker was being shown "Text too long. Max 2000
+      // characters." and expected to make something of it.
+      toast.error(getSmartImportErrorMessage(error));
       setStep('INPUT');
     }
   };

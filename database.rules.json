@@ -27,7 +27,26 @@
       // See DOCS/PLANING/14-events-write-cascade.md.
       "$eventId": {
         ".read": "auth != null",
-        ".write": "auth != null && ( !data.exists() || data.child('organizerId').val() === auth.uid || newData.child('organizerId').val() === auth.uid )",
+        // Creating is allowed only to somebody who registers themselves as the
+        // organizer; an event that already exists is judged on the organizer
+        // stored in it, and on nothing else.
+        //
+        // The third clause this replaces asked whether the data *arriving*
+        // named the writer as the organizer. That is a question the writer
+        // answers for themselves: one write saying "the organizer is me" was
+        // approved on the strength of what that same write had just said, and
+        // the app hands an identity to every visitor who opens an invitation
+        // link. The event changed hands with its details, its menu and every
+        // sign-up, the real organizer was locked out of their own screens, and
+        // a second write then deleted the event outright.
+        //
+        // The clause is folded into the first rather than deleted. Deleting it
+        // closes the takeover and leaves "!data.exists()" standing on its own,
+        // which is what lets anybody plant a node under events at any id with
+        // any content at all.
+        // See DOCS/PLANING/63-anyone-can-take-over-an-existing-event.md
+        // and DOCS/PLANING/20-anyone-can-create-an-event-node.md.
+        ".write": "auth != null && ( (!data.exists() && newData.child('organizerId').val() === auth.uid) || data.child('organizerId').val() === auth.uid )",
         "details": {
           ".write": "auth != null && ( !data.exists() || root.child('events').child($eventId).child('organizerId').val() === auth.uid )"
         },

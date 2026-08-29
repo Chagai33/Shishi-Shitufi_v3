@@ -1,6 +1,7 @@
 // src/components/Admin/BulkItemsManager.tsx
 
 import { useState, useMemo, useEffect } from 'react';
+import { ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
 import { ArrowRight, Edit, Save, X, CheckSquare, Square, Search, AlertCircle, CheckCircle, Plus, Upload, Filter, ChevronDown, ChevronUp, List as ListIcon } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
@@ -85,6 +86,7 @@ const MobileItemCard = ({
                 <input
                   type="text"
                   value={item.name}
+                  maxLength={ITEM_NAME_MAX}
                   onChange={(e) => onUpdateField('name', e.target.value)}
                   className="w-full px-2 py-1 text-sm border-b border-blue-300 focus:border-blue-500 outline-none bg-transparent"
                   placeholder={t('bulkEdit.table.name')}
@@ -156,6 +158,7 @@ const MobileItemCard = ({
               <input
                 type="text"
                 value={item.notes || ''}
+                maxLength={ITEM_NOTE_MAX}
                 onChange={(e) => onUpdateField('notes', e.target.value)}
                 className="w-full text-xs px-2 py-1 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 placeholder-yellow-800/50 focus:ring-1 focus:ring-yellow-400 outline-none"
                 placeholder={t('bulkEdit.table.notes')}
@@ -1057,6 +1060,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                                 <input
                                   type="text"
                                   value={item.name}
+                                  maxLength={ITEM_NAME_MAX}
                                   onChange={(e) => updateItemField(item.id, 'name', e.target.value)}
                                   className="w-full px-3 py-1.5 text-sm bg-gray-50 border-transparent focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all outline-none"
                                   placeholder={t('bulkEdit.table.name')}
@@ -1088,6 +1092,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                                 <input
                                   type="text"
                                   value={item.notes || ''}
+                                  maxLength={ITEM_NOTE_MAX}
                                   onChange={(e) => updateItemField(item.id, 'notes', e.target.value)}
                                   className="w-full px-3 py-1.5 text-sm bg-gray-50 border-transparent focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 rounded-lg transition-all outline-none placeholder-gray-400"
                                   placeholder={t('bulkEdit.table.addNote')}
@@ -1209,6 +1214,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                     <input
                       type="text"
                       value={newItem.name}
+                      maxLength={ITEM_NAME_MAX}
                       onChange={(e) => setNewItem(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="לדוגמה: פשטידת גבינות"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 placeholder-gray-500"
@@ -1261,6 +1267,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                     <input
                       type="text"
                       value={newItem.notes}
+                      maxLength={ITEM_NOTE_MAX}
                       onChange={(e) => setNewItem(prev => ({ ...prev, notes: e.target.value }))}
                       placeholder="הערות נוספות (אופציונלי)"
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none text-gray-900 placeholder-gray-500"

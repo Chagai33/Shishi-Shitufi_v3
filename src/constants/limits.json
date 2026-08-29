@@ -1,0 +1,15 @@
+{
+  "itemsPerEvent": 120,
+  "eventsPerOrganizer": 50,
+  "ridesPerPerson": 2,
+  "monthsAhead": 12,
+  "eventTitle": 50,
+  "eventLocation": 100,
+  "eventDescription": 500,
+  "categoryName": 30,
+  "itemName": 50,
+  "itemNote": 50,
+  "personName": 40,
+  "phoneNumber": 30,
+  "pickupLocation": 100
+}

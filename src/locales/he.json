@@ -311,7 +311,10 @@
                     "manageParticipantsComingSoon": "ניהול משתתפים עבור {{title}} - בקרוב!"
                 }
             },
-            "general": "שגיאה כללית"
+            "general": "שגיאה כללית",
+            "limits": {
+                "tooManyEvents": "הגעת ל-{{limit}} האירועים שניתן ליצור. כדי ליצור אירוע חדש, יש למחוק אירוע קיים."
+            }
         },
         "landing": {
             "header": {
@@ -569,7 +572,9 @@
                 "rideOffersDisabled": "המארגן לא איפשר הצעת טרמפים באירוע הזה",
                 "rideRequestsDisabled": "המארגן לא איפשר בקשת טרמפים באירוע הזה",
                 "limitReached": "הגעת ל-{{limit}} הפריטים שניתן להוסיף באירוע הזה",
-                "addItem": "הוסף פריט"
+                "addItem": "הוסף פריט",
+                "rideOfferAlreadyPosted": "כבר פרסמת נסיעה. ניתן לערוך את הנסיעה הקיימת.",
+                "rideRequestAlreadyPosted": "כבר פרסמת בקשת טרמפ. ניתן לערוך את הבקשה הקיימת."
             },
             "promo": {
                 "register": "הירשם",
@@ -706,6 +711,9 @@
                 "deleteConfirm": "האם לבטל את השיבוץ של {{name}} ל{{item}}?",
                 "assignmentDeleted": "השיבוץ נמחק בהצלחה",
                 "total": "סה\"כ {{count}} שיבוצים"
+            },
+            "limits": {
+                "eventFull": "האירוע הגיע ל-{{limit}} הפריטים שהוא יכול להכיל. כדי להוסיף עוד, יש למחוק פריט קיים."
             }
         },
         "footer": {

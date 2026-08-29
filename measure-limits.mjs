@@ -91,10 +91,26 @@ const pickupLengths = [];
 const categoryNameLengths = [];
 const participantNameLengths = [];
 const assignmentNoteLengths = [];
+const phoneLengths = [];
 const userNameLengths = [];
 
 // Events per organizer
 const eventsPerOrganizer = new Map();
+
+// Dates. Nothing measured these before the ceiling on them was written, and they
+// are the only two fields where an existing record could already be outside a
+// new ceiling and would then be readable but not editable.
+const MONTHS_AHEAD = 12;
+const horizon = new Date();
+horizon.setUTCMonth(horizon.getUTCMonth() + MONTHS_AHEAD);
+const horizonIso = horizon.toISOString().slice(0, 10);
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+let eventsWithEndDate = 0;
+const datesBeyondHorizon = [];
+const endDatesBeyondHorizon = [];
+const endBeforeStart = [];
+const malformedDates = [];
 
 for (const eventId of eventIds) {
   const event = events[eventId] || {};
@@ -121,11 +137,13 @@ for (const eventId of eventIds) {
     itemNameLengths.push(len(item?.name));
     if (item?.notes) itemNoteLengths.push(len(item.notes));
     if (item?.pickupLocation) pickupLengths.push(len(item.pickupLocation));
+    if (item?.phoneNumber) phoneLengths.push(len(item.phoneNumber));
   }
 
   for (const participant of Object.values(participants)) participantNameLengths.push(len(participant?.name));
   for (const assignment of Object.values(assignments)) {
     if (assignment?.notes) assignmentNoteLengths.push(len(assignment.notes));
+    if (assignment?.phoneNumber) phoneLengths.push(len(assignment.phoneNumber));
   }
 
   // The exact string the smart migration builds and sends to the AI function.
@@ -134,11 +152,47 @@ for (const eventId of eventIds) {
   migrationBlobLengths.push(blob.length);
   if (blob.length > AI_TEXT_CAP) eventsOverAiCap.push({ items: itemList.length, chars: blob.length });
 
+  const date = details.date;
+  const endDate = details.endDate;
+  if (endDate) eventsWithEndDate += 1;
+
+  for (const [label, value] of [['date', date], ['endDate', endDate]]) {
+    if (value === undefined || value === null || value === '') continue;
+    if (typeof value !== 'string' || !ISO_DATE.test(value)) {
+      malformedDates.push(label);
+      continue;
+    }
+    if (value > horizonIso) (label === 'date' ? datesBeyondHorizon : endDatesBeyondHorizon).push(value);
+  }
+  if (typeof date === 'string' && typeof endDate === 'string' && ISO_DATE.test(date) && ISO_DATE.test(endDate) && endDate < date) {
+    endBeforeStart.push(1);
+  }
+
   const organizer = event.organizerId || 'unknown';
   eventsPerOrganizer.set(organizer, (eventsPerOrganizer.get(organizer) || 0) + 1);
 }
 
+// The name on the user record, which is copied onto every event that person
+// creates as its organizerName. It was declared here and never filled in, so
+// this is the one name field in the product that had never been measured.
+for (const user of Object.values(users)) {
+  if (user?.name) userNameLengths.push(len(user.name));
+}
+
 const perOrganizer = [...eventsPerOrganizer.values()];
+
+console.log('');
+console.log('=== DATES, AGAINST A TWELVE MONTH CEILING ===================');
+console.log(`events with an end date filled in  ${eventsWithEndDate}`);
+console.log(`start dates beyond the ceiling     ${datesBeyondHorizon.length}`);
+console.log(`end dates beyond the ceiling       ${endDatesBeyondHorizon.length}`);
+console.log(`end dates before their start       ${endBeforeStart.length}`);
+console.log(`dates that are not YYYY-MM-DD      ${malformedDates.length}`);
+if (datesBeyondHorizon.length || endDatesBeyondHorizon.length || endBeforeStart.length || malformedDates.length) {
+  console.log('');
+  console.log('  ^ any of these above zero means an existing event would be');
+  console.log('    readable but not editable once the ceiling is deployed.');
+}
 
 console.log('');
 console.log('=== SCALE ===================================================');
@@ -168,6 +222,8 @@ line('ride pickup location', stats(pickupLengths));
 line('category name', stats(categoryNameLengths));
 line('participant name', stats(participantNameLengths));
 line('assignment note', stats(assignmentNoteLengths));
+line('phone number', stats(phoneLengths));
+line('user record name', stats(userNameLengths));
 console.log('');
 console.log(`five longest item names            ${topFive(itemNameLengths)}`);
 console.log(`five longest event titles          ${topFive(titleLengths)}`);

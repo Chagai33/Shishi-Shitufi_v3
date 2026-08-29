@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useId } from 'react';
+import { ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
 import { X, ChefHat, Hash, FileText, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
@@ -152,7 +153,11 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
       }
     } catch (error) {
       console.error('Error saving menu item:', error);
-      toast.error(item ? 'שגיאה בעדכון הפריט. אנא נסה שוב.' : 'שגיאה בהוספת הפריט. אנא נסה שוב.');
+      // The event being full arrives here as a message worth reading.
+      toast.error(
+        (error as any)?.message
+        || (item ? 'שגיאה בעדכון הפריט. אנא נסה שוב.' : 'שגיאה בהוספת הפריט. אנא נסה שוב.')
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -206,6 +211,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
                     id={nameId}
                     type="text"
                     value={formData.name}
+                    maxLength={ITEM_NAME_MAX}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="לחם, סלט, יין, וכו'"
                     className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
@@ -263,6 +269,7 @@ export function MenuItemForm({ event, item, onClose }: MenuItemFormProps) {
                   <textarea
                     id={notesId}
                     value={formData.notes}
+                    maxLength={ITEM_NOTE_MAX}
                     onChange={(e) => handleInputChange('notes', e.target.value)}
                     placeholder="הערות נוספות על הפריט..."
                     rows={3}

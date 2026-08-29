@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ITEM_NAME_MAX } from '../../constants/limits';
 import { X, Mic, MicOff, Check, Edit2, Trash2, Wand2, Loader2, ArrowRight } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
@@ -191,6 +192,7 @@ export function SmartImportModal({ onImport, onClose }: SmartImportModalProps) {
                       <input
                         type="text"
                         value={item.name}
+                        maxLength={ITEM_NAME_MAX}
                         onChange={(e) => handleUpdateItem(item.id, 'name', e.target.value)}
                         className="w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-sm py-1 px-2"
                       />

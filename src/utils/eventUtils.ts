@@ -32,7 +32,6 @@ export const isRideCategory = (categoryId?: string): boolean =>
 
 
 
-
 /**
  * Regex for detecting carpool/ride sharing keywords in Hebrew and English.
  * @deprecated Ideally rely on category ID 'trempim' or rowType 'offers'

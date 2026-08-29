@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useId } from 'react';
+import { ITEM_NOTE_MAX } from '../../constants/limits';
 import FocusTrap from 'focus-trap-react';
 import { X, Hash, MessageSquare, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -203,6 +204,7 @@ export function EditAssignmentModal({ menuItem, event, assignment, onClose, item
                 <textarea
                   id="notes-input"
                   value={notes}
+                  maxLength={ITEM_NOTE_MAX}
                   onChange={(e) => handleInputChange('notes', e.target.value)}
                   placeholder={t('editAssignmentModal.notesPlaceholder')}
                   rows={3}

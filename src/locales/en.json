@@ -307,7 +307,10 @@
                     "manageParticipantsComingSoon": "Manage participants for {{title}} - Coming soon!"
                 }
             },
-            "general": "General Error"
+            "general": "General Error",
+            "limits": {
+                "tooManyEvents": "You have reached the limit of {{limit}} events. To create another, delete one first."
+            }
         },
         "landing": {
             "header": {
@@ -565,7 +568,9 @@
                 "rideOffersDisabled": "The organizer has not allowed ride offers in this event",
                 "rideRequestsDisabled": "The organizer has not allowed ride requests in this event",
                 "limitReached": "You have reached the {{limit}} items you can add to this event",
-                "addItem": "Add Item"
+                "addItem": "Add Item",
+                "rideOfferAlreadyPosted": "You have already offered a ride. You can edit the one you posted.",
+                "rideRequestAlreadyPosted": "You have already asked for a ride. You can edit the request you posted."
             },
             "promo": {
                 "register": "Register",
@@ -694,6 +699,9 @@
                 "deleteConfirm": "Cancel assignment of {{name}} for {{item}}?",
                 "assignmentDeleted": "Assignment deleted successfully",
                 "total": "Total {{count}} assignments"
+            },
+            "limits": {
+                "eventFull": "This event has reached its limit of {{limit}} items. To add another, delete one first."
             }
         },
         "footer": {

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useId } from 'react';
+import { ITEM_NOTE_MAX, PERSON_NAME_MAX, PHONE_NUMBER_MAX } from '../../constants/limits';
 import { useTranslation } from 'react-i18next';
 import { useStore, selectAssignments, selectMenuItems } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
@@ -441,6 +442,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       <input
                         type="text"
                         value={tempUserName}
+                        maxLength={PERSON_NAME_MAX}
                         onChange={(e) => setTempUserName(e.target.value)}
                         className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder={t('eventPage.assignment.namePlaceholder')}
@@ -461,6 +463,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     <input
                       type="text"
                       value={participantName}
+                      maxLength={PERSON_NAME_MAX}
                       onChange={e => setParticipantName(e.target.value)}
                       placeholder={t('eventPage.assignment.namePlaceholder')}
                       className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
@@ -580,6 +583,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       inputMode="numeric"
                       pattern="[0-9]*"
                       value={phoneNumber}
+                      maxLength={PHONE_NUMBER_MAX}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="050-0000000"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rides focus:border-transparent text-right sm:text-left dir-ltr"
@@ -598,6 +602,7 @@ const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-neutral-400" />
                   <textarea
                     value={notes}
+                    maxLength={ITEM_NOTE_MAX}
                     onChange={e => setNotes(e.target.value)}
                     className="w-full p-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 shadow-sm placeholder-gray-500"
                     rows={3}

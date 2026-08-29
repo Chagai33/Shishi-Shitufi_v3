@@ -1,6 +1,7 @@
 // src/pages/LoginPage.tsx
 
 import React, { useState, useId } from 'react';
+import { PERSON_NAME_MAX } from '../constants/limits';
 import { useNavigate, Link } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -145,6 +146,7 @@ const LoginPage: React.FC = () => {
                     id={displayNameId}
                     type="text"
                     value={displayName}
+                    maxLength={PERSON_NAME_MAX}
                     onChange={(e) => setDisplayName(e.target.value)}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-accent"

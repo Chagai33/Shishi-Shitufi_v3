@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
 import { X, Save, Plus, Edit, Trash2, List, CheckCircle, Users, Home } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { FirebaseService } from '../../services/firebaseService';
@@ -354,6 +355,7 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
                         <input
                           type="text"
                           value={item.name}
+                          maxLength={ITEM_NAME_MAX}
                           onChange={(e) => updateItemInEditingList(index, { name: e.target.value })}
                           className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
                           placeholder={t('importModal.preview.table.name')}
@@ -362,6 +364,7 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
                         <input
                           type="text"
                           value={item.notes || ''}
+                          maxLength={ITEM_NOTE_MAX}
                           onChange={(e) => updateItemInEditingList(index, { notes: e.target.value || undefined })}
                           className="w-full px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 disabled:bg-gray-50 disabled:text-gray-500"
                           placeholder={t('importModal.preview.table.notes')}
@@ -432,6 +435,7 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
                           <input
                             type="text"
                             value={item.name}
+                            maxLength={ITEM_NAME_MAX}
                             onChange={(e) => updateItemInEditingList(index, { name: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:bg-gray-50 disabled:text-gray-500"
                             disabled={editingList.id.startsWith('default-')}
@@ -493,6 +497,7 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
                         <input
                           type="text"
                           value={item.notes || ''}
+                          maxLength={ITEM_NOTE_MAX}
                           onChange={(e) => updateItemInEditingList(index, { notes: e.target.value || undefined })}
                           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-600 disabled:bg-gray-50 disabled:text-gray-500"
                           placeholder={t('importModal.preview.table.notes')}

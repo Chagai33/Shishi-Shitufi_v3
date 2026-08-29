@@ -91,6 +91,7 @@ const pickupLengths = [];
 const categoryNameLengths = [];
 const participantNameLengths = [];
 const assignmentNoteLengths = [];
+const phoneLengths = [];
 const userNameLengths = [];
 
 // Events per organizer
@@ -136,11 +137,13 @@ for (const eventId of eventIds) {
     itemNameLengths.push(len(item?.name));
     if (item?.notes) itemNoteLengths.push(len(item.notes));
     if (item?.pickupLocation) pickupLengths.push(len(item.pickupLocation));
+    if (item?.phoneNumber) phoneLengths.push(len(item.phoneNumber));
   }
 
   for (const participant of Object.values(participants)) participantNameLengths.push(len(participant?.name));
   for (const assignment of Object.values(assignments)) {
     if (assignment?.notes) assignmentNoteLengths.push(len(assignment.notes));
+    if (assignment?.phoneNumber) phoneLengths.push(len(assignment.phoneNumber));
   }
 
   // The exact string the smart migration builds and sends to the AI function.
@@ -212,6 +215,7 @@ line('ride pickup location', stats(pickupLengths));
 line('category name', stats(categoryNameLengths));
 line('participant name', stats(participantNameLengths));
 line('assignment note', stats(assignmentNoteLengths));
+line('phone number', stats(phoneLengths));
 console.log('');
 console.log(`five longest item names            ${topFive(itemNameLengths)}`);
 console.log(`five longest event titles          ${topFive(titleLengths)}`);

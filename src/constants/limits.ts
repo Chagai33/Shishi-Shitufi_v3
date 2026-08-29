@@ -45,3 +45,24 @@ export const RIDES_PER_PERSON = limits.ridesPerPerson;
  * See DOCS/PLANING/65-end-date-is-written-and-never-read.md.
  */
 export const MONTHS_AHEAD = limits.monthsAhead;
+
+/**
+ * How long each piece of text may be, in characters.
+ *
+ * Characters and not bytes: that was an open question about the rule language
+ * and it was measured, because every Hebrew letter is two bytes and had the
+ * answer been bytes then every number here would have meant half of itself for
+ * the people who actually use this.
+ *
+ * These are also the numbers the input fields carry as maxLength, so that
+ * nobody can type past a ceiling and be refused by the server afterwards.
+ */
+export const EVENT_TITLE_MAX = limits.eventTitle;
+export const EVENT_LOCATION_MAX = limits.eventLocation;
+export const EVENT_DESCRIPTION_MAX = limits.eventDescription;
+export const CATEGORY_NAME_MAX = limits.categoryName;
+export const ITEM_NAME_MAX = limits.itemName;
+export const ITEM_NOTE_MAX = limits.itemNote;
+export const PERSON_NAME_MAX = limits.personName;
+export const PHONE_NUMBER_MAX = limits.phoneNumber;
+export const PICKUP_LOCATION_MAX = limits.pickupLocation;

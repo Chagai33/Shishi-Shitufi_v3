@@ -1592,6 +1592,164 @@ describe('how many events one organizer may create', () => {
   });
 });
 
+// How long a text field may be.
+//
+// There was no answer to this anywhere in the product: not one length check in
+// the rules and not one maxLength on a screen. Five screens did refuse text for
+// being too short, with a clear message, which taught people that input was
+// checked while only one direction ever was.
+//
+// Every ceiling here sits clearly above the longest value the live database
+// actually held on 26/08/2026, which is the whole point: a ceiling is there to
+// stop a flood, not to cut real data. Three of them were raised from the first
+// proposal for exactly that reason, when the numbers first suggested turned out
+// to be below values already stored.
+// See DOCS/PLANING/57-central-limits-policy.md.
+describe('how long a text field may be', () => {
+  const EVENT_L = '-EventLengths0000000';
+  const x = (n) => 'x'.repeat(n);
+
+  const freshEvent = () =>
+    seed(`events/${EVENT_L}`, {
+      organizerId: A,
+      organizerName: 'A',
+      createdAt: 15,
+      details: {
+        title: 'Lengths', date: '2026-12-01', time: '19:00', location: 'x',
+        allowUserItems: true, userItemLimit: 3,
+        allowRideOffers: true, allowRideRequests: true,
+        categories: [{ id: 'starter', name: 'first', icon: '2.gif', color: '#3498db', order: 1 }],
+      },
+      participants: { [B]: { name: 'B', joinedAt: 1 } },
+      menuItems: {
+        '-item-of-b': { name: 'Bread', creatorId: B, category: 'starter', quantity: 1 },
+      },
+      assignments: {
+        '-signup-of-b': { menuItemId: '-item-of-b', userId: B, userName: 'B', quantity: 1 },
+      },
+      userItemCounts: { [B]: 1 },
+      itemCount: 1,
+    });
+
+  // Every field, its ceiling, and who writes it. The organizer writes the event
+  // and its categories; the participant writes their own item and sign-up.
+  const fields = [
+    ['event title', () => alice, `events/${EVENT_L}/details/title`, 50],
+    ['event location', () => alice, `events/${EVENT_L}/details/location`, 100],
+    ['event description', () => alice, `events/${EVENT_L}/details/description`, 500],
+    ['category name', () => alice, `events/${EVENT_L}/details/categories/0/name`, 30],
+    ['organizer name', () => alice, `events/${EVENT_L}/organizerName`, 40],
+    ['item name', () => bob, `events/${EVENT_L}/menuItems/-item-of-b/name`, 50],
+    ['item note', () => bob, `events/${EVENT_L}/menuItems/-item-of-b/notes`, 50],
+    ['item creator name', () => bob, `events/${EVENT_L}/menuItems/-item-of-b/creatorName`, 40],
+    ['ride pickup location', () => bob, `events/${EVENT_L}/menuItems/-item-of-b/pickupLocation`, 100],
+    ['item phone number', () => bob, `events/${EVENT_L}/menuItems/-item-of-b/phoneNumber`, 30],
+    ['participant name', () => bob, `events/${EVENT_L}/participants/${B}/name`, 40],
+    ['sign-up name', () => bob, `events/${EVENT_L}/assignments/-signup-of-b/userName`, 40],
+    ['sign-up note', () => bob, `events/${EVENT_L}/assignments/-signup-of-b/notes`, 50],
+    ['sign-up phone number', () => bob, `events/${EVENT_L}/assignments/-signup-of-b/phoneNumber`, 30],
+  ];
+
+  for (const [label, client, path, ceiling] of fields) {
+    test(`${label}: ${ceiling} characters go in`, async () => {
+      await freshEvent();
+      await set(ref(client().db, path), x(ceiling));
+      const snap = await get(ref(client().db, path));
+      assert.equal(snap.val().length, ceiling);
+    });
+
+    test(`${label}: one character more is refused`, async () => {
+      await freshEvent();
+      assert.ok(await denied(set(ref(client().db, path), x(ceiling + 1))));
+    });
+  }
+
+  // The question record 57 left open, and it matters: the rule language says
+  // "length" and does not say whether that is characters or bytes. Every Hebrew
+  // letter is two bytes, so if it were bytes then every ceiling here would be
+  // half of what it says for the people who actually use this product.
+  //
+  // It is characters. Fifty Hebrew letters go into a field whose ceiling is
+  // fifty, and fifty one do not.
+  test('and the count is characters, not bytes, so Hebrew is not halved', async () => {
+    await freshEvent();
+
+    await set(ref(alice.db, `events/${EVENT_L}/details/title`), 'א'.repeat(50));
+    const snap = await get(ref(alice.db, `events/${EVENT_L}/details/title`));
+    assert.equal([...snap.val()].length, 50);
+
+    assert.ok(
+      await denied(set(ref(alice.db, `events/${EVENT_L}/details/title`), 'א'.repeat(51))),
+    );
+  });
+
+  test('a value that is not text at all is refused', async () => {
+    await freshEvent();
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_L}/details/title`), 12345)));
+  });
+
+  // Optional fields have to stay optional. A validate rule is skipped for a
+  // deletion, and this is the proof: clearing the description, the note and the
+  // phone number all still work.
+  test('the optional fields can still be cleared', async () => {
+    await freshEvent();
+    await set(ref(alice.db, `events/${EVENT_L}/details/description`), 'something');
+    await set(ref(alice.db, `events/${EVENT_L}/details/description`), null);
+    assert.ok(!(await get(ref(alice.db, `events/${EVENT_L}/details/description`))).exists());
+
+    await set(ref(bob.db, `events/${EVENT_L}/menuItems/-item-of-b/notes`), 'a note');
+    await set(ref(bob.db, `events/${EVENT_L}/menuItems/-item-of-b/notes`), null);
+    assert.ok(!(await get(ref(bob.db, `events/${EVENT_L}/menuItems/-item-of-b/notes`))).exists());
+  });
+
+  // The widest write the product makes goes through every one of these rules at
+  // once, and a validate rule is not waived by the organizer's blanket write
+  // over their own event. So this is the write most likely to be broken by a
+  // ceiling set too low, and the one that proves none of them is.
+  test('the migration, which writes every field at once, still commits', async () => {
+    await freshEvent();
+
+    await runTransaction(ref(alice.db, `events/${EVENT_L}`), (current) => {
+      if (current === null) return current;
+      current.menuItems = {
+        '-migrated': {
+          name: 'A perfectly ordinary item name',
+          notes: 'and a note on it',
+          creatorId: A,
+          creatorName: 'Admin',
+          category: 'starter',
+          quantity: 1,
+        },
+      };
+      current.assignments = {};
+      current.userItemCounts = {};
+      current.itemCount = 1;
+      return current;
+    });
+
+    const snap = await get(ref(alice.db, `events/${EVENT_L}/menuItems/-migrated/name`));
+    assert.equal(snap.val(), 'A perfectly ordinary item name');
+  });
+
+  // And it is refused when one field in it is over, organizer or not.
+  test('and is refused when one field in it is over the ceiling', async () => {
+    await freshEvent();
+
+    assert.ok(
+      await denied(
+        runTransaction(ref(alice.db, `events/${EVENT_L}`), (current) => {
+          if (current === null) return current;
+          current.menuItems = {
+            '-too-long': { name: x(51), creatorId: A, category: 'starter', quantity: 1 },
+          };
+          current.itemCount = 1;
+          return current;
+        }),
+      ),
+    );
+  });
+});
+
 describe('regression: the previous rules leaked the whole event list', () => {
   after(async () => {
     await applyRules(loadRules());

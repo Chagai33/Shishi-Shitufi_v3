@@ -50,6 +50,34 @@ describe('the ceilings on the screens and the ceilings in the rules', () => {
     assert.equal(requests, 1, 'the ride request ceiling in the rules is not ridesPerPerson');
   });
 
+  // Every text ceiling, by the shape the rules write it in. A number that
+  // appears in limits.json and in no rule is a ceiling the server does not hold,
+  // and a rule holding a number that is in no limits.json is one the screens do
+  // not know about. Either way somebody types something that is refused with
+  // nothing useful said.
+  const textFields = [
+    'eventTitle', 'eventLocation', 'eventDescription', 'categoryName',
+    'itemName', 'itemNote', 'personName', 'phoneNumber', 'pickupLocation',
+  ];
+
+  for (const field of textFields) {
+    test(`${field} is the same length in both`, () => {
+      assert.ok(
+        rulesText.includes(`newData.isString() && newData.val().length <= ${limits[field]}"`),
+        `no rule in database.rules.json caps a string at ${limits[field]}, which is ${field}`,
+      );
+    });
+  }
+
+  // And no rule caps a string at a number that limits.json has never heard of.
+  test('no rule holds a text ceiling the screens do not know about', () => {
+    const known = new Set(textFields.map((f) => limits[f]));
+    const inRules = [...rulesText.matchAll(/newData\.isString\(\) && newData\.val\(\)\.length <= (\d+)/g)]
+      .map((m) => Number(m[1]));
+    const strangers = [...new Set(inRules)].filter((n) => !known.has(n));
+    assert.deepEqual(strangers, [], `these ceilings are in the rules only: ${strangers.join(', ')}`);
+  });
+
   // The date table is generated, so what is checked is that it says what it was
   // generated to say: the first month's ceiling is monthsAhead months after the
   // month the table starts in, and the table is still rolling today.

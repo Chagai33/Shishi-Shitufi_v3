@@ -108,6 +108,20 @@ describe('the ceilings on the screens and the ceilings in the rules', () => {
     assert.deepEqual(offenders, [], 'these fields carry a number instead of a limit');
   });
 
+  // And the fourth place, which is not a rule at all. The text sent to the smart
+  // import is refused by the cloud function and by nothing else, so the function
+  // carries its own copy of the number: a deployed function can read only what
+  // is inside functions/, and never src/constants/limits.json. The screens build
+  // that text and hold the same number in order to say so before sending it.
+  // Three copies of one ceiling is what this file exists to stop drifting.
+  test('the smart import text ceiling is the same on the screens and in the function', () => {
+    const functionSource = read('../../functions/smartImport.js');
+    assert.ok(
+      functionSource.includes(`text.length > ${limits.aiTextMax}`),
+      `functions/smartImport.js does not refuse text past ${limits.aiTextMax}, which is aiTextMax`,
+    );
+  });
+
   // The date table is generated, so what is checked is that it says what it was
   // generated to say: the first month's ceiling is monthsAhead months after the
   // month the table starts in, and the table is still rolling today.

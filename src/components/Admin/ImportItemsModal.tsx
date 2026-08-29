@@ -1,7 +1,7 @@
 // src/components/Admin/ImportItemsModal.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
-import { ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
+import { AI_TEXT_MAX, ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
 import FocusTrap from 'focus-trap-react';
 import { X, Upload, Table, AlertCircle, CheckCircle, Trash2, List, Wand2, Mic, MicOff, Loader2, Clipboard as ClipboardIcon, Plus } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -203,6 +203,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const handleSmartAnalyze = async () => {
     if (!smartInputText.trim() && !smartImage) {
       toast.error('אנא הזן טקסט, הקלט רשימה, או העלה תמונה');
+      return;
+    }
+
+    // The function refuses text past this length, and it is reached here without
+    // anything unusual happening: a smart migration sends every item in the
+    // event as one line each, and an event may now hold 120 of them. Saying so
+    // before the call is the difference between a limit and a failure. The check
+    // in the function stays where it is; this one only makes it speakable.
+    if (smartInputText.length > AI_TEXT_MAX) {
+      toast.error(t('importModal.smart.tooLong', { length: smartInputText.length, max: AI_TEXT_MAX }));
       return;
     }
 
@@ -637,14 +647,21 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const handleSmartClassify = async () => {
     if (importItems.length === 0) return;
 
+    // 1. Convert items to text list. Built before anything is set spinning,
+    // because its length decides whether there is a run at all: this is one
+    // string holding every item name in the event, and a full event of 120
+    // items goes past what the function accepts long before it looks unusual.
+    const listText = importItems.map(i => i.name).join(', ');
+    if (listText.length > AI_TEXT_MAX) {
+      toast.error(t('importModal.smart.tooLong', { length: listText.length, max: AI_TEXT_MAX }));
+      return;
+    }
+
     setIsAnalyzing(true);
     setClassificationSummary(null);
     const toastId = toast.loading(t('importModal.smart.analyzing'));
 
     try {
-      // 1. Convert items to text list
-      const listText = importItems.map(i => i.name).join(', ');
-
       // 2. Build allowed categories
       const allowedCats = categoryOptions.map(opt => ({ id: opt.value, name: opt.label }));
 

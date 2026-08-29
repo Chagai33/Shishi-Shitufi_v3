@@ -88,7 +88,8 @@
                 "resultAll": "Classification complete. Every item got a category.",
                 "resultPartial": "{{classified}} of {{total}} items were classified. The rest are in the category shown in the table, and you can change it there.",
                 "resultNone": "No item could be classified. They are in the category shown in the table, and you can change it there.",
-                "error": "Classification failed. Try again, or pick a category in the table."
+                "error": "Classification failed. Try again, or pick a category in the table.",
+                "tooLong": "The list is too long for automatic classification: {{length}} characters out of {{max}}. Shorten it, or classify the items by hand."
             },
             "title": "Import Items",
             "preset": {

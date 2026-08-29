@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ITEM_NAME_MAX } from '../../constants/limits';
+import { useTranslation } from 'react-i18next';
+import { AI_TEXT_MAX, ITEM_NAME_MAX } from '../../constants/limits';
 import { X, Mic, MicOff, Check, Edit2, Trash2, Wand2, Loader2, ArrowRight } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
@@ -19,6 +20,7 @@ interface SmartImportModalProps {
 }
 
 export function SmartImportModal({ onImport, onClose }: SmartImportModalProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<'INPUT' | 'PROCESSING' | 'REVIEW'>('INPUT');
   const [inputText, setInputText] = useState('');
   const [importedItems, setImportedItems] = useState<ImportedItem[]>([]);
@@ -44,6 +46,14 @@ export function SmartImportModal({ onImport, onClose }: SmartImportModalProps) {
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
       toast.error('אנא הזן טקסט או הקלט רשימה');
+      return;
+    }
+
+    // The same ceiling the other screen states, said the same way. The function
+    // refuses this length, and being told why beats being told the text is
+    // invalid.
+    if (inputText.length > AI_TEXT_MAX) {
+      toast.error(t('importModal.smart.tooLong', { length: inputText.length, max: AI_TEXT_MAX }));
       return;
     }
 

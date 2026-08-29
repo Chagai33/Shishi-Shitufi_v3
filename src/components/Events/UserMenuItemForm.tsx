@@ -1,6 +1,7 @@
 // src/components/Events/UserMenuItemForm.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
+import { ITEM_NAME_MAX, ITEM_NOTE_MAX, PERSON_NAME_MAX, PHONE_NUMBER_MAX } from '../../constants/limits';
 import { X, AlertCircle, Plus, Minus, ChevronDown, ChevronUp, Phone } from 'lucide-react';
 import { useStore, selectMenuItems } from '../../store/useStore';
 import { FirebaseService } from '../../services/firebaseService';
@@ -150,6 +151,7 @@ const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, di
         <div className="p-3 bg-white border-t border-gray-100">
           <textarea
             value={value}
+            maxLength={ITEM_NOTE_MAX}
             onChange={onChange}
             disabled={disabled}
             className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 outline-none resize-none"
@@ -882,6 +884,7 @@ export function UserMenuItemForm({
                       id="name-ride"
                       type="text"
                       value={formData.name}
+                      maxLength={ITEM_NAME_MAX}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder={t('userItemForm.pickupPlaceholder')}
                       className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
@@ -949,6 +952,7 @@ export function UserMenuItemForm({
                       id={itemNameId}
                       type="text"
                       value={formData.name}
+                      maxLength={ITEM_NAME_MAX}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder={t(`userItemForm.placeholders.${formData.category}`, {
                         defaultValue: t('userItemForm.placeholders.pattern', {
@@ -980,6 +984,7 @@ export function UserMenuItemForm({
                       id="participant-name-item"
                       type="text"
                       value={participantName}
+                      maxLength={PERSON_NAME_MAX}
                       onChange={(e) => setParticipantName(e.target.value)}
                       placeholder={t('userItemForm.fields.nameDisplayPlaceholder')}
                       className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 transition-all border-gray-300"
@@ -1080,6 +1085,7 @@ export function UserMenuItemForm({
                           type="tel"
                           inputMode="numeric"
                           value={formData.phoneNumber || ''}
+                          maxLength={PHONE_NUMBER_MAX}
                           onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                           placeholder="050-0000000"
                           className={`w-full pr-11 pl-3 py-3 border rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'

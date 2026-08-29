@@ -1,6 +1,7 @@
 // src/pages/EventPage.tsx
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { PERSON_NAME_MAX } from '../constants/limits';
 import { useTranslation } from 'react-i18next';
 import { useParams, Link } from 'react-router-dom';
 import { useStore, selectMenuItems, selectAssignments, selectParticipants, selectAssignmentsByItemId } from '../store/useStore';
@@ -48,6 +49,7 @@ const NameModal: React.FC<{ isLoading: boolean, onSave: (name: string) => void, 
                     <input
                         type="text"
                         value={name}
+                        maxLength={PERSON_NAME_MAX}
                         onChange={(e) => {
                             setName(e.target.value);
                             if (e.target.value.trim()) setError('');

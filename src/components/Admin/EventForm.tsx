@@ -1,11 +1,12 @@
 // src/components/Admin/EventForm.tsx
 import React, { useState, useEffect, useRef, useId } from 'react';
+import { EVENT_DESCRIPTION_MAX, EVENT_LOCATION_MAX, EVENT_TITLE_MAX, MONTHS_AHEAD, PERSON_NAME_MAX } from '../../constants/limits';
 import { X, Calendar, Clock, MapPin, User, FileText, AlertCircle, LayoutTemplate, Trash2, Save, ChevronDown, ChevronUp } from 'lucide-react';
 import { TEMPLATES, EVENT_PRESETS } from '../../constants/templates';
 import { useAuth } from '../../hooks/useAuth';
 import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, EventDetails, EventType, CategoryConfig } from '../../types';
-import { getNextFriday } from '../../utils/dateUtils';
+import { getNextFriday, furthestEventDate } from '../../utils/dateUtils';
 import toast from 'react-hot-toast';
 import FocusTrap from 'focus-trap-react';
 import { CategoryEditor } from './CategoryEditor';
@@ -254,7 +255,13 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
       newErrors.hostName = 'שם המארח חייב להכיל לפחות 2 תווים';
     }
 
-    if (formData.endDate && new Date(formData.endDate) < new Date(formData.date)) {
+    if (formData.date && formData.date > furthestEventDate()) {
+      newErrors.date = `לא ניתן לקבוע אירוע יותר מ-${MONTHS_AHEAD} חודשים קדימה`;
+    }
+
+    if (formData.endDate && formData.endDate > furthestEventDate()) {
+      newErrors.endDate = `לא ניתן לקבוע סיום יותר מ-${MONTHS_AHEAD} חודשים קדימה`;
+    } else if (formData.endDate && new Date(formData.endDate) < new Date(formData.date)) {
       newErrors.endDate = 'תאריך הסיום חייב להיות אחרי תאריך ההתחלה';
     } else if (formData.endDate && formData.endTime && formData.endDate === formData.date && formData.endTime < formData.time) {
       newErrors.endDate = 'שעת הסיום חייבת להיות אחרי שעת ההתחלה';
@@ -350,9 +357,16 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
           throw new Error('Failed to create event');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving event:', error);
-      toast.error(event ? 'שגיאה בעדכון האירוע. אנא נסה שוב.' : 'שגיאה ביצירת האירוע. אנא נסה שוב.');
+      // A ceiling arrives here as a message worth reading. Saying "try again"
+      // over the top of it would send the organizer round the same loop for as
+      // long as they had the patience, which is exactly the wall this campaign
+      // is about. See DOCS/PLANING/57-central-limits-policy.md.
+      toast.error(
+        error?.message
+        || (event ? 'שגיאה בעדכון האירוע. אנא נסה שוב.' : 'שגיאה ביצירת האירוע. אנא נסה שוב.')
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -589,6 +603,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     id={titleId}
                     type="text"
                     value={formData.title}
+                    maxLength={EVENT_TITLE_MAX}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     placeholder="שישי שיתופי בקהילה"
                     className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
@@ -616,6 +631,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                       id={dateId}
                       type="date"
                       value={formData.date}
+                      max={furthestEventDate()}
                       onChange={(e) => handleInputChange('date', e.target.value)}
                       className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.date ? 'border-red-500' : 'border-gray-300'}`}
                       disabled={isSubmitting}
@@ -665,6 +681,8 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                       id={endDateId}
                       type="date"
                       value={formData.endDate}
+                      min={formData.date}
+                      max={furthestEventDate()}
                       onChange={(e) => handleInputChange('endDate', e.target.value)}
                       className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.endDate ? 'border-red-500' : 'border-gray-300'}`}
                       disabled={isSubmitting}
@@ -704,6 +722,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     id={locationId}
                     type="text"
                     value={formData.location}
+                    maxLength={EVENT_LOCATION_MAX}
                     onChange={(e) => handleInputChange('location', e.target.value)}
                     placeholder="כתובת או שם המקום"
                     className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
@@ -730,6 +749,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     id={hostNameId}
                     type="text"
                     value={formData.hostName}
+                    maxLength={PERSON_NAME_MAX}
                     onChange={(e) => handleInputChange('hostName', e.target.value)}
                     placeholder="שם המארח"
                     className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.hostName ? 'border-red-500' : 'border-gray-300'}`}
@@ -753,6 +773,7 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                 <textarea
                   id={descriptionId}
                   value={formData.description}
+                  maxLength={EVENT_DESCRIPTION_MAX}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder="פרטים נוספים על האירוע..."
                   rows={4}

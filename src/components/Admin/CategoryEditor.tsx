@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CATEGORY_NAME_MAX } from '../../constants/limits';
 import { CategoryConfig } from '../../types';
 import { AVAILABLE_ICONS } from '../../constants/templates';
 import { Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
@@ -158,6 +159,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({ categories, onCh
                 id={`category-input-${category.id}`}
                 type="text"
                 value={category.name}
+                maxLength={CATEGORY_NAME_MAX}
                 onChange={(e) => handleUpdate(category.id, 'name', e.target.value)}
                 onFocus={() => setEditingId(category.id)}
                 onBlur={() => setEditingId(null)}

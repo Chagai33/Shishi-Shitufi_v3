@@ -1,6 +1,7 @@
 // src/components/Admin/ImportItemsModal.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
+import { ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
 import FocusTrap from 'focus-trap-react';
 import { X, Upload, Table, AlertCircle, CheckCircle, Trash2, List, Wand2, Mic, MicOff, Loader2, Clipboard as ClipboardIcon, Plus } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -1063,6 +1064,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                                 <input
                                   type="text"
                                   value={item.name}
+                                  maxLength={ITEM_NAME_MAX}
                                   onChange={(e) => updateItem(index, 'name', e.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                 />
@@ -1116,6 +1118,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                                 <input
                                   type="text"
                                   value={item.notes || ''}
+                                  maxLength={ITEM_NOTE_MAX}
                                   onChange={(e) => updateItem(index, 'notes', e.target.value || undefined)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                                   placeholder={t('importModal.preview.table.notes')}

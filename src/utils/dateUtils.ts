@@ -1,3 +1,5 @@
+import { MONTHS_AHEAD } from '../constants/limits';
+
 export function formatDate(dateStr: string): string {
   try {
     const date = new Date(dateStr);
@@ -52,6 +54,19 @@ export function getNextFriday(): string {
   
   return nextFriday.toISOString().split('T')[0];
 }
+/**
+ * The furthest ahead an event may be set, as the date picker wants it.
+ *
+ * The database refuses anything past this, so the picker refuses it first. The
+ * two have to agree, and the number they agree on lives in one place.
+ * See DOCS/PLANING/57-central-limits-policy.md.
+ */
+export function furthestEventDate(): string {
+  const furthest = new Date();
+  furthest.setMonth(furthest.getMonth() + MONTHS_AHEAD);
+  return furthest.toISOString().split('T')[0];
+}
+
 // Additional function to check if event has ended (including time)
 export function isEventFinished(dateStr: string, timeStr: string): boolean {
   try {

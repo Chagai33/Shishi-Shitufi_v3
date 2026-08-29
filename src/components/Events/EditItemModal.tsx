@@ -1,6 +1,7 @@
 // src/components/Events/EditItemModal.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
+import { ITEM_NAME_MAX, ITEM_NOTE_MAX, PHONE_NUMBER_MAX } from '../../constants/limits';
 import FocusTrap from 'focus-trap-react';
 import { X, ChevronDown, ChevronUp, AlertCircle, Plus, Minus, Phone } from 'lucide-react';
 import { FirebaseService } from '../../services/firebaseService';
@@ -150,6 +151,7 @@ const CollapsibleNotes: React.FC<CollapsibleNotesProps> = ({ value, onChange, di
                 <div className="p-3 bg-white border-t border-gray-100">
                     <textarea
                         value={value}
+                        maxLength={ITEM_NOTE_MAX}
                         onChange={onChange}
                         disabled={disabled}
                         className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rides outline-none resize-none"
@@ -595,6 +597,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                             id="item-name"
                                             type="text"
                                             value={formData.name}
+                                            maxLength={ITEM_NAME_MAX}
                                             onChange={(e) => handleInputChange('name', e.target.value)}
                                             placeholder={t('userItemForm.pickupPlaceholder')}
                                             className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-rides focus:border-rides transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
@@ -713,6 +716,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 name="phoneNumber"
                                                 type="tel"
                                                 value={formData.phoneNumber || ''}
+                                                maxLength={PHONE_NUMBER_MAX}
                                                 onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                                                 placeholder="050-0000000"
                                                 className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-rides focus:border-rides transition-all ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
@@ -767,6 +771,7 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                     <input
                                         type="text"
                                         value={formData.name}
+                                        maxLength={ITEM_NAME_MAX}
                                         onChange={(e) => handleInputChange('name', e.target.value)}
                                         className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                                     />

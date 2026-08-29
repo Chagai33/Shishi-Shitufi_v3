@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PERSON_NAME_MAX } from '../../constants/limits';
 import { X, Lock, User, Eye, EyeOff, AlertCircle, Info, UserPlus } from 'lucide-react';
 import { signInWithEmailAndPassword, updateProfile } from 'firebase/auth'; // Adding updateProfile
 import { auth } from '../../lib/firebase';
@@ -149,7 +150,7 @@ export function AdminLogin({ onClose, onSuccess }: AdminLoginProps) {
               <label className="block text-sm font-medium text-gray-700 mb-2">שם להצגה *</label>
               <div className="relative">
                 <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input type="text" value={displayName} onChange={(e) => handleInputChange('displayName', e.target.value)} placeholder="שם המנהל" className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.displayName ? 'border-red-500' : 'border-gray-300'}`} disabled={isLoading} required />
+                <input type="text" value={displayName} maxLength={PERSON_NAME_MAX} onChange={(e) => handleInputChange('displayName', e.target.value)} placeholder="שם המנהל" className={`w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.displayName ? 'border-red-500' : 'border-gray-300'}`} disabled={isLoading} required />
               </div>
               {errors.displayName && (<p className="mt-1 text-sm text-red-600 flex items-center"><AlertCircle className="h-4 w-4 ml-1" />{errors.displayName}</p>)}
             </div>

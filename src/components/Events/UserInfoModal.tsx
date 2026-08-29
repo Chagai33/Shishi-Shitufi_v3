@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useId } from 'react';
+import { PERSON_NAME_MAX, PHONE_NUMBER_MAX } from '../../constants/limits';
 import FocusTrap from 'focus-trap-react';
 import { X, User, Phone, Mail, AlertCircle } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -171,6 +172,7 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
                   id="name-input"
                   type="text"
                   value={name}
+                  maxLength={PERSON_NAME_MAX}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="הזן שם מלא"
                   autoComplete="name"
@@ -202,6 +204,7 @@ export function UserInfoModal({ onClose, onComplete }: UserInfoModalProps) {
                   id="phone-input"
                   type="tel"
                   value={phone}
+                  maxLength={PHONE_NUMBER_MAX}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="050-1234567"
                   autoComplete="tel"

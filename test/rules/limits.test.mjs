@@ -12,11 +12,24 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const read = (relative) =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
+
+const SRC = fileURLToPath(new URL('../../src', import.meta.url));
+
+/** Every .tsx and .ts file under src, so no screen can be missed by hand. */
+function sourceFiles(dir = SRC) {
+  const found = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) found.push(...sourceFiles(path));
+    else if (/\.tsx?$/.test(entry.name)) found.push(path);
+  }
+  return found;
+}
 
 const limits = JSON.parse(read('../../src/constants/limits.json'));
 const rulesText = read('../../database.rules.json');
@@ -76,6 +89,23 @@ describe('the ceilings on the screens and the ceilings in the rules', () => {
       .map((m) => Number(m[1]));
     const strangers = [...new Set(inRules)].filter((n) => !known.has(n));
     assert.deepEqual(strangers, [], `these ceilings are in the rules only: ${strangers.join(', ')}`);
+  });
+
+  // And the third place the numbers could split: the input fields. Every
+  // maxLength on a screen has to come from the limits module, because a number
+  // typed straight into a form is a number nobody will remember to change.
+  test('no screen carries a ceiling of its own', () => {
+    const offenders = [];
+    for (const file of sourceFiles()) {
+      const text = readFileSync(file, 'utf8');
+      for (const match of text.matchAll(/maxLength=\{([^}]+)\}/g)) {
+        const expression = match[1].trim();
+        if (/^\d+$/.test(expression)) {
+          offenders.push(`${file.split(/[\\/]/).pop()}: maxLength={${expression}}`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], 'these fields carry a number instead of a limit');
   });
 
   // The date table is generated, so what is checked is that it says what it was

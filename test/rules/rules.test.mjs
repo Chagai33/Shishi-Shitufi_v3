@@ -330,6 +330,24 @@ describe('creating an event', () => {
   test('and not a bare node with no organizer at all', async () => {
     assert.ok(await denied(set(ref(bob.db, `events/${EVENT_JUNK_2}`), { details: { probe: 1 } })));
   });
+
+  // Record 20 is half open: a few narrow paths still materialise an event node
+  // at an id a stranger picks, because each of their rules answers on its own
+  // without asking whether the event is there. The four bookkeeping nodes this
+  // campaign added would each have been one more of those, so each of them
+  // asks. This does not close record 20, it keeps it from getting wider.
+  // See DOCS/PLANING/20-anyone-can-create-an-event-node.md.
+  test('and none of the new counters can conjure an event that is not there', async () => {
+    const nowhere = '-EventThatIsNotThere';
+    await seed(`events/${nowhere}`, null);
+
+    assert.ok(await denied(set(ref(bob.db, `events/${nowhere}/itemCount`), 1)));
+    assert.ok(await denied(set(ref(bob.db, `events/${nowhere}/itemRemovals/${B}`), '-anything')));
+    assert.ok(await denied(set(ref(bob.db, `events/${nowhere}/rideOfferCounts/${B}`), 1)));
+    assert.ok(await denied(set(ref(bob.db, `events/${nowhere}/rideRequestCounts/${B}`), 1)));
+
+    assert.ok(!(await get(ref(bob.db, `events/${nowhere}`))).exists());
+  });
 });
 
 describe('claiming an item', () => {

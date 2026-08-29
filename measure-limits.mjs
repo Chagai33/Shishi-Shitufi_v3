@@ -172,6 +172,13 @@ for (const eventId of eventIds) {
   eventsPerOrganizer.set(organizer, (eventsPerOrganizer.get(organizer) || 0) + 1);
 }
 
+// The name on the user record, which is copied onto every event that person
+// creates as its organizerName. It was declared here and never filled in, so
+// this is the one name field in the product that had never been measured.
+for (const user of Object.values(users)) {
+  if (user?.name) userNameLengths.push(len(user.name));
+}
+
 const perOrganizer = [...eventsPerOrganizer.values()];
 
 console.log('');
@@ -216,6 +223,7 @@ line('category name', stats(categoryNameLengths));
 line('participant name', stats(participantNameLengths));
 line('assignment note', stats(assignmentNoteLengths));
 line('phone number', stats(phoneLengths));
+line('user record name', stats(userNameLengths));
 console.log('');
 console.log(`five longest item names            ${topFive(itemNameLengths)}`);
 console.log(`five longest event titles          ${topFive(titleLengths)}`);

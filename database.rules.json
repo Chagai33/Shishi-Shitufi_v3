@@ -288,6 +288,14 @@
             ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'ride_offers' && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'ride_requests' && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'trempim' && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() !== 'rides' && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
           }
         },
+        // Each of the four nodes below is writable by any signed-in person, so
+        // each of them asks first whether the event is actually there. Without
+        // that, every one would be another way to plant a node under events at
+        // an id of the writer's choosing, which is the half of record 20 that
+        // is still open. They are only ever written alongside an item in an
+        // event that already exists, so the check costs nothing.
+        // See DOCS/PLANING/20-anyone-can-create-an-event-node.md.
+        //
         // Which item the write above is paying with. It carries no meaning on
         // its own and nothing reads it: it exists so that the counter rule has
         // something to check the deletion against. Writing it freely is
@@ -316,11 +324,11 @@
         // See DOCS/PLANING/57-central-limits-policy.md.
         "itemCount": {
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120",
-          ".write": "auth != null && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1) || (data.exists() && newData.val() === data.val() - 1 && root.child('events').child($eventId).child('menuItems').child(newData.parent().child('itemRemovals').child(auth.uid).val()).child('creatorId').val() === auth.uid && !newData.parent().child('menuItems').child(newData.parent().child('itemRemovals').child(auth.uid).val()).exists()) )"
+          ".write": "auth != null && root.child('events').child($eventId).exists() && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1) || (data.exists() && newData.val() === data.val() - 1 && root.child('events').child($eventId).child('menuItems').child(newData.parent().child('itemRemovals').child(auth.uid).val()).child('creatorId').val() === auth.uid && !newData.parent().child('menuItems').child(newData.parent().child('itemRemovals').child(auth.uid).val()).exists()) )"
         },
         "itemRemovals": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid"
+            ".write": "auth != null && root.child('events').child($eventId).exists() && auth.uid === $uid"
           }
         },
         // One ride each way, offered and asked for, per person, per event.
@@ -354,12 +362,12 @@
         // and DOCS/PLANING/31-rides-consume-the-item-quota.md.
         "rideOfferCounts": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1 && newData.val() <= 2) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && (root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'ride_offers' || root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'trempim' || root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'rides') && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
+            ".write": "auth != null && root.child('events').child($eventId).exists() && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1 && newData.val() <= 2) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && (root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'ride_offers' || root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'trempim' || root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'rides') && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
           }
         },
         "rideRequestCounts": {
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1 && newData.val() <= 2) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'ride_requests' && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
+            ".write": "auth != null && root.child('events').child($eventId).exists() && auth.uid === $uid && ( (!data.exists() && newData.val() === 1) || (data.exists() && newData.val() === data.val() + 1 && newData.val() <= 2) || (data.exists() && newData.val() === data.val() - 1 && newData.val() >= 0 && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('creatorId').val() === auth.uid && root.child('events').child($eventId).child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).child('category').val() === 'ride_requests' && !newData.parent().parent().child('menuItems').child(newData.parent().parent().child('itemRemovals').child($uid).val()).exists()) )"
           }
         }
       }

@@ -11,7 +11,7 @@
 
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { ref, get, set, update, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, get, set, update, runTransaction, query, orderByChild, equalTo } from 'firebase/database';
 import { clientAs, seed, loadRules, applyRules, denied } from './helpers.mjs';
 
 const A = 'uid-organizer-a';
@@ -30,6 +30,14 @@ const EVENT_EMPTY = '-EventWithNoItems000';
 // default. See DOCS/PLANING/29-rides-blocked-by-user-items-setting.md.
 const EVENT_OFFERS_ONLY = '-EventOffersOnly0000';
 const EVENT_REQUESTS_ONLY = '-EventRequestsOnly00';
+// Two ids nobody has used yet. Creating an event is still open to anybody, so
+// the first one gets made; the second one is the shape that must not be.
+const EVENT_NEW_BY_B = '-EventCreatedByB0000';
+// Two junk ids, not one. Against the old rules the first attempt below went
+// through, and a second attempt at the same id was then refused for the wrong
+// reason: the node already existed. Each attempt needs an id of its own.
+const EVENT_JUNK = '-EventJunkNode000000';
+const EVENT_JUNK_2 = '-EventJunkNode000001';
 
 let alice, bob, anon, visitor;
 
@@ -249,6 +257,70 @@ describe('writing into an event you do not own', () => {
         }),
       ),
     );
+  });
+});
+
+// The rule on the event node used to ask whether the data *arriving* named the
+// writer as the organizer. Anybody could answer that for themselves simply by
+// writing it, and the app hands an identity to every visitor who opens an
+// invitation link. One write and the event changed hands: the details, the menu
+// and every sign-up went with it, and the real organizer was locked out of
+// their own screens. See DOCS/PLANING/63-anyone-can-take-over-an-existing-event.md.
+describe('taking over an event that already exists', () => {
+  test("B cannot write themselves in as the organizer of A's event", async () => {
+    assert.ok(await denied(set(ref(bob.db, `events/${EVENT_A}/organizerId`), B)));
+  });
+
+  // The same takeover in one move rather than two: replace the whole event with
+  // an object that says B owns it.
+  test("B cannot replace A's whole event with one of their own", async () => {
+    assert.ok(
+      await denied(
+        set(ref(bob.db, `events/${EVENT_A}`), {
+          organizerId: B,
+          organizerName: 'B',
+          createdAt: 9,
+          details: { title: 'Mine now' },
+        }),
+      ),
+    );
+  });
+
+  test('and A is still the organizer afterwards', async () => {
+    const snap = await get(ref(alice.db, `events/${EVENT_A}/organizerId`));
+    assert.equal(snap.val(), A);
+  });
+});
+
+// Making an event stays open to anybody, because that is the product: you sign
+// in and you make one. What it is no longer is a blank cheque to write any node
+// under events, with any content, at any id somebody invents.
+// See DOCS/PLANING/20-anyone-can-create-an-event-node.md.
+describe('creating an event', () => {
+  test('B can create an event of their own, registering themselves as its organizer', async () => {
+    await set(ref(bob.db, `events/${EVENT_NEW_BY_B}`), {
+      organizerId: B,
+      organizerName: 'B',
+      createdAt: 6,
+      details: { title: "B's own event", allowUserItems: true, userItemLimit: 3 },
+      menuItems: {},
+      assignments: {},
+      participants: {},
+    });
+    const snap = await get(ref(bob.db, `events/${EVENT_NEW_BY_B}/organizerId`));
+    assert.equal(snap.val(), B);
+  });
+
+  test('but not one that puts somebody else down as the organizer', async () => {
+    assert.ok(
+      await denied(
+        set(ref(bob.db, `events/${EVENT_JUNK}`), { organizerId: A, details: { title: 'not mine' } }),
+      ),
+    );
+  });
+
+  test('and not a bare node with no organizer at all', async () => {
+    assert.ok(await denied(set(ref(bob.db, `events/${EVENT_JUNK_2}`), { details: { probe: 1 } })));
   });
 });
 
@@ -698,6 +770,43 @@ describe('the organizer still runs their own event', () => {
 
     const snap = await get(ref(alice.db, `events/${EVENT_A}/menuItems`));
     assert.deepEqual(Object.keys(snap.val() || {}), ['-migrated-1']);
+  });
+
+  // The test above writes three scoped paths, which is not the shape the
+  // product uses. The migration is a transaction on the whole event node, so
+  // what actually reaches the server is the entire event object written back.
+  // That is the widest write any screen makes, and therefore the one a tighter
+  // rule on the event node is most likely to break.
+  // See DOCS/PLANING/51-smart-migration-replaces-every-item.md.
+  test('A can run the smart migration in the shape the product actually uses', async () => {
+    await runTransaction(ref(alice.db, `events/${EVENT_A}`), (current) => {
+      if (current === null) return current;
+      current.menuItems = { '-migrated-2': { name: 'Migrated again', creatorId: A, quantity: 1 } };
+      current.assignments = {};
+      current.userItemCounts = { [B]: 0 };
+      return current;
+    });
+
+    const snap = await get(ref(alice.db, `events/${EVENT_A}/menuItems`));
+    assert.deepEqual(Object.keys(snap.val() || {}), ['-migrated-2']);
+  });
+
+  // Bulk item management, which edits items and cancels sign-ups across events.
+  // It never writes the event node itself, only scoped paths beneath it.
+  test('A can edit items and cancel sign-ups the way bulk item management does', async () => {
+    await seed(`events/${EVENT_A}/menuItems/-item-bulk`, { name: 'Rolls', creatorId: B, quantity: 1 });
+    await seed(`events/${EVENT_A}/assignments/-assignment-bulk`, {
+      menuItemId: '-item-bulk', userId: C, userName: 'C', quantity: 1,
+    });
+
+    await update(ref(alice.db), {
+      [`events/${EVENT_A}/menuItems/-item-bulk/name`]: 'Rolls, renamed in bulk',
+      [`events/${EVENT_A}/menuItems/-item-bulk/category`]: 'dessert',
+      [`events/${EVENT_A}/assignments/-assignment-bulk`]: null,
+    });
+
+    const snap = await get(ref(alice.db, `events/${EVENT_A}/menuItems/-item-bulk/name`));
+    assert.equal(snap.val(), 'Rolls, renamed in bulk');
   });
 
   test('A can wipe the menu of their own event', async () => {

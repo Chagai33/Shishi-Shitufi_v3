@@ -42,11 +42,36 @@ export function getSmartImportErrorMessage(error: any): string {
     case 'functions/data-loss':
       return i18n.t('importModal.smart.errors.parse');
 
+    // The function is not answering at all, and none of our code ran.
+    //
+    // This is what a spending ceiling looks like from here: when billing on the
+    // project is stopped the function stops being served, and the client sees a
+    // 404 or a 403 depending on how it was stopped, never anything we wrote.
+    // The same three arrive when it has not been deployed yet, or when it is
+    // being deployed right now.
+    //
+    // So they say the service is not available and that items can be added by
+    // hand, rather than "try again": trying again does not help while the thing
+    // on the other end is switched off, and an organiser who is told to retry
+    // will sit there retrying.
     case 'functions/unavailable':
+    case 'functions/not-found':
+    case 'functions/permission-denied':
       return i18n.t('importModal.smart.errors.unavailable');
 
     case 'functions/internal':
       return i18n.t('importModal.smart.errors.internal');
+
+    // The caller's own sign-in is gone. Everybody here is signed in, most of
+    // them anonymously and without ever being asked, so this is a session that
+    // expired rather than a person who has to make an account.
+    case 'functions/unauthenticated':
+      return i18n.t('importModal.smart.errors.signedOut');
+
+    // Ran out of time rather than failed. A photograph of a handwritten list is
+    // the way to reach this, so the advice is about size and not about retrying.
+    case 'functions/deadline-exceeded':
+      return i18n.t('importModal.smart.errors.tooSlow');
   }
 
   if (typeof error?.message === 'string' && error.message.includes('network')) {

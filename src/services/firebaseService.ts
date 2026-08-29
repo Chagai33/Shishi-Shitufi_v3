@@ -8,7 +8,8 @@ import { getFunctions, httpsCallable } from 'firebase/functions'; // <-- Added i
 import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
 
-import { RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS, RIDES_PER_PERSON, isRideCategory } from '../utils/eventUtils';
+import { RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS, isRideCategory } from '../utils/eventUtils';
+import { ITEMS_PER_EVENT, EVENTS_PER_ORGANIZER, RIDES_PER_PERSON } from '../constants/limits';
 import { toast } from 'react-hot-toast';
 import i18n from '../i18n';
 
@@ -202,9 +203,23 @@ export class FirebaseService {
    */
   static async createEvent(organizerId: string, eventDetails: EventDetails): Promise<string> {
     try {
-      // Get organizer name
-      const organizerSnapshot = await get(ref(database, `users/${organizerId}/name`));
+      // Get organizer name, and the count of events they already have.
+      const [organizerSnapshot, eventCountSnapshot] = await Promise.all([
+        get(ref(database, `users/${organizerId}/name`)),
+        get(ref(database, `users/${organizerId}/eventCount`))
+      ]);
       const organizerName = organizerSnapshot.val() || 'מארגן';
+
+      // How many events one organizer may have. Nothing counted them before,
+      // and a rule cannot count children either, so the count is kept as a
+      // number on the organizer's own record and every creation steps it.
+      // An organizer who already has events but no counter starts from one,
+      // because their existing events cannot be counted retroactively.
+      // See DOCS/PLANING/57-central-limits-policy.md.
+      const eventCount = eventCountSnapshot.val() || 0;
+      if (eventCount >= EVENTS_PER_ORGANIZER) {
+        throw new Error(i18n.t('dashboard.limits.tooManyEvents', { limit: EVENTS_PER_ORGANIZER }));
+      }
 
       // Create new event in global collection
       const newEventRef = push(ref(database, 'events'));
@@ -217,10 +232,16 @@ export class FirebaseService {
         details: eventDetails,
         menuItems: {},
         assignments: {},
-        participants: {}
+        participants: {},
+        itemCount: 0
       };
 
-      await set(newEventRef, fullEventData);
+      // The event and the counter go up together, because the rules will not
+      // take one without the other.
+      await update(ref(database), {
+        [`events/${newEventId}`]: fullEventData,
+        [`users/${organizerId}/eventCount`]: eventCount + 1
+      });
       return newEventId;
     } catch (error) {
       console.error('❌ Error in createEvent:', error);
@@ -400,7 +421,24 @@ export class FirebaseService {
    */
   static async deleteEvent(eventId: string): Promise<void> {
     try {
-      await remove(ref(database, `events/${eventId}`));
+      // Deleting gives the place back, and it has to say which event it is
+      // giving back: the counter only comes down when the event it names was
+      // this organizer's and is gone once the write lands. Without that the
+      // counter could be walked down and the ceiling would mean nothing.
+      // See DOCS/PLANING/57-central-limits-policy.md.
+      const organizerId = auth.currentUser?.uid;
+      const updates: { [key: string]: any } = { [`events/${eventId}`]: null };
+
+      if (organizerId) {
+        const eventCountSnapshot = await get(ref(database, `users/${organizerId}/eventCount`));
+        const eventCount = eventCountSnapshot.val() || 0;
+        if (eventCount > 0) {
+          updates[`users/${organizerId}/eventRemoval`] = eventId;
+          updates[`users/${organizerId}/eventCount`] = eventCount - 1;
+        }
+      }
+
+      await update(ref(database), updates);
     } catch (error) {
       console.error('❌ Error in deleteEvent:', error);
       console.groupEnd();
@@ -417,13 +455,14 @@ export class FirebaseService {
    */
   static async deleteAllEventItems(eventId: string): Promise<void> {
     try {
-      const updates: { [key: string]: null } = {};
+      const updates: { [key: string]: null | number } = {};
       updates[`events/${eventId}/menuItems`] = null;
       updates[`events/${eventId}/assignments`] = null;
       updates[`events/${eventId}/userItemCounts`] = null;
       updates[`events/${eventId}/rideOfferCounts`] = null;
       updates[`events/${eventId}/rideRequestCounts`] = null;
       updates[`events/${eventId}/itemRemovals`] = null;
+      updates[`events/${eventId}/itemCount`] = 0;
 
       await update(ref(database), updates);
     } catch (error) {
@@ -468,6 +507,7 @@ export class FirebaseService {
     // Set by the updater, which may run more than once. The last run is the one
     // that commits, so an assignment rather than an increment is what is wanted.
     let concurrentItemCount = 0;
+    let migratedItemCount = 0;
 
     try {
       await runTransaction(eventRef, (currentEventData: ShishiEvent | null) => {
@@ -615,7 +655,18 @@ export class FirebaseService {
           }
         });
 
+        // The event's own count, rebuilt from what it actually holds. The
+        // migration is the one write that can change it by more than one, and
+        // it is also the write that repairs it when it has drifted.
+        migratedItemCount = Object.keys(newMenuItemsMap).length;
+        if (migratedItemCount > ITEMS_PER_EVENT) {
+          // Abort rather than send a write the rules will refuse with nothing
+          // more useful than "permission denied".
+          return undefined;
+        }
+
         // 5. Apply New Items to State
+        currentEventData.itemCount = migratedItemCount;
         currentEventData.menuItems = newMenuItemsMap;
         currentEventData.assignments = keptAssignments;
         currentEventData.userItemCounts = newUserItemCounts;
@@ -627,6 +678,10 @@ export class FirebaseService {
 
         return currentEventData;
       });
+
+      if (migratedItemCount > ITEMS_PER_EVENT) {
+        throw new Error(i18n.t('eventPage.limits.eventFull', { limit: ITEMS_PER_EVENT }));
+      }
 
       return { concurrentItemCount };
     } catch (error) {
@@ -682,10 +737,11 @@ export class FirebaseService {
     options?: { bypassLimit?: boolean }
   ): Promise<string> {
     try {
-      // Read the two things the decision needs instead of the whole event.
-      const [detailsSnapshot, organizerSnapshot] = await Promise.all([
+      // Read the three things the decision needs instead of the whole event.
+      const [detailsSnapshot, organizerSnapshot, itemCountSnapshot] = await Promise.all([
         get(ref(database, `events/${eventId}/details`)),
-        get(ref(database, `events/${eventId}/organizerId`))
+        get(ref(database, `events/${eventId}/organizerId`)),
+        get(ref(database, `events/${eventId}/itemCount`))
       ]);
 
       if (!detailsSnapshot.exists()) {
@@ -777,6 +833,21 @@ export class FirebaseService {
         }
       }
 
+      // Check 4: is the event full? This one is not per person. The app hands a
+      // fresh identity to every visitor who opens an invitation link, so a
+      // per-person quota is a quota per identity and identities are free; the
+      // count on the event is what makes the total finite.
+      //
+      // It applies to the organizer as well, and here it has to, because the
+      // rules cannot apply it to them: the migration writes the whole menu in
+      // one go and no rule can count what arrives in it. This is the only place
+      // the organizer meets this ceiling.
+      // See DOCS/PLANING/57-central-limits-policy.md.
+      const nextItemCount = (itemCountSnapshot.val() || 0) + 1;
+      if (nextItemCount > ITEMS_PER_EVENT) {
+        throw new Error(i18n.t('eventPage.limits.eventFull', { limit: ITEMS_PER_EVENT }));
+      }
+
       // --- Prepare Data ---
       const newItemRef = push(ref(database, `events/${eventId}/menuItems`));
       const newItemId = newItemRef.key!;
@@ -808,6 +879,9 @@ export class FirebaseService {
       if (claimsRidePlace) {
         updates[`events/${eventId}/${ridePlacePath}/${creatorId}`] = ridePlaceCount + 1;
       }
+      // The event's own count moves for every item, ride or not, because the
+      // ceiling is on the event and not on any one person.
+      updates[`events/${eventId}/itemCount`] = nextItemCount;
 
       await update(ref(database), updates);
 
@@ -1009,9 +1083,10 @@ export class FirebaseService {
     console.log('📥 Input parameters:', { eventId, itemId });
 
     try {
-      const [itemSnapshot, assignmentsSnapshot] = await Promise.all([
+      const [itemSnapshot, assignmentsSnapshot, itemCountSnapshot] = await Promise.all([
         get(ref(database, `events/${eventId}/menuItems/${itemId}`)),
-        get(ref(database, `events/${eventId}/assignments`))
+        get(ref(database, `events/${eventId}/assignments`)),
+        get(ref(database, `events/${eventId}/itemCount`))
       ]);
 
       if (!itemSnapshot.exists()) {
@@ -1074,6 +1149,17 @@ export class FirebaseService {
           updates[`events/${eventId}/itemRemovals/${creatorId}`] = itemId;
           updates[`events/${eventId}/${ridePathForDeleted}/${creatorId}`] = held - 1;
         }
+      }
+
+      // Step 2c: and the event's own count comes down with it. Skipping this
+      // would leave the count climbing on every add-and-delete round until the
+      // event refused everybody, so the rules require it rather than trusting
+      // it. Events created before any of this shipped have no count at all and
+      // carry on without one.
+      const writerId = auth.currentUser?.uid;
+      if (itemCountSnapshot.exists() && (itemCountSnapshot.val() || 0) > 0) {
+        if (writerId) updates[`events/${eventId}/itemRemovals/${writerId}`] = itemId;
+        updates[`events/${eventId}/itemCount`] = itemCountSnapshot.val() - 1;
       }
 
       // Step 3: Delete all assignments related to the item

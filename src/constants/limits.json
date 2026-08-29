@@ -1,0 +1,6 @@
+{
+  "itemsPerEvent": 120,
+  "eventsPerOrganizer": 50,
+  "ridesPerPerson": 2,
+  "monthsAhead": 12
+}

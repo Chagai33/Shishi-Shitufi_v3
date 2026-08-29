@@ -297,15 +297,23 @@ describe('taking over an event that already exists', () => {
 // under events, with any content, at any id somebody invents.
 // See DOCS/PLANING/20-anyone-can-create-an-event-node.md.
 describe('creating an event', () => {
+  // Creating an event now steps the organizer's own event counter with it, so
+  // that there is something for a ceiling to be measured against.
+  // See DOCS/PLANING/57-central-limits-policy.md.
   test('B can create an event of their own, registering themselves as its organizer', async () => {
-    await set(ref(bob.db, `events/${EVENT_NEW_BY_B}`), {
-      organizerId: B,
-      organizerName: 'B',
-      createdAt: 6,
-      details: { title: "B's own event", allowUserItems: true, userItemLimit: 3 },
-      menuItems: {},
-      assignments: {},
-      participants: {},
+    await seed(`users/${B}`, { name: 'B', createdAt: 1 });
+
+    await update(ref(bob.db), {
+      [`events/${EVENT_NEW_BY_B}`]: {
+        organizerId: B,
+        organizerName: 'B',
+        createdAt: 6,
+        details: { title: "B's own event", allowUserItems: true, userItemLimit: 3 },
+        menuItems: {},
+        assignments: {},
+        participants: {},
+      },
+      [`users/${B}/eventCount`]: 1,
     });
     const snap = await get(ref(bob.db, `events/${EVENT_NEW_BY_B}/organizerId`));
     assert.equal(snap.val(), B);
@@ -456,10 +464,12 @@ describe('adding items as a participant', () => {
 
   test('a participant with no counter yet can add their first item', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     await update(ref(visitor.db), {
       [`events/${EVENT_A}/menuItems/-first-item-by-v`]: firstItem('Quiche', 'main'),
       [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
+      [`events/${EVENT_A}/itemCount`]: 1,
     });
 
     const snap = await get(ref(visitor.db, `events/${EVENT_A}/menuItems/-first-item-by-v/name`));
@@ -472,11 +482,13 @@ describe('adding items as a participant', () => {
   test('a first ride offer is not refused either', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
     await seed(`events/${EVENT_A}/rideOfferCounts/${V}`, null);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     await update(ref(visitor.db), {
       [`events/${EVENT_A}/menuItems/-first-offer-by-v`]: firstItem('Ride there', 'ride_offers'),
       [`events/${EVENT_A}/rideOfferCounts/${V}`]: 1,
       [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
+      [`events/${EVENT_A}/itemCount`]: 1,
     });
 
     const snap = await get(ref(visitor.db, `events/${EVENT_A}/menuItems/-first-offer-by-v/name`));
@@ -486,11 +498,13 @@ describe('adding items as a participant', () => {
   test('nor is a first ride request', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
     await seed(`events/${EVENT_A}/rideRequestCounts/${V}`, null);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     await update(ref(visitor.db), {
       [`events/${EVENT_A}/menuItems/-first-request-by-v`]: firstItem('Need a lift', 'ride_requests'),
       [`events/${EVENT_A}/rideRequestCounts/${V}`]: 1,
       [`events/${EVENT_A}/userItemCounts/${V}`]: 1,
+      [`events/${EVENT_A}/itemCount`]: 1,
     });
 
     const snap = await get(ref(visitor.db, `events/${EVENT_A}/menuItems/-first-request-by-v/name`));
@@ -502,12 +516,14 @@ describe('adding items as a participant', () => {
   // somebody open at any number and skip the quota entirely.
   test('but a first counter may only be one, not any number the client likes', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${V}`, null);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     assert.ok(
       await denied(
         update(ref(visitor.db), {
           [`events/${EVENT_A}/menuItems/-jump-by-v`]: firstItem('Opening high', 'main'),
           [`events/${EVENT_A}/userItemCounts/${V}`]: 5,
+          [`events/${EVENT_A}/itemCount`]: 1,
         }),
       ),
     );
@@ -515,12 +531,14 @@ describe('adding items as a participant', () => {
 
   test('B can add an item while under the quota, counter and all', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 1);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     await update(ref(bob.db), {
       [`events/${EVENT_A}/menuItems/-item-by-b-2`]: {
         name: 'Hummus', creatorId: B, category: 'starter', quantity: 1,
       },
       [`events/${EVENT_A}/userItemCounts/${B}`]: 2,
+      [`events/${EVENT_A}/itemCount`]: 1,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-item-by-b-2/name`));
@@ -529,6 +547,7 @@ describe('adding items as a participant', () => {
 
   test('B is refused once the quota is used up', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 3);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     assert.ok(
       await denied(
@@ -537,6 +556,7 @@ describe('adding items as a participant', () => {
             name: 'One too many', creatorId: B, category: 'starter', quantity: 1,
           },
           [`events/${EVENT_A}/userItemCounts/${B}`]: 4,
+          [`events/${EVENT_A}/itemCount`]: 1,
         }),
       ),
     );
@@ -549,12 +569,14 @@ describe('adding items as a participant', () => {
   test('a ride does not count against the quota, exactly as the screen behaves', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 3);
     await seed(`events/${EVENT_A}/rideOfferCounts/${B}`, null);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     await update(ref(bob.db), {
       [`events/${EVENT_A}/menuItems/-ride-by-b`]: {
         name: 'Ride to the event', creatorId: B, category: 'ride_offers', quantity: 3,
       },
       [`events/${EVENT_A}/rideOfferCounts/${B}`]: 1,
+      [`events/${EVENT_A}/itemCount`]: 1,
     });
 
     const name = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-ride-by-b/name`));
@@ -570,12 +592,14 @@ describe('adding items as a participant', () => {
   test('the fourth, older ride category is exempt too', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 3);
     await seed(`events/${EVENT_A}/rideOfferCounts/${B}`, null);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     await update(ref(bob.db), {
       [`events/${EVENT_A}/menuItems/-legacy-ride-by-b`]: {
         name: 'Ride, old category', creatorId: B, category: 'rides', quantity: 3,
       },
       [`events/${EVENT_A}/rideOfferCounts/${B}`]: 1,
+      [`events/${EVENT_A}/itemCount`]: 1,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-legacy-ride-by-b/name`));
@@ -603,12 +627,14 @@ describe('adding items as a participant', () => {
   // removing it, so "has a counter" and "has items" are not the same question.
   test('a participant whose counter is back at zero can add again', async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 0);
+    await seed(`events/${EVENT_A}/itemCount`, null);
 
     await update(ref(bob.db), {
       [`events/${EVENT_A}/menuItems/-item-after-zero`]: {
         name: 'Back again', creatorId: B, category: 'main', quantity: 1,
       },
       [`events/${EVENT_A}/userItemCounts/${B}`]: 1,
+      [`events/${EVENT_A}/itemCount`]: 1,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-item-after-zero/name`));
@@ -628,6 +654,7 @@ describe('adding items as a participant', () => {
             name: 'Not mine', creatorId: C, category: 'main', quantity: 1,
           },
           [`events/${EVENT_A}/userItemCounts/${B}`]: 2,
+          [`events/${EVENT_A}/itemCount`]: 1,
         }),
       ),
     );
@@ -671,8 +698,13 @@ describe('adding items as a participant', () => {
     await seed(`events/${EVENT_A}/menuItems/-item-to-delete`, {
       name: 'Mine', creatorId: B, category: 'main', quantity: 1,
     });
+    await seed(`events/${EVENT_A}/itemCount`, 4);
 
-    await set(ref(bob.db, `events/${EVENT_A}/menuItems/-item-to-delete`), null);
+    await update(ref(bob.db), {
+      [`events/${EVENT_A}/menuItems/-item-to-delete`]: null,
+      [`events/${EVENT_A}/itemCount`]: 3,
+      [`events/${EVENT_A}/itemRemovals/${B}`]: '-item-to-delete',
+    });
 
     const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-item-to-delete`));
     assert.ok(!snap.exists());
@@ -687,9 +719,12 @@ describe('rides follow their own switch, not the item switch', () => {
   const ride = (name, category) => ({ name, creatorId: B, category, quantity: 3 });
 
   test('B can offer a ride even though participant items are switched off', async () => {
+    await seed(`events/${EVENT_OFFERS_ONLY}/itemCount`, null);
+
     await update(ref(bob.db), {
       [`events/${EVENT_OFFERS_ONLY}/menuItems/-offer-by-b`]: ride('Ride there', 'ride_offers'),
       [`events/${EVENT_OFFERS_ONLY}/rideOfferCounts/${B}`]: 1,
+      [`events/${EVENT_OFFERS_ONLY}/itemCount`]: 1,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_OFFERS_ONLY}/menuItems/-offer-by-b/name`));
@@ -697,9 +732,12 @@ describe('rides follow their own switch, not the item switch', () => {
   });
 
   test('B can ask for a ride in the event where that switch is the one left on', async () => {
+    await seed(`events/${EVENT_REQUESTS_ONLY}/itemCount`, null);
+
     await update(ref(bob.db), {
       [`events/${EVENT_REQUESTS_ONLY}/menuItems/-request-by-b`]: ride('Need a lift', 'ride_requests'),
       [`events/${EVENT_REQUESTS_ONLY}/rideRequestCounts/${B}`]: 1,
+      [`events/${EVENT_REQUESTS_ONLY}/itemCount`]: 1,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_REQUESTS_ONLY}/menuItems/-request-by-b/name`));
@@ -716,6 +754,7 @@ describe('rides follow their own switch, not the item switch', () => {
             name: 'Quiche', creatorId: B, category: 'main', quantity: 1,
           },
           [`events/${EVENT_OFFERS_ONLY}/userItemCounts/${B}`]: 1,
+          [`events/${EVENT_OFFERS_ONLY}/itemCount`]: 1,
         }),
       ),
     );
@@ -769,6 +808,7 @@ describe('walking around the item quota', () => {
       assignments: {},
       userItemCounts: { [B]: 3 },
       rideOfferCounts: { [B]: 1 },
+      itemCount: 5,
     });
 
   test('the counter cannot be stepped down with nothing deleted', async () => {
@@ -796,6 +836,7 @@ describe('walking around the item quota', () => {
           [`events/${EVENT_Q}/menuItems/-q-not-mine`]: null,
           [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-not-mine',
           [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+          [`events/${EVENT_Q}/itemCount`]: 4,
         }),
       ),
     );
@@ -812,6 +853,7 @@ describe('walking around the item quota', () => {
           [`events/${EVENT_Q}/menuItems/-q-ride`]: null,
           [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-ride',
           [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+          [`events/${EVENT_Q}/itemCount`]: 4,
         }),
       ),
     );
@@ -825,6 +867,7 @@ describe('walking around the item quota', () => {
       [`events/${EVENT_Q}/menuItems/-q-1`]: null,
       [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-1',
       [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+      [`events/${EVENT_Q}/itemCount`]: 4,
     });
 
     await update(ref(bob.db), {
@@ -832,6 +875,7 @@ describe('walking around the item quota', () => {
         name: 'Instead', creatorId: B, category: 'starter', quantity: 1,
       },
       [`events/${EVENT_Q}/userItemCounts/${B}`]: 3,
+      [`events/${EVENT_Q}/itemCount`]: 5,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_Q}/menuItems/-q-replacement/name`));
@@ -844,6 +888,7 @@ describe('walking around the item quota', () => {
       [`events/${EVENT_Q}/menuItems/-q-1`]: null,
       [`events/${EVENT_Q}/itemRemovals/${B}`]: '-q-1',
       [`events/${EVENT_Q}/userItemCounts/${B}`]: 2,
+      [`events/${EVENT_Q}/itemCount`]: 4,
     });
 
     assert.ok(
@@ -897,6 +942,7 @@ describe('an item that only says it is a ride', () => {
       menuItems: {},
       assignments: {},
       userItemCounts: { [B]: 3 },
+      itemCount: 0,
     });
 
   const fake = (id, category) => ({
@@ -908,6 +954,7 @@ describe('an item that only says it is a ride', () => {
     update(ref(bob.db), {
       [`events/${EVENT_R}/menuItems/${id}`]: fake(id, 'ride_offers'),
       [`events/${EVENT_R}/rideOfferCounts/${B}`]: count,
+      [`events/${EVENT_R}/itemCount`]: count,
     });
 
   test('a round trip still goes in, both legs', async () => {
@@ -936,6 +983,7 @@ describe('an item that only says it is a ride', () => {
       update(ref(bob.db), {
         [`events/${EVENT_R}/menuItems/${id}`]: fake(id, 'ride_requests'),
         [`events/${EVENT_R}/rideRequestCounts/${B}`]: count,
+        [`events/${EVENT_R}/itemCount`]: count,
       });
 
     await askLeg('-ask-there', 1);
@@ -963,6 +1011,7 @@ describe('an item that only says it is a ride', () => {
         update(ref(bob.db), {
           [`events/${EVENT_R}/menuItems/-opening-high`]: fake('-opening-high', 'ride_offers'),
           [`events/${EVENT_R}/rideOfferCounts/${B}`]: 2,
+          [`events/${EVENT_R}/itemCount`]: 1,
         }),
       ),
     );
@@ -984,6 +1033,7 @@ describe('an item that only says it is a ride', () => {
       [`events/${EVENT_R}/menuItems/-first-ride`]: null,
       [`events/${EVENT_R}/itemRemovals/${B}`]: '-first-ride',
       [`events/${EVENT_R}/rideOfferCounts/${B}`]: 0,
+      [`events/${EVENT_R}/itemCount`]: 0,
     });
 
     await offerLeg('-second-ride', 1);
@@ -1006,6 +1056,7 @@ describe('an item that only says it is a ride', () => {
           [`events/${EVENT_R}/menuItems/-offer-to-delete`]: null,
           [`events/${EVENT_R}/itemRemovals/${B}`]: '-offer-to-delete',
           [`events/${EVENT_R}/rideRequestCounts/${B}`]: 0,
+          [`events/${EVENT_R}/itemCount`]: 0,
         }),
       ),
     );
@@ -1078,12 +1129,14 @@ describe('deleting an item you created', () => {
   // counter coming down, and the name of the item that pays for the step.
   test("B can delete their own item together with somebody else's sign-up", async () => {
     await seed(`events/${EVENT_A}/userItemCounts/${B}`, 1);
+    await seed(`events/${EVENT_A}/itemCount`, 1);
 
     await update(ref(bob.db), {
       [`events/${EVENT_A}/menuItems/-item-by-b`]: null,
       [`events/${EVENT_A}/assignments/-assignment-by-c`]: null,
       [`events/${EVENT_A}/itemRemovals/${B}`]: '-item-by-b',
       [`events/${EVENT_A}/userItemCounts/${B}`]: 0,
+      [`events/${EVENT_A}/itemCount`]: 0,
     });
 
     const snap = await get(ref(bob.db, `events/${EVENT_A}/menuItems/-item-by-b`));
@@ -1205,6 +1258,340 @@ describe('the organizer still runs their own event', () => {
 
 // Proves the leak was real by putting the previous rule back and watching it
 // reopen. Runs last, and restores the real rules afterwards.
+// How far ahead an event may be set, and it applies to the end date as well as
+// the start. An event three years out is three years of everybody's names and
+// phone numbers kept alive by one date field, and there was no ceiling on it.
+//
+// A rule cannot format the clock as a date, so this is a table: for each month,
+// the latest day an event may fall on while that month is the current one. It
+// rolls on its own and it is exact to the month.
+//
+// The end date is the half that is easy to miss. Limiting only the start leaves
+// the hole wide open, because an event can begin tomorrow and end in the year
+// 3000. See DOCS/PLANING/65-end-date-is-written-and-never-read.md.
+describe('how far ahead an event may be set', () => {
+  const EVENT_D = '-EventDates000000000';
+
+  // Relative to the clock, so these do not rot: the ceiling itself rolls.
+  const inMonths = (n) => {
+    const d = new Date();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() + n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const freshEvent = () =>
+    seed(`events/${EVENT_D}`, {
+      organizerId: A,
+      organizerName: 'A',
+      createdAt: 11,
+      details: {
+        title: 'Dates', date: inMonths(1), time: '19:00', location: 'x',
+        allowUserItems: true, userItemLimit: 3,
+      },
+      participants: {},
+      menuItems: {},
+      assignments: {},
+    });
+
+  test('an event six months out is accepted', async () => {
+    await freshEvent();
+    await set(ref(alice.db, `events/${EVENT_D}/details/date`), inMonths(6));
+    const snap = await get(ref(alice.db, `events/${EVENT_D}/details/date`));
+    assert.equal(snap.val(), inMonths(6));
+  });
+
+  test('an event eighteen months out is refused', async () => {
+    await freshEvent();
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_D}/details/date`), inMonths(18))));
+  });
+
+  test('and an event in the year 3000 is refused', async () => {
+    await freshEvent();
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_D}/details/date`), '3000-01-01')));
+  });
+
+  test('a date that is not a date is refused', async () => {
+    await freshEvent();
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_D}/details/date`), 'whenever')));
+  });
+
+  // The half that is easy to miss.
+  test('an end date beyond the ceiling is refused, even when the start is fine', async () => {
+    await freshEvent();
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_D}/details/endDate`), '3000-01-01')));
+  });
+
+  test('an end date inside the ceiling is accepted', async () => {
+    await freshEvent();
+    await set(ref(alice.db, `events/${EVENT_D}/details/endDate`), inMonths(2));
+    const snap = await get(ref(alice.db, `events/${EVENT_D}/details/endDate`));
+    assert.equal(snap.val(), inMonths(2));
+  });
+
+  // The rule that lived in the form and therefore did not exist.
+  test('an end date before the start is refused, in a direct write', async () => {
+    await freshEvent();
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_D}/details/endDate`), inMonths(0))));
+  });
+
+  test('an end date on the same day as the start is accepted', async () => {
+    await freshEvent();
+    await set(ref(alice.db, `events/${EVENT_D}/details/endDate`), inMonths(1));
+    const snap = await get(ref(alice.db, `events/${EVENT_D}/details/endDate`));
+    assert.equal(snap.val(), inMonths(1));
+  });
+
+  test('and an end time before the start time on that same day is refused', async () => {
+    await freshEvent();
+    await set(ref(alice.db, `events/${EVENT_D}/details/endDate`), inMonths(1));
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_D}/details/endTime`), '17:00')));
+  });
+
+  test('an end time after the start time on that same day is accepted', async () => {
+    await freshEvent();
+    await set(ref(alice.db, `events/${EVENT_D}/details/endDate`), inMonths(1));
+    await set(ref(alice.db, `events/${EVENT_D}/details/endTime`), '23:00');
+    const snap = await get(ref(alice.db, `events/${EVENT_D}/details/endTime`));
+    assert.equal(snap.val(), '23:00');
+  });
+
+  // Both are optional, and clearing them must not be read as writing a bad one.
+  test('the optional end date can still be removed', async () => {
+    await freshEvent();
+    await set(ref(alice.db, `events/${EVENT_D}/details/endDate`), inMonths(2));
+    await set(ref(alice.db, `events/${EVENT_D}/details/endDate`), null);
+    const snap = await get(ref(alice.db, `events/${EVENT_D}/details/endDate`));
+    assert.ok(!snap.exists());
+  });
+
+  // A whole event created in one write goes through the same check.
+  test('a new event cannot be created three years out either', async () => {
+    assert.ok(
+      await denied(
+        set(ref(bob.db, `events/-EventFarFuture00000`), {
+          organizerId: B,
+          organizerName: 'B',
+          createdAt: 12,
+          details: { title: 'Far', date: '3000-01-01', time: '19:00', location: 'x' },
+        }),
+      ),
+    );
+  });
+});
+
+// How many items one event may hold.
+//
+// The per-participant quota does not bound this, and cannot: the app hands a
+// fresh identity to every visitor who opens an invitation link, so three items
+// each is three items per identity and identities are free. The ceiling on the
+// event is what makes that finite.
+//
+// It binds participants exactly and the organizer not at all, and that is a
+// limit of the rule language rather than a choice. The migration writes the
+// whole menu in one go and no rule can count what arrives in it, so the
+// organizer's own screens hold the ceiling instead.
+describe('how many items an event may hold', () => {
+  const EVENT_F = '-EventFullOfItems000';
+
+  const nearlyFull = (count) =>
+    seed(`events/${EVENT_F}`, {
+      organizerId: A,
+      organizerName: 'A',
+      createdAt: 13,
+      details: {
+        title: 'Full', date: '2026-12-01', time: '19:00', location: 'x',
+        allowUserItems: true, userItemLimit: 3,
+      },
+      participants: { [B]: { name: 'B', joinedAt: 1 } },
+      menuItems: {},
+      assignments: {},
+      userItemCounts: {},
+      itemCount: count,
+    });
+
+  const itemBy = (uid) => ({ name: 'One more', creatorId: uid, category: 'starter', quantity: 1 });
+
+  test('a participant adding an item steps the event counter with it', async () => {
+    await nearlyFull(10);
+
+    await update(ref(bob.db), {
+      [`events/${EVENT_F}/menuItems/-under-the-line`]: itemBy(B),
+      [`events/${EVENT_F}/userItemCounts/${B}`]: 1,
+      [`events/${EVENT_F}/itemCount`]: 11,
+    });
+
+    const snap = await get(ref(bob.db, `events/${EVENT_F}/itemCount`));
+    assert.equal(snap.val(), 11);
+  });
+
+  test('an item written without moving the event counter is refused', async () => {
+    await nearlyFull(10);
+
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_F}/menuItems/-no-event-counter`]: itemBy(B),
+          [`events/${EVENT_F}/userItemCounts/${B}`]: 1,
+        }),
+      ),
+    );
+  });
+
+  test('and the item on the ceiling is refused', async () => {
+    await nearlyFull(120);
+
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`events/${EVENT_F}/menuItems/-over-the-line`]: itemBy(B),
+          [`events/${EVENT_F}/userItemCounts/${B}`]: 1,
+          [`events/${EVENT_F}/itemCount`]: 121,
+        }),
+      ),
+    );
+  });
+
+  test('the event counter cannot be walked back down on its own', async () => {
+    await nearlyFull(10);
+    assert.ok(await denied(set(ref(bob.db, `events/${EVENT_F}/itemCount`), 9)));
+  });
+
+  test('but a real deletion brings it down', async () => {
+    await nearlyFull(10);
+    await seed(`events/${EVENT_F}/menuItems/-mine`, {
+      name: 'Mine', creatorId: B, category: 'starter', quantity: 1,
+    });
+    await seed(`events/${EVENT_F}/userItemCounts/${B}`, 1);
+
+    await update(ref(bob.db), {
+      [`events/${EVENT_F}/menuItems/-mine`]: null,
+      [`events/${EVENT_F}/itemRemovals/${B}`]: '-mine',
+      [`events/${EVENT_F}/userItemCounts/${B}`]: 0,
+      [`events/${EVENT_F}/itemCount`]: 9,
+    });
+
+    const snap = await get(ref(bob.db, `events/${EVENT_F}/itemCount`));
+    assert.equal(snap.val(), 9);
+  });
+
+  // Nobody, organizer included, may declare a count above the ceiling. This is
+  // a validate rule, so the organizer's blanket write over their own event does
+  // not get past it.
+  test('not even the organizer can declare a count above the ceiling', async () => {
+    await nearlyFull(10);
+    assert.ok(await denied(set(ref(alice.db, `events/${EVENT_F}/itemCount`), 121)));
+  });
+
+  // And the gap, stated as a test so that nobody discovers it by accident: the
+  // organizer can still put more items in than the counter admits to, because
+  // no rule can count the children of a write.
+  test('but the organizer can still write more items than the counter says', async () => {
+    await nearlyFull(0);
+
+    const items = {};
+    for (let i = 0; i < 8; i++) {
+      items[`-bulk-${i}`] = { name: `Item ${i}`, creatorId: A, quantity: 1 };
+    }
+    await update(ref(alice.db), {
+      [`events/${EVENT_F}/menuItems`]: items,
+      [`events/${EVENT_F}/itemCount`]: 3,
+    });
+
+    const snap = await get(ref(alice.db, `events/${EVENT_F}/menuItems`));
+    assert.equal(Object.keys(snap.val() || {}).length, 8);
+  });
+});
+
+// How many events one organizer may create. The counter lives on the
+// organizer's own user record, which they already have a blanket write over, so
+// the ceiling is a validate rule: those apply whatever granted the write.
+describe('how many events one organizer may create', () => {
+  const newEvent = (id) => ({
+    organizerId: B,
+    organizerName: 'B',
+    createdAt: 14,
+    details: { title: id, date: '2026-12-01', time: '19:00', location: 'x' },
+  });
+
+  test('creating an event steps the organizer counter with it', async () => {
+    await seed(`users/${B}`, { name: 'B', createdAt: 1 });
+    await seed('events/-EventCount0000000a', null);
+
+    await update(ref(bob.db), {
+      ['events/-EventCount0000000a']: newEvent('-EventCount0000000a'),
+      [`users/${B}/eventCount`]: 1,
+    });
+
+    const snap = await get(ref(bob.db, `users/${B}/eventCount`));
+    assert.equal(snap.val(), 1);
+  });
+
+  test('an event created without moving that counter is refused', async () => {
+    await seed(`users/${B}`, { name: 'B', createdAt: 1 });
+    await seed('events/-EventCount0000000b', null);
+
+    assert.ok(
+      await denied(
+        set(ref(bob.db, 'events/-EventCount0000000b'), newEvent('-EventCount0000000b')),
+      ),
+    );
+  });
+
+  test('and the event that would pass the ceiling is refused', async () => {
+    await seed(`users/${B}`, { name: 'B', createdAt: 1, eventCount: 50 });
+    await seed('events/-EventCount0000000c', null);
+
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          ['events/-EventCount0000000c']: newEvent('-EventCount0000000c'),
+          [`users/${B}/eventCount`]: 51,
+        }),
+      ),
+    );
+  });
+
+  test('the counter cannot simply be overwritten, blanket write or not', async () => {
+    await seed(`users/${B}`, { name: 'B', createdAt: 1, eventCount: 7 });
+
+    assert.ok(await denied(set(ref(bob.db, `users/${B}/eventCount`), 0)));
+    assert.ok(await denied(set(ref(bob.db, `users/${B}`), { name: 'B', createdAt: 1, eventCount: 0 })));
+  });
+
+  test('nor walked down without deleting an event', async () => {
+    await seed(`users/${B}`, { name: 'B', createdAt: 1, eventCount: 3 });
+    assert.ok(await denied(set(ref(bob.db, `users/${B}/eventCount`), 2)));
+  });
+
+  test('but deleting an event of your own brings it down', async () => {
+    await seed(`users/${B}`, { name: 'B', createdAt: 1, eventCount: 3 });
+    await seed('events/-EventCount0000000d', newEvent('-EventCount0000000d'));
+
+    await update(ref(bob.db), {
+      ['events/-EventCount0000000d']: null,
+      [`users/${B}/eventRemoval`]: '-EventCount0000000d',
+      [`users/${B}/eventCount`]: 2,
+    });
+
+    const snap = await get(ref(bob.db, `users/${B}/eventCount`));
+    assert.equal(snap.val(), 2);
+  });
+
+  test("and not by naming somebody else's event", async () => {
+    await seed(`users/${B}`, { name: 'B', createdAt: 1, eventCount: 3 });
+
+    assert.ok(
+      await denied(
+        update(ref(bob.db), {
+          [`users/${B}/eventRemoval`]: EVENT_A,
+          [`users/${B}/eventCount`]: 2,
+        }),
+      ),
+    );
+  });
+});
+
 describe('regression: the previous rules leaked the whole event list', () => {
   after(async () => {
     await applyRules(loadRules());

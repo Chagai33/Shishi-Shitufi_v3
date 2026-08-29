@@ -96,6 +96,21 @@ const userNameLengths = [];
 // Events per organizer
 const eventsPerOrganizer = new Map();
 
+// Dates. Nothing measured these before the ceiling on them was written, and they
+// are the only two fields where an existing record could already be outside a
+// new ceiling and would then be readable but not editable.
+const MONTHS_AHEAD = 12;
+const horizon = new Date();
+horizon.setUTCMonth(horizon.getUTCMonth() + MONTHS_AHEAD);
+const horizonIso = horizon.toISOString().slice(0, 10);
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+let eventsWithEndDate = 0;
+const datesBeyondHorizon = [];
+const endDatesBeyondHorizon = [];
+const endBeforeStart = [];
+const malformedDates = [];
+
 for (const eventId of eventIds) {
   const event = events[eventId] || {};
   const details = event.details || {};
@@ -134,11 +149,40 @@ for (const eventId of eventIds) {
   migrationBlobLengths.push(blob.length);
   if (blob.length > AI_TEXT_CAP) eventsOverAiCap.push({ items: itemList.length, chars: blob.length });
 
+  const date = details.date;
+  const endDate = details.endDate;
+  if (endDate) eventsWithEndDate += 1;
+
+  for (const [label, value] of [['date', date], ['endDate', endDate]]) {
+    if (value === undefined || value === null || value === '') continue;
+    if (typeof value !== 'string' || !ISO_DATE.test(value)) {
+      malformedDates.push(label);
+      continue;
+    }
+    if (value > horizonIso) (label === 'date' ? datesBeyondHorizon : endDatesBeyondHorizon).push(value);
+  }
+  if (typeof date === 'string' && typeof endDate === 'string' && ISO_DATE.test(date) && ISO_DATE.test(endDate) && endDate < date) {
+    endBeforeStart.push(1);
+  }
+
   const organizer = event.organizerId || 'unknown';
   eventsPerOrganizer.set(organizer, (eventsPerOrganizer.get(organizer) || 0) + 1);
 }
 
 const perOrganizer = [...eventsPerOrganizer.values()];
+
+console.log('');
+console.log('=== DATES, AGAINST A TWELVE MONTH CEILING ===================');
+console.log(`events with an end date filled in  ${eventsWithEndDate}`);
+console.log(`start dates beyond the ceiling     ${datesBeyondHorizon.length}`);
+console.log(`end dates beyond the ceiling       ${endDatesBeyondHorizon.length}`);
+console.log(`end dates before their start       ${endBeforeStart.length}`);
+console.log(`dates that are not YYYY-MM-DD      ${malformedDates.length}`);
+if (datesBeyondHorizon.length || endDatesBeyondHorizon.length || endBeforeStart.length || malformedDates.length) {
+  console.log('');
+  console.log('  ^ any of these above zero means an existing event would be');
+  console.log('    readable but not editable once the ceiling is deployed.');
+}
 
 console.log('');
 console.log('=== SCALE ===================================================');

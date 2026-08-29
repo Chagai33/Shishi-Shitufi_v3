@@ -152,6 +152,10 @@ export interface ShishiEvent {
   itemRemovals?: { [key: string]: string };
   rideOfferCounts?: { [key: string]: number };
   rideRequestCounts?: { [key: string]: number };
+  // How many items the event holds. A rule cannot count children, so the
+  // ceiling on the size of an event is measured against this instead.
+  // See DOCS/PLANING/57-central-limits-policy.md.
+  itemCount?: number;
 }
 
 // Types for the global Store (Zustand)

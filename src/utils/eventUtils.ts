@@ -30,23 +30,6 @@ export const RIDE_CATEGORY_IDS = [...RIDE_OFFER_CATEGORY_IDS, ...RIDE_REQUEST_CA
 export const isRideCategory = (categoryId?: string): boolean =>
   !!categoryId && RIDE_CATEGORY_IDS.includes(categoryId);
 
-/**
- * How many lifts one person may offer, and ask for, in one event.
- *
- * The event screen has always said one of each and enforced it there; the
- * server did not, which is what let an ordinary item take the ride exemption
- * from the item quota without any limit at all.
- *
- * It is two rather than one because a round trip is two items: the ride form
- * writes the outward leg and the return leg as two separate rides, one after
- * the other, so a ceiling of one would create the first and refuse the second.
- *
- * Keep this in step with database.rules.json, the same way the category lists
- * above are. See DOCS/PLANING/64-item-quota-can-be-walked-around.md.
- */
-export const RIDES_PER_PERSON = 2;
-
-
 
 
 /**

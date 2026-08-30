@@ -25,6 +25,13 @@ interface ImportItemsModalProps {
   event: ShishiEvent;
   onClose: () => void;
   onAddSingleItem?: () => void;
+  // Called once the database has the items. The screen that opened this window
+  // may be holding a list it read once and has no reason to read again, and the
+  // event card on the home screen is exactly that: it went on saying no items
+  // had been added yet, which is the first reason a product owner thought a
+  // successful import had failed. The event form beside it in this same file
+  // already gets one. See DOCS/PLANING/76-dashboard-card-does-not-refresh-after-import.md.
+  onImported?: () => void;
   initialText?: string;
   autoRunAI?: boolean;
   categoriesOverride?: CategoryConfig[]; // To support new categories before they are saved to the event object
@@ -65,7 +72,7 @@ interface FileReadResult {
 
 type ImportMethod = 'file' | 'preset' | 'smart';
 
-export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText, autoRunAI, categoriesOverride, migrationStartTime }: ImportItemsModalProps) {
+export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, initialText, autoRunAI, categoriesOverride, migrationStartTime }: ImportItemsModalProps) {
   const { t } = useTranslation();
   const { addMenuItem } = useStore();
   const { user: authUser } = useAuth();
@@ -629,6 +636,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
         toast.success(concurrentItemCount > 0
           ? t('importModal.migration.doneWithConcurrent', { count: concurrentItemCount })
           : t('importModal.migration.done'));
+        onImported?.();
         onClose();
         return;
       } catch (error: any) {
@@ -690,7 +698,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       if (successCount > 0) toast.success(t('importModal.preset.loadedSuccess', { count: successCount }));
       if (errorCount > 0) toast.error(t('importModal.preview.summary.errors', { count: errorCount }));
       if (notAttempted > 0) toast.error(t('importModal.preview.stoppedAtCeiling', { count: notAttempted, limit: ITEMS_PER_EVENT }));
-      if (successCount > 0) onClose();
+      // Anything written at all is a reason to refresh, including a run that
+      // stopped part way: what did get in is what the card is now wrong about.
+      if (successCount > 0) { onImported?.(); onClose(); }
     } catch (error) {
       console.error('Error during import:', error);
       toast.error(t('dashboard.general')); // Optimized

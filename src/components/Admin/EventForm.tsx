@@ -444,6 +444,10 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
                     setShowImportForMigration(false);
                     onClose();
                   }}
+                  // The migration path is the one route out of this form that
+                  // never reached onSuccess, so the screen that opened the form
+                  // was left holding the counts from before the migration.
+                  onImported={onSuccess}
                   categoriesOverride={formData.categories}
                   initialText={migrationData}
                   autoRunAI={true}

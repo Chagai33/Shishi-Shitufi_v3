@@ -1,7 +1,7 @@
 // src/components/Admin/ImportItemsModal.tsx
 
 import React, { useState, useEffect, useRef, useId } from 'react';
-import { AI_TEXT_MAX, ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
+import { AI_TEXT_MAX, ITEM_NAME_MAX, ITEM_NOTE_MAX, ITEMS_PER_EVENT, IMPORT_FILE_BYTES, IMPORT_FILE_ROWS } from '../../constants/limits';
 import FocusTrap from 'focus-trap-react';
 import { X, Upload, Table, AlertCircle, CheckCircle, Trash2, List, Wand2, Mic, MicOff, Loader2, Clipboard as ClipboardIcon, Plus } from 'lucide-react';
 import { useStore } from '../../store/useStore';
@@ -18,12 +18,20 @@ import { functions } from '../../lib/firebase';
 import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
 import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
+import { mapRows, countRowsWithData, looksMisdecoded, ImportRow } from '../../utils/importColumns';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
   event: ShishiEvent;
   onClose: () => void;
   onAddSingleItem?: () => void;
+  // Called once the database has the items. The screen that opened this window
+  // may be holding a list it read once and has no reason to read again, and the
+  // event card on the home screen is exactly that: it went on saying no items
+  // had been added yet, which is the first reason a product owner thought a
+  // successful import had failed. The event form beside it in this same file
+  // already gets one. See DOCS/PLANING/76-dashboard-card-does-not-refresh-after-import.md.
+  onImported?: () => void;
   initialText?: string;
   autoRunAI?: boolean;
   categoriesOverride?: CategoryConfig[]; // To support new categories before they are saved to the event object
@@ -45,9 +53,26 @@ interface ImportItem {
   existingItem?: MenuItem;
 }
 
+// What a file gave up on the way in. The screen says all of it, because the one
+// number it used to give, "3 items loaded", was the whole of what the organiser
+// knew about a file that had four.
+interface FileReadReport {
+  /** Rows that held something and nothing in the item name column. */
+  skippedRows: number;
+  /** Headers of columns that were read and then not used. */
+  ignoredColumns: string[];
+  /** Sheets after the first, which are not read. */
+  extraSheets: string[];
+}
+
+interface FileReadResult {
+  items: ImportItem[];
+  report: FileReadReport;
+}
+
 type ImportMethod = 'file' | 'preset' | 'smart';
 
-export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText, autoRunAI, categoriesOverride, migrationStartTime }: ImportItemsModalProps) {
+export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, initialText, autoRunAI, categoriesOverride, migrationStartTime }: ImportItemsModalProps) {
   const { t } = useTranslation();
   const { addMenuItem } = useStore();
   const { user: authUser } = useAuth();
@@ -57,6 +82,15 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const [isImporting, setIsImporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showPresetManager, setShowPresetManager] = useState(false);
+
+  // What the last file gave up. It stays on screen for as long as the preview is
+  // open, because a message that fades is a message the organiser missed.
+  const [fileReport, setFileReport] = useState<FileReadReport | null>(null);
+
+  // How far the write loop has got. A full event of 120 items takes about a
+  // minute and a quarter, one write at a time, and it used to pass with nothing
+  // on screen but a disabled button.
+  const [importProgress, setImportProgress] = useState<{ done: number; total: number } | null>(null);
 
   const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [itemsToImport, setItemsToImport] = useState<{ newItems: ImportItem[], duplicateItems: ImportItem[] }>({ newItems: [], duplicateItems: [] });
@@ -123,6 +157,47 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     const catchAll = categoryOptions.find(opt => opt.value === 'other' || opt.value === 'general');
     return catchAll?.value || categoryOptions[0]?.value || 'other';
   }, [categoryOptions]);
+
+  // A dropdown must never display a value it is not holding, and left alone it
+  // does exactly that: React picks the first option whenever the value matches
+  // none of them, so an item carrying "main" in an event that has no such
+  // category showed up as "meat" and was written as "main". The organiser
+  // approved a preview that was telling the truth about nothing.
+  // See DOCS/PLANING/75-import-preview-shows-a-category-it-does-not-save.md.
+  const isUnknownCategory = (item: ImportItem) => !allowedCategoryIds.has(item.category);
+
+  // Only what is actually going to be written can block the import. A row nobody
+  // selected, or one already held back by an error, is not about to reach the
+  // database and has no say.
+  const unknownCategoryCount = importItems.filter(
+    item => item.selected && !item.error && isUnknownCategory(item)
+  ).length;
+
+  // The way out of the block, in one click rather than one dropdown per row. It
+  // moves every unrecognised item and not only the selected ones, because a row
+  // the organiser selects a moment later would otherwise put the block back.
+  const moveUnknownToFallback = () => {
+    setImportItems(prev => prev.map(item =>
+      isUnknownCategory(item) ? { ...item, category: fallbackCategoryId } : item
+    ));
+  };
+
+  const fallbackCategoryLabel =
+    categoryOptions.find(opt => opt.value === fallbackCategoryId)?.label || fallbackCategoryId;
+
+  // How much room the event has left, which the preview had no idea about. The
+  // ceiling was enforced one item at a time during the write, so a file of 500
+  // items showed a button saying "import 500 items", put in the first 120 and
+  // failed the other 380 one by one, at about half a second each, reporting only
+  // the first failure. The number the server counts against is itemCount, so
+  // that is the one to ask, and the items themselves only when it is missing.
+  // A migration replaces the menu rather than adding to it, so it is not
+  // measured against what the event already holds.
+  // See DOCS/PLANING/74-no-ceiling-on-file-import.md.
+  const currentItemCount = event.itemCount ?? Object.keys(event.menuItems || {}).length;
+  const remainingCapacity = migrationStartTime
+    ? Number.POSITIVE_INFINITY
+    : Math.max(0, ITEMS_PER_EVENT - currentItemCount);
 
   // The items the event already holds, keyed by name. The id lives in the map key
   // rather than on the item, so it has to be carried across here.
@@ -219,6 +294,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     setIsAnalyzing(true);
     setClassificationSummary(null);
+    setFileReport(null);
     setMigrationKeptCount(0);
     setMigrationKnownIds([]);
 
@@ -355,56 +431,91 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
 
 
-  const parseExcelFile = (file: File): Promise<ImportItem[]> => {
+  // Both readers hand their rows to the same place, so an xlsx file and the same
+  // file saved as CSV cannot be read differently. What they get back is the items
+  // and an account of what was not read, which the preview then says out loud.
+  const buildItemsFromRows = (rows: ImportRow[], extraSheets: string[]): FileReadResult => {
+    const mapped = mapRows(rows);
+
+    if (!mapped.ok) {
+      // A file with headers and no item name among them is not read at all.
+      // Falling back to position here is what turned a column of people into a
+      // list of items, so the file is refused and the headers are quoted back.
+      throw new Error(t('importModal.file.noNameColumn', { headers: mapped.headerCells.join(', ') }));
+    }
+
+    const items: ImportItem[] = mapped.rows.map(row => {
+      const base = { name: row.name, notes: row.notes, isRequired: false };
+      if (row.name.length < 2) {
+        return { ...base, category: fallbackCategoryId, quantity: 1, selected: false, error: t('importModal.preview.errors.nameLength') };
+      }
+      if (row.quantity < 1 || row.quantity > 100) {
+        return { ...base, category: fallbackCategoryId, quantity: 1, selected: false, error: t('importModal.preview.errors.quantityRange') };
+      }
+      return { ...base, category: fallbackCategoryId, quantity: row.quantity, selected: true };
+    });
+
+    return {
+      items,
+      report: {
+        skippedRows: mapped.skippedRows,
+        ignoredColumns: mapped.mapping.ignoredColumns,
+        extraSheets
+      }
+    };
+  };
+
+  const parseExcelFile = (file: File): Promise<FileReadResult> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        let rows: ImportRow[];
+        let extraSheets: string[];
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as (string | number)[][];
-          const items: ImportItem[] = [];
-          const startRow = jsonData[0] && typeof jsonData[0][0] === 'string' && (jsonData[0][0].includes('שם') || jsonData[0][0].includes('name')) ? 1 : 0;
-          for (let i = startRow; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            if (!row || !row[0]) continue;
-            const name = String(row[0]).trim();
-            const quantity = row[1] ? parseInt(String(row[1])) || 1 : 1;
-            const notes = row[2] ? String(row[2]).trim() : undefined;
-            if (name.length < 2) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
-            if (quantity < 1 || quantity > 100) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
-            items.push({ name, category: 'main', quantity, notes, isRequired: false, selected: true });
-          }
-          resolve(items);
-        } catch { reject(new Error(t('importModal.file.parseError'))); }
+          rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as ImportRow[];
+          // Only the first sheet is read, and until now nobody was told which one
+          // that was or that there had been others.
+          extraSheets = workbook.SheetNames.slice(1);
+        } catch { reject(new Error(t('importModal.file.parseError'))); return; }
+
+        if (countRowsWithData(rows) > IMPORT_FILE_ROWS) {
+          reject(new Error(t('importModal.file.tooManyRows', { max: IMPORT_FILE_ROWS })));
+          return;
+        }
+
+        try { resolve(buildItemsFromRows(rows, extraSheets)); }
+        catch (error) { reject(error instanceof Error ? error : new Error(t('importModal.file.parseError'))); }
       };
       reader.onerror = () => reject(new Error(t('importModal.file.parseError')));
       reader.readAsArrayBuffer(file);
     });
   };
 
-  const parseCSVFile = (file: File): Promise<ImportItem[]> => {
+  const parseCSVFile = (file: File): Promise<FileReadResult> => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         complete: (results) => {
-          try {
-            const items: ImportItem[] = [];
-            const data = results.data as string[][];
-            const startRow = data[0] && data[0][0] && (data[0][0].includes('שם') || data[0][0].includes('name')) ? 1 : 0;
-            for (let i = startRow; i < data.length; i++) {
-              const row = data[i];
-              if (!row || !row[0] || !row[0].trim()) continue;
-              const name = row[0].trim();
-              const quantity = row[1] ? parseInt(row[1]) || 1 : 1;
-              const notes = row[2] ? row[2].trim() : undefined;
-              if (name.length < 2) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
-              if (quantity < 1 || quantity > 100) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
-              items.push({ name, category: 'main', quantity, notes, isRequired: false, selected: true });
-            }
-            resolve(items);
-          } catch { reject(new Error(t('importModal.file.parseError'))); }
+          const rows = results.data as ImportRow[];
+
+          // Excel in a Hebrew locale writes plain CSV in an older encoding, and
+          // only "CSV UTF-8" arrives readable. The unreadable one used to be
+          // imported as rubbish item names without a word.
+          if (looksMisdecoded(rows.flat().join(''))) {
+            reject(new Error(t('importModal.file.badEncoding')));
+            return;
+          }
+
+          if (countRowsWithData(rows) > IMPORT_FILE_ROWS) {
+            reject(new Error(t('importModal.file.tooManyRows', { max: IMPORT_FILE_ROWS })));
+            return;
+          }
+
+          try { resolve(buildItemsFromRows(rows, [])); }
+          catch (error) { reject(error instanceof Error ? error : new Error(t('importModal.file.parseError'))); }
         },
         error: () => reject(new Error(t('importModal.file.parseError'))),
         encoding: 'UTF-8'
@@ -415,12 +526,22 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Before the read and not after it. The whole file goes into memory in one
+    // go, and nothing downstream can undo that.
+    if (file.size > IMPORT_FILE_BYTES) {
+      toast.error(t('importModal.file.tooLarge', { max: Math.round(IMPORT_FILE_BYTES / (1024 * 1024)) }));
+      e.target.value = '';
+      return;
+    }
+
     try {
-      let items: ImportItem[] = [];
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) { items = await parseExcelFile(file); }
-      else if (file.name.endsWith('.csv')) { items = await parseCSVFile(file); }
+      let result: FileReadResult;
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) { result = await parseExcelFile(file); }
+      else if (file.name.endsWith('.csv')) { result = await parseCSVFile(file); }
       else { toast.error(t('importModal.file.unsupportedType')); return; }
+      const { items, report } = result;
       setImportItems(items);
+      setFileReport(report);
       setClassificationSummary(null);
       setMigrationKeptCount(0);
       setMigrationKnownIds([]);
@@ -439,6 +560,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
     setImportItems(items);
     setClassificationSummary(null);
+    setFileReport(null);
     setMigrationKeptCount(0);
     setMigrationKnownIds([]);
     setShowPreview(true);
@@ -514,6 +636,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
         toast.success(concurrentItemCount > 0
           ? t('importModal.migration.doneWithConcurrent', { count: concurrentItemCount })
           : t('importModal.migration.done'));
+        onImported?.();
         onClose();
         return;
       } catch (error: any) {
@@ -526,8 +649,20 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     // STANDARD IMPORT MODE (Loop)
     const newItemsForStore: MenuItem[] = [];
+    // What the loop is not going to attempt, so it can be said afterwards rather
+    // than discovered. One item refused because the event is full is the sign
+    // that every item behind it will be refused too, and at around half a second
+    // each that is nine minutes of failure on a file of a thousand.
+    let notAttempted = 0;
     try {
       for (const item of itemsToProcess) {
+        if (successCount >= remainingCapacity) {
+          notAttempted = itemsToProcess.length - successCount - errorCount;
+          break;
+        }
+        // The item being written, counted from one, rather than the number
+        // already finished. Otherwise the first thing on screen is "0 of 3".
+        setImportProgress({ done: successCount + errorCount + 1, total: itemsToProcess.length });
         try {
           const menuItemData: Omit<MenuItem, 'id'> = {
             name: item.name,
@@ -564,12 +699,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
       if (successCount > 0) toast.success(t('importModal.preset.loadedSuccess', { count: successCount }));
       if (errorCount > 0) toast.error(t('importModal.preview.summary.errors', { count: errorCount }));
-      if (successCount > 0) onClose();
+      if (notAttempted > 0) toast.error(t('importModal.preview.stoppedAtCeiling', { count: notAttempted, limit: ITEMS_PER_EVENT }));
+      // Anything written at all is a reason to refresh, including a run that
+      // stopped part way: what did get in is what the card is now wrong about.
+      if (successCount > 0) { onImported?.(); onClose(); }
     } catch (error) {
       console.error('Error during import:', error);
       toast.error(t('dashboard.general')); // Optimized
     } finally {
       setIsImporting(false);
+      setImportProgress(null);
       setShowDuplicateConfirm(false);
     }
   };
@@ -592,6 +731,18 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
       return;
     }
 
+    // The button is already disabled while this is true. The check stands here
+    // as well because the button is a courtesy and this is the door.
+    if (unknownCategoryCount > 0) {
+      toast.error(t('importModal.preview.unknownCategoryWarning', { count: unknownCategoryCount }));
+      return;
+    }
+
+    if (overCapacity) {
+      toast.error(t('importModal.preview.overCapacity', { selected: selectedItemsCount, remaining: remainingCapacity, limit: ITEMS_PER_EVENT }));
+      return;
+    }
+
     // *** Fix: Using event.menuItems instead of menuItems from Store ***
     const eventMenuItems = event.menuItems ? Object.values(event.menuItems) : [];
     const existingNames = new Set(eventMenuItems.map(mi => mi.name.trim().toLowerCase()));
@@ -610,6 +761,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
   const validItemsCount = importItems.filter(item => !item.error).length;
   const selectedItemsCount = importItems.filter(item => item.selected && !item.error).length;
+  const overCapacity = selectedItemsCount > remainingCapacity;
 
   const handleSmartClassify = async () => {
     if (importItems.length === 0) return;
@@ -967,13 +1119,50 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                       </button>
 
                       <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
-                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setMigrationKeptCount(0); setMigrationKnownIds([]); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
+                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setFileReport(null); setMigrationKeptCount(0); setMigrationKnownIds([]); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
                     </div>
                   </div>
                   {migrationKeptCount > 0 && (
                     <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                       <span>{t('importModal.smart.migrationKept', { count: migrationKeptCount })}</span>
+                    </div>
+                  )}
+                  {fileReport && (fileReport.skippedRows > 0 || fileReport.ignoredColumns.length > 0 || fileReport.extraSheets.length > 0) && (
+                    <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <div className="space-y-1">
+                        {fileReport.skippedRows > 0 && (
+                          <p>{t('importModal.file.report.skippedRows', { count: fileReport.skippedRows })}</p>
+                        )}
+                        {fileReport.ignoredColumns.length > 0 && (
+                          <p>{t('importModal.file.report.ignoredColumns', { count: fileReport.ignoredColumns.length, columns: fileReport.ignoredColumns.join(', ') })}</p>
+                        )}
+                        {fileReport.extraSheets.length > 0 && (
+                          <p>{t('importModal.file.report.extraSheets', { count: fileReport.extraSheets.length, sheets: fileReport.extraSheets.join(', ') })}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {overCapacity && (
+                    <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <span>{t('importModal.preview.overCapacity', { selected: selectedItemsCount, remaining: remainingCapacity, limit: ITEMS_PER_EVENT })}</span>
+                    </div>
+                  )}
+                  {unknownCategoryCount > 0 && (
+                    <div role="status" className="mb-4 flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                      <span className="flex items-start space-x-2 rtl:space-x-reverse flex-1">
+                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                        <span>{t('importModal.preview.unknownCategoryWarning', { count: unknownCategoryCount })}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={moveUnknownToFallback}
+                        className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                      >
+                        {t('importModal.preview.unknownCategoryFix', { category: fallbackCategoryLabel })}
+                      </button>
                     </div>
                   )}
                   {classificationSummary && classificationSummary.total > 0 && classificationSummary.classified < classificationSummary.total && (
@@ -1011,7 +1200,8 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                                   {item.error && (<p className="text-xs text-red-600 mt-1 flex items-center"><AlertCircle className="h-3 w-3 ml-1" />{item.error}</p>)}
                                 </td>
                                 <td className="px-4 py-3">
-                                  <select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                  <select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className={`w-full px-2 py-1 border rounded text-sm ${isUnknownCategory(item) ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-300'}`}>
+                                    {isUnknownCategory(item) && (<option value={item.category}>{t('importModal.preview.unknownCategory')}</option>)}
                                     {categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}
                                   </select>
                                 </td>
@@ -1093,8 +1283,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                                   <select
                                     value={item.category}
                                     onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                    className={`w-full px-3 py-2 border rounded-lg text-sm ${isUnknownCategory(item) ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-300 bg-white'}`}
                                   >
+                                    {isUnknownCategory(item) && (<option value={item.category}>{t('importModal.preview.unknownCategory')}</option>)}
                                     {categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}
                                   </select>
                                 </div>
@@ -1132,7 +1323,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                 </div>
                 {importItems.length > 0 && (<div className="bg-blue-50 rounded-lg p-4 mb-6"><div className="flex items-center space-x-3 rtl:space-x-reverse"><CheckCircle className="h-5 w-5 text-blue-600" aria-hidden="true" /><div><p className="text-sm text-blue-800"><Trans i18nKey="importModal.preview.summary.selected" values={{ selected: selectedItemsCount, valid: validItemsCount }} components={{ strong: <strong /> }} /></p>{importItems.some(item => item.error) && (<p className="text-xs text-red-600 mt-1">{t('importModal.preview.summary.errors', { count: importItems.filter(item => item.error).length })}</p>)}</div></div></div>)}
                 <div className="flex space-x-3 rtl:space-x-reverse">
-                  <button onClick={handleImport} disabled={selectedItemsCount === 0 || isImporting} type="button" className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">{isImporting ? (<> <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div> {t('importModal.preview.importingBtn')} </>) : (t('importModal.preview.importBtn', { count: selectedItemsCount }))}</button>
+                  <button onClick={handleImport} disabled={selectedItemsCount === 0 || isImporting || unknownCategoryCount > 0 || overCapacity} type="button" className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">{isImporting ? (<> <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div> {importProgress ? t('importModal.preview.importingProgress', { done: importProgress.done, total: importProgress.total }) : t('importModal.preview.importingBtn')} </>) : (t('importModal.preview.importBtn', { count: selectedItemsCount }))}</button>
                   <button onClick={onClose} disabled={isImporting} type="button" className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">{t('importModal.preview.cancelBtn')}</button>
                 </div>
               </>

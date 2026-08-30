@@ -24,6 +24,29 @@ import limits from './limits.json';
 export const ITEMS_PER_EVENT = limits.itemsPerEvent;
 
 /**
+ * How large a file the import from file may read, in bytes, and how many rows of
+ * it may hold data.
+ *
+ * These two are not in the database rules and cannot be: no rule sees a file.
+ * They are the only ceilings here that the server never gets a chance to hold,
+ * which is why they sit in front of the read rather than behind it.
+ *
+ * Both are far above anything real. A file of 120 items, which is every item an
+ * event may hold, was measured at 30 kilobytes, so five megabytes is about a
+ * hundred and seventy times what the largest legitimate list needs, and the room
+ * is there because a file carrying an image or heavy formatting is still a
+ * perfectly ordinary list.
+ *
+ * The row ceiling counts rows that hold something, not the rows the reader
+ * announces. A sheet whose range was stretched by somebody scrolling and
+ * deleting reports its declared range: a two item file came back as five
+ * thousand rows, and a ceiling on the raw count would have refused it.
+ * See DOCS/PLANING/74-no-ceiling-on-file-import.md.
+ */
+export const IMPORT_FILE_BYTES = limits.importFileBytes;
+export const IMPORT_FILE_ROWS = limits.importFileRows;
+
+/**
  * How long the text sent to the smart import may be, in characters.
  *
  * This one is not enforced in the database rules but in the cloud function, and

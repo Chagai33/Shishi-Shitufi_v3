@@ -445,6 +445,7 @@ const DashboardPage: React.FC = () => {
                         setShowImportModal(false);
                         setSelectedEventForImport(null);
                     }}
+                    onImported={fetchEvents}
                     onAddSingleItem={() => {
                         const eventToBulkEdit = selectedEventForImport;
                         setShowImportModal(false);

@@ -57,6 +57,9 @@
                 "deselectAll": "Deselect All",
                 "back": "Back to Import",
                 "noItems": "No items found",
+                "overCapacity": "You selected {{selected}} items and there is room for {{remaining}}. An event holds up to {{limit}} items. Deselect some of them, or delete items the event already has.",
+                "stoppedAtCeiling": "The import stopped because the event filled up. {{count}} items were not added, and an event holds up to {{limit}} items.",
+                "importingProgress": "Importing {{done}} of {{total}}...",
                 "unknownCategory": "A category this event does not have",
                 "unknownCategoryWarning": "{{count}} items came in with a category this event does not have. Choose one for them before importing, or they will not appear on the board.",
                 "unknownCategoryFix": "Move them all to {{category}}",
@@ -134,6 +137,8 @@
                     "ignoredColumns": "{{count}} columns were not read: {{columns}}.",
                     "extraSheets": "The file has {{count}} more sheets that were not read: {{sheets}}. Only the first sheet is read."
                 },
+                "tooLarge": "This file is too large. The maximum size is {{max}} MB.",
+                "tooManyRows": "This file has too many rows. Up to {{max}} rows can be imported at once.",
                 "unsupportedType": "Unsupported file type",
                 "parseError": "Error processing file"
             },

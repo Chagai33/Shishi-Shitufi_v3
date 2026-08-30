@@ -1,6 +1,8 @@
 {
   "aiTextMax": 2000,
   "itemsPerEvent": 120,
+  "importFileBytes": 5242880,
+  "importFileRows": 2000,
   "eventsPerOrganizer": 50,
   "ridesPerPerson": 2,
   "monthsAhead": 12,

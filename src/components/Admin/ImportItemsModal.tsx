@@ -18,6 +18,7 @@ import { functions } from '../../lib/firebase';
 import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
 import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
+import { mapRows, looksMisdecoded, ImportRow } from '../../utils/importColumns';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
@@ -45,6 +46,23 @@ interface ImportItem {
   existingItem?: MenuItem;
 }
 
+// What a file gave up on the way in. The screen says all of it, because the one
+// number it used to give, "3 items loaded", was the whole of what the organiser
+// knew about a file that had four.
+interface FileReadReport {
+  /** Rows that held something and nothing in the item name column. */
+  skippedRows: number;
+  /** Headers of columns that were read and then not used. */
+  ignoredColumns: string[];
+  /** Sheets after the first, which are not read. */
+  extraSheets: string[];
+}
+
+interface FileReadResult {
+  items: ImportItem[];
+  report: FileReadReport;
+}
+
 type ImportMethod = 'file' | 'preset' | 'smart';
 
 export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText, autoRunAI, categoriesOverride, migrationStartTime }: ImportItemsModalProps) {
@@ -57,6 +75,10 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
   const [isImporting, setIsImporting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showPresetManager, setShowPresetManager] = useState(false);
+
+  // What the last file gave up. It stays on screen for as long as the preview is
+  // open, because a message that fades is a message the organiser missed.
+  const [fileReport, setFileReport] = useState<FileReadReport | null>(null);
 
   const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
   const [itemsToImport, setItemsToImport] = useState<{ newItems: ImportItem[], duplicateItems: ImportItem[] }>({ newItems: [], duplicateItems: [] });
@@ -246,6 +268,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
     setIsAnalyzing(true);
     setClassificationSummary(null);
+    setFileReport(null);
     setMigrationKeptCount(0);
     setMigrationKnownIds([]);
 
@@ -382,56 +405,81 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
 
 
 
-  const parseExcelFile = (file: File): Promise<ImportItem[]> => {
+  // Both readers hand their rows to the same place, so an xlsx file and the same
+  // file saved as CSV cannot be read differently. What they get back is the items
+  // and an account of what was not read, which the preview then says out loud.
+  const buildItemsFromRows = (rows: ImportRow[], extraSheets: string[]): FileReadResult => {
+    const mapped = mapRows(rows);
+
+    if (!mapped.ok) {
+      // A file with headers and no item name among them is not read at all.
+      // Falling back to position here is what turned a column of people into a
+      // list of items, so the file is refused and the headers are quoted back.
+      throw new Error(t('importModal.file.noNameColumn', { headers: mapped.headerCells.join(', ') }));
+    }
+
+    const items: ImportItem[] = mapped.rows.map(row => {
+      const base = { name: row.name, notes: row.notes, isRequired: false };
+      if (row.name.length < 2) {
+        return { ...base, category: fallbackCategoryId, quantity: 1, selected: false, error: t('importModal.preview.errors.nameLength') };
+      }
+      if (row.quantity < 1 || row.quantity > 100) {
+        return { ...base, category: fallbackCategoryId, quantity: 1, selected: false, error: t('importModal.preview.errors.quantityRange') };
+      }
+      return { ...base, category: fallbackCategoryId, quantity: row.quantity, selected: true };
+    });
+
+    return {
+      items,
+      report: {
+        skippedRows: mapped.skippedRows,
+        ignoredColumns: mapped.mapping.ignoredColumns,
+        extraSheets
+      }
+    };
+  };
+
+  const parseExcelFile = (file: File): Promise<FileReadResult> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        let rows: ImportRow[];
+        let extraSheets: string[];
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as (string | number)[][];
-          const items: ImportItem[] = [];
-          const startRow = jsonData[0] && typeof jsonData[0][0] === 'string' && (jsonData[0][0].includes('שם') || jsonData[0][0].includes('name')) ? 1 : 0;
-          for (let i = startRow; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            if (!row || !row[0]) continue;
-            const name = String(row[0]).trim();
-            const quantity = row[1] ? parseInt(String(row[1])) || 1 : 1;
-            const notes = row[2] ? String(row[2]).trim() : undefined;
-            if (name.length < 2) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
-            if (quantity < 1 || quantity > 100) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
-            items.push({ name, category: fallbackCategoryId, quantity, notes, isRequired: false, selected: true });
-          }
-          resolve(items);
-        } catch { reject(new Error(t('importModal.file.parseError'))); }
+          rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as ImportRow[];
+          // Only the first sheet is read, and until now nobody was told which one
+          // that was or that there had been others.
+          extraSheets = workbook.SheetNames.slice(1);
+        } catch { reject(new Error(t('importModal.file.parseError'))); return; }
+
+        try { resolve(buildItemsFromRows(rows, extraSheets)); }
+        catch (error) { reject(error instanceof Error ? error : new Error(t('importModal.file.parseError'))); }
       };
       reader.onerror = () => reject(new Error(t('importModal.file.parseError')));
       reader.readAsArrayBuffer(file);
     });
   };
 
-  const parseCSVFile = (file: File): Promise<ImportItem[]> => {
+  const parseCSVFile = (file: File): Promise<FileReadResult> => {
     return new Promise((resolve, reject) => {
       Papa.parse(file, {
         complete: (results) => {
-          try {
-            const items: ImportItem[] = [];
-            const data = results.data as string[][];
-            const startRow = data[0] && data[0][0] && (data[0][0].includes('שם') || data[0][0].includes('name')) ? 1 : 0;
-            for (let i = startRow; i < data.length; i++) {
-              const row = data[i];
-              if (!row || !row[0] || !row[0].trim()) continue;
-              const name = row[0].trim();
-              const quantity = row[1] ? parseInt(row[1]) || 1 : 1;
-              const notes = row[2] ? row[2].trim() : undefined;
-              if (name.length < 2) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
-              if (quantity < 1 || quantity > 100) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
-              items.push({ name, category: fallbackCategoryId, quantity, notes, isRequired: false, selected: true });
-            }
-            resolve(items);
-          } catch { reject(new Error(t('importModal.file.parseError'))); }
+          const rows = results.data as ImportRow[];
+
+          // Excel in a Hebrew locale writes plain CSV in an older encoding, and
+          // only "CSV UTF-8" arrives readable. The unreadable one used to be
+          // imported as rubbish item names without a word.
+          if (looksMisdecoded(rows.flat().join(''))) {
+            reject(new Error(t('importModal.file.badEncoding')));
+            return;
+          }
+
+          try { resolve(buildItemsFromRows(rows, [])); }
+          catch (error) { reject(error instanceof Error ? error : new Error(t('importModal.file.parseError'))); }
         },
         error: () => reject(new Error(t('importModal.file.parseError'))),
         encoding: 'UTF-8'
@@ -443,11 +491,13 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      let items: ImportItem[] = [];
-      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) { items = await parseExcelFile(file); }
-      else if (file.name.endsWith('.csv')) { items = await parseCSVFile(file); }
+      let result: FileReadResult;
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) { result = await parseExcelFile(file); }
+      else if (file.name.endsWith('.csv')) { result = await parseCSVFile(file); }
       else { toast.error(t('importModal.file.unsupportedType')); return; }
+      const { items, report } = result;
       setImportItems(items);
+      setFileReport(report);
       setClassificationSummary(null);
       setMigrationKeptCount(0);
       setMigrationKnownIds([]);
@@ -466,6 +516,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
     setImportItems(items);
     setClassificationSummary(null);
+    setFileReport(null);
     setMigrationKeptCount(0);
     setMigrationKnownIds([]);
     setShowPreview(true);
@@ -1001,13 +1052,29 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                       </button>
 
                       <button onClick={toggleSelectAll} className="text-sm text-green-600 hover:text-green-700">{validItemsCount > 0 && importItems.filter(item => !item.error).every(item => item.selected) ? t('importModal.preview.deselectAll') : t('importModal.preview.selectAll')}</button>
-                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setMigrationKeptCount(0); setMigrationKnownIds([]); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
+                      <button onClick={() => { setShowPreview(false); setImportItems([]); setSmartInputText(''); setClassificationSummary(null); setFileReport(null); setMigrationKeptCount(0); setMigrationKnownIds([]); }} className="text-sm text-gray-600 hover:text-gray-700">{t('importModal.preview.back')}</button>
                     </div>
                   </div>
                   {migrationKeptCount > 0 && (
                     <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                       <span>{t('importModal.smart.migrationKept', { count: migrationKeptCount })}</span>
+                    </div>
+                  )}
+                  {fileReport && (fileReport.skippedRows > 0 || fileReport.ignoredColumns.length > 0 || fileReport.extraSheets.length > 0) && (
+                    <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <div className="space-y-1">
+                        {fileReport.skippedRows > 0 && (
+                          <p>{t('importModal.file.report.skippedRows', { count: fileReport.skippedRows })}</p>
+                        )}
+                        {fileReport.ignoredColumns.length > 0 && (
+                          <p>{t('importModal.file.report.ignoredColumns', { count: fileReport.ignoredColumns.length, columns: fileReport.ignoredColumns.join(', ') })}</p>
+                        )}
+                        {fileReport.extraSheets.length > 0 && (
+                          <p>{t('importModal.file.report.extraSheets', { count: fileReport.extraSheets.length, sheets: fileReport.extraSheets.join(', ') })}</p>
+                        )}
+                      </div>
                     </div>
                   )}
                   {unknownCategoryCount > 0 && (

@@ -126,7 +126,14 @@
             },
             "file": {
                 "label": "Upload {{type}} file",
-                "help": "Format: Column 1 - Item Name, Column 2 - Quantity (Optional), Column 3 - Notes (Optional)\nFirst line can be headers and will be ignored.",
+                "help": "The import takes a list of items, not a list of who brings what. Sign-ups are built from the participants afterwards.\nIf there is a header row we match columns by what it says: item name, quantity and notes. Other columns are not read.\nWith no header row the order is item name, quantity, notes.",
+                "noNameColumn": "We could not find a column that looks like an item name. The headers we read are: {{headers}}. Rename one of them to \"item name\" and try again.",
+                "badEncoding": "This file was not saved in an encoding we can read, so its text comes out garbled. In Excel, save it as CSV UTF-8, or simply save it as an Excel file.",
+                "report": {
+                    "skippedRows": "{{count}} rows were skipped, because they had no item name.",
+                    "ignoredColumns": "{{count}} columns were not read: {{columns}}.",
+                    "extraSheets": "The file has {{count}} more sheets that were not read: {{sheets}}. Only the first sheet is read."
+                },
                 "unsupportedType": "Unsupported file type",
                 "parseError": "Error processing file"
             },

@@ -57,6 +57,9 @@
                 "deselectAll": "Deselect All",
                 "back": "Back to Import",
                 "noItems": "No items found",
+                "unknownCategory": "A category this event does not have",
+                "unknownCategoryWarning": "{{count}} items came in with a category this event does not have. Choose one for them before importing, or they will not appear on the board.",
+                "unknownCategoryFix": "Move them all to {{category}}",
                 "errors": {
                     "nameLength": "Item name must be at least 2 characters",
                     "quantityRange": "Quantity must be between 1 and 100"

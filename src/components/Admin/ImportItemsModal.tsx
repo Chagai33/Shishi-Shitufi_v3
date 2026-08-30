@@ -124,6 +124,33 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     return catchAll?.value || categoryOptions[0]?.value || 'other';
   }, [categoryOptions]);
 
+  // A dropdown must never display a value it is not holding, and left alone it
+  // does exactly that: React picks the first option whenever the value matches
+  // none of them, so an item carrying "main" in an event that has no such
+  // category showed up as "meat" and was written as "main". The organiser
+  // approved a preview that was telling the truth about nothing.
+  // See DOCS/PLANING/75-import-preview-shows-a-category-it-does-not-save.md.
+  const isUnknownCategory = (item: ImportItem) => !allowedCategoryIds.has(item.category);
+
+  // Only what is actually going to be written can block the import. A row nobody
+  // selected, or one already held back by an error, is not about to reach the
+  // database and has no say.
+  const unknownCategoryCount = importItems.filter(
+    item => item.selected && !item.error && isUnknownCategory(item)
+  ).length;
+
+  // The way out of the block, in one click rather than one dropdown per row. It
+  // moves every unrecognised item and not only the selected ones, because a row
+  // the organiser selects a moment later would otherwise put the block back.
+  const moveUnknownToFallback = () => {
+    setImportItems(prev => prev.map(item =>
+      isUnknownCategory(item) ? { ...item, category: fallbackCategoryId } : item
+    ));
+  };
+
+  const fallbackCategoryLabel =
+    categoryOptions.find(opt => opt.value === fallbackCategoryId)?.label || fallbackCategoryId;
+
   // The items the event already holds, keyed by name. The id lives in the map key
   // rather than on the item, so it has to be carried across here.
   const existingItemsByName = React.useMemo(() => {
@@ -373,9 +400,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
             const name = String(row[0]).trim();
             const quantity = row[1] ? parseInt(String(row[1])) || 1 : 1;
             const notes = row[2] ? String(row[2]).trim() : undefined;
-            if (name.length < 2) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
-            if (quantity < 1 || quantity > 100) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
-            items.push({ name, category: 'main', quantity, notes, isRequired: false, selected: true });
+            if (name.length < 2) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
+            if (quantity < 1 || quantity > 100) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
+            items.push({ name, category: fallbackCategoryId, quantity, notes, isRequired: false, selected: true });
           }
           resolve(items);
         } catch { reject(new Error(t('importModal.file.parseError'))); }
@@ -399,9 +426,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
               const name = row[0].trim();
               const quantity = row[1] ? parseInt(row[1]) || 1 : 1;
               const notes = row[2] ? row[2].trim() : undefined;
-              if (name.length < 2) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
-              if (quantity < 1 || quantity > 100) { items.push({ name, category: 'main', quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
-              items.push({ name, category: 'main', quantity, notes, isRequired: false, selected: true });
+              if (name.length < 2) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.nameLength') }); continue; }
+              if (quantity < 1 || quantity > 100) { items.push({ name, category: fallbackCategoryId, quantity: 1, notes, isRequired: false, selected: false, error: t('importModal.preview.errors.quantityRange') }); continue; }
+              items.push({ name, category: fallbackCategoryId, quantity, notes, isRequired: false, selected: true });
             }
             resolve(items);
           } catch { reject(new Error(t('importModal.file.parseError'))); }
@@ -589,6 +616,13 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
     const selectedItems = importItems.filter(item => item.selected && !item.error);
     if (selectedItems.length === 0) {
       toast.error(t('importModal.preview.noItems'));
+      return;
+    }
+
+    // The button is already disabled while this is true. The check stands here
+    // as well because the button is a courtesy and this is the door.
+    if (unknownCategoryCount > 0) {
+      toast.error(t('importModal.preview.unknownCategoryWarning', { count: unknownCategoryCount }));
       return;
     }
 
@@ -976,6 +1010,21 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                       <span>{t('importModal.smart.migrationKept', { count: migrationKeptCount })}</span>
                     </div>
                   )}
+                  {unknownCategoryCount > 0 && (
+                    <div role="status" className="mb-4 flex flex-col sm:flex-row sm:items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                      <span className="flex items-start space-x-2 rtl:space-x-reverse flex-1">
+                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                        <span>{t('importModal.preview.unknownCategoryWarning', { count: unknownCategoryCount })}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={moveUnknownToFallback}
+                        className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                      >
+                        {t('importModal.preview.unknownCategoryFix', { category: fallbackCategoryLabel })}
+                      </button>
+                    </div>
+                  )}
                   {classificationSummary && classificationSummary.total > 0 && classificationSummary.classified < classificationSummary.total && (
                     <div role="status" className="mb-4 flex items-start space-x-2 rtl:space-x-reverse rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                       <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -1011,7 +1060,8 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                                   {item.error && (<p className="text-xs text-red-600 mt-1 flex items-center"><AlertCircle className="h-3 w-3 ml-1" />{item.error}</p>)}
                                 </td>
                                 <td className="px-4 py-3">
-                                  <select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className="w-full px-2 py-1 border border-gray-300 rounded text-sm">
+                                  <select value={item.category} onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)} className={`w-full px-2 py-1 border rounded text-sm ${isUnknownCategory(item) ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-300'}`}>
+                                    {isUnknownCategory(item) && (<option value={item.category}>{t('importModal.preview.unknownCategory')}</option>)}
                                     {categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}
                                   </select>
                                 </td>
@@ -1093,8 +1143,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                                   <select
                                     value={item.category}
                                     onChange={(e) => updateItem(index, 'category', e.target.value as MenuCategory)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+                                    className={`w-full px-3 py-2 border rounded-lg text-sm ${isUnknownCategory(item) ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-300 bg-white'}`}
                                   >
+                                    {isUnknownCategory(item) && (<option value={item.category}>{t('importModal.preview.unknownCategory')}</option>)}
                                     {categoryOptions.map(option => (<option key={option.value} value={option.value}>{option.label}</option>))}
                                   </select>
                                 </div>
@@ -1132,7 +1183,7 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, initialText,
                 </div>
                 {importItems.length > 0 && (<div className="bg-blue-50 rounded-lg p-4 mb-6"><div className="flex items-center space-x-3 rtl:space-x-reverse"><CheckCircle className="h-5 w-5 text-blue-600" aria-hidden="true" /><div><p className="text-sm text-blue-800"><Trans i18nKey="importModal.preview.summary.selected" values={{ selected: selectedItemsCount, valid: validItemsCount }} components={{ strong: <strong /> }} /></p>{importItems.some(item => item.error) && (<p className="text-xs text-red-600 mt-1">{t('importModal.preview.summary.errors', { count: importItems.filter(item => item.error).length })}</p>)}</div></div></div>)}
                 <div className="flex space-x-3 rtl:space-x-reverse">
-                  <button onClick={handleImport} disabled={selectedItemsCount === 0 || isImporting} type="button" className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">{isImporting ? (<> <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div> {t('importModal.preview.importingBtn')} </>) : (t('importModal.preview.importBtn', { count: selectedItemsCount }))}</button>
+                  <button onClick={handleImport} disabled={selectedItemsCount === 0 || isImporting || unknownCategoryCount > 0} type="button" className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">{isImporting ? (<> <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div> {t('importModal.preview.importingBtn')} </>) : (t('importModal.preview.importBtn', { count: selectedItemsCount }))}</button>
                   <button onClick={onClose} disabled={isImporting} type="button" className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50">{t('importModal.preview.cancelBtn')}</button>
                 </div>
               </>

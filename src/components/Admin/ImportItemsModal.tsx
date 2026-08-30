@@ -660,7 +660,9 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
           notAttempted = itemsToProcess.length - successCount - errorCount;
           break;
         }
-        setImportProgress({ done: successCount + errorCount, total: itemsToProcess.length });
+        // The item being written, counted from one, rather than the number
+        // already finished. Otherwise the first thing on screen is "0 of 3".
+        setImportProgress({ done: successCount + errorCount + 1, total: itemsToProcess.length });
         try {
           const menuItemData: Omit<MenuItem, 'id'> = {
             name: item.name,

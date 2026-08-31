@@ -24,19 +24,15 @@
 | 8א | ההגירה החכמה הופכת טרמפים לפריטים רגילים | 🟠 עוקף את חוק 66 | [80](80-smart-migration-turns-rides-into-ordinary-items.md) |
 | 8א | הייבוא אינו בודק אורך שם והערה, והשרת דוחה אחרי שהמסך אישר | 🟠 המסך מציג מה שהמסד ידחה | [81](81-import-does-not-check-name-and-note-length.md) |
 | 8א | אין קובץ תבנית להורדה | 🟢 מי שמתחיל מאפס מנחש | [77](77-import-template-file-to-download.md) |
-| 9 | פגיעויות אבטחה בתלויות, **נפרס בשני העצים 30/08** | ✅ סגור | [03](03-dependencies.md) |
 | 10 | בדיקת תקינות הקוד קורסת ואינה נותנת כיסוי | 🟠 איכות | [16](16-lint-broken.md) |
 | 10א | עדכון חלקי מייצר אירוע ריק שנקרא ככבוי | 🟢 צומצם 25/08 | [35](35-event-page-flashes-false-answers.md) |
 | 11 | מגבלות ועלויות של הבינה המלאכותית, **נפרס ואומת 29/08** | 🟢 נותרה שאלת העלות בפועל | [53](53-ai-limits-and-costs.md) |
 | 11 | הפונקציה בענן פתוחה לכל קורא, ו-App Check אינו מופעל | 🟠 מעקף למגבלת הקצב | [69](69-app-check-is-not-enabled.md) |
 | 11 | אין תקרה על ההוצאה הכוללת של הבינה המלאכותית | 🟠 עלות גדלה עם המשתמשים | [71](71-no-ceiling-on-total-ai-spend.md) |
 | 11 | מונה השימוש ב-AI שורד את מחיקת החשבון | 🟢 שארית אחרי מחיקה | [70](70-ai-usage-counter-outlives-the-account.md) |
-| 11 | מדיניות מגבלות מרכזית, **נפרסה ומוזגה 29/08** | ✅ סגור | [57](57-central-limits-policy.md) |
 | 11 | מספר המשתתפים באירוע נשאר בלי תקרה, **הוצא במכוון** | 🟠 הכרעה שלא יושמה | [67](67-participants-per-event-has-no-ceiling.md) |
 | 11 | המגבלות נאכפות ולא מוסברות: מונה תווים ועמוד עזרה | 🟢 הסבר למשתמש | [68](68-the-limits-are-enforced-but-not-explained.md) |
 | 11 | תאריך הסיום נשמר ואיש אינו קורא אותו, **התקרה עליו נוספה 29/08** | 🟠 שדה מת בשלושה מסכים | [65](65-end-date-is-written-and-never-read.md) |
-| 11 | מכסת הפריטים נעקפה בשלוש דרכים, **נסגרו ונפרסו 29/08** | ✅ סגור | [64](64-item-quota-can-be-walked-around.md) |
-| 11 | טרמפ שנערך והפך לפריט רגיל, **נסגר ונפרס 29/08** | ✅ סגור | [66](66-a-ride-can-be-edited-into-an-ordinary-item.md) |
 | 11א | המודל מחזיר מזהה קטגוריה בתוך שם הפריט | 🟢 פריט זבל בתצוגה | [54](54-model-returns-a-category-id-as-an-item-name.md) |
 | 12 | מסך "ניהול משתמשים זמניים" נשבר בפתיחה | 🟢 קוד מת או תיקון | [42](42-temporary-user-management-screen-is-dead.md) |
 | 13 | מסך ניהול הפריטים בכמות רושם "admin" כיוצר | 🟢 היגיינת נתונים | [32](32-bulk-manager-writes-a-literal-admin-as-creator.md) |
@@ -627,3 +623,7 @@ firebase deploy --only database --project shishi-shitufimt
 | [56](56-raw-keys-shown-in-hebrew.md) | 37 מחרוזות שהוצגו כשם טכני קיבלו נוסח, בעברית ובאנגלית | 26/08/2026 |
 | [49](49-add-to-calendar-shows-a-raw-key-in-hebrew.md) | כפתור התאריך אומר "הוסף ליומן גוגל" ולא שם מפתח | 26/08/2026 |
 | [61](61-whats-new-page.md) | עמוד "מה חדש" בכתובת `/updates`, מקושר מהכותרת התחתונה בלבד | 27/08/2026 |
+| [03](03-dependencies.md) | פגיעויות התלויות, נפרס בשני העצים | 30/08/2026 |
+| [57](57-central-limits-policy.md) | מדיניות מגבלות מרכזית, אחת עשרה תקרות | 29/08/2026 |
+| [64](64-item-quota-can-be-walked-around.md) | מכסת הפריטים נעקפה בשלוש דרכים, כולן נסגרו | 29/08/2026 |
+| [66](66-a-ride-can-be-edited-into-an-ordinary-item.md) | טרמפ שנערך והפך לפריט רגיל | 29/08/2026 |

@@ -1,5 +1,9 @@
-import { ShishiEvent, CategoryConfig } from '../types';
-import { TFunction } from 'i18next';
+// Both of these are types and nothing else, and spelling them as types is what
+// lets a test import this file: node strips a type-only import instead of trying
+// to resolve it, and neither '../types' nor 'i18next' resolves under node.
+// See test/import/categories.test.mjs.
+import type { ShishiEvent, CategoryConfig } from '../types';
+import type { TFunction } from 'i18next';
 
 /**
  * Standard definition for the "Ride Offers" category.
@@ -29,6 +33,25 @@ export const RIDE_CATEGORY_IDS = [...RIDE_OFFER_CATEGORY_IDS, ...RIDE_REQUEST_CA
 /** True when the category is one the product treats as a ride. */
 export const isRideCategory = (categoryId?: string): boolean =>
   !!categoryId && RIDE_CATEGORY_IDS.includes(categoryId);
+
+/**
+ * Where an item goes in this event when nobody chose a category for it.
+ *
+ * The event's own catch-all if it has one, otherwise its first category. Never
+ * an id typed into the code: "on the fire" and "picnic" have no catch-all at
+ * all, so a hardcoded value is not even in their list, and a dropdown handed a
+ * value none of its options match displays the first option while still holding
+ * the value. The organiser then reads one category and the database is given
+ * another. That is the defect, and it has now been found on four screens.
+ *
+ * This is the rule ImportItemsModal has been applying since campaign 17, moved
+ * here so that the screens share it rather than each carrying a copy.
+ * See DOCS/PLANING/78-bulk-category-change-writes-a-category-the-event-does-not-have.md.
+ */
+export const getFallbackCategoryId = (categoryIds: string[]): string => {
+  const catchAll = categoryIds.find(id => id === 'other' || id === 'general');
+  return catchAll || categoryIds[0] || '';
+};
 
 
 

@@ -19,6 +19,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
 import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
 import { mapRows, countRowsWithData, looksMisdecoded, ImportRow } from '../../utils/importColumns';
+import { getFallbackCategoryId } from '../../utils/eventUtils';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
@@ -149,14 +150,14 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
   );
 
   // Where an item goes when there is no earlier category to keep, which is the
-  // case for a brand new item in a plain Smart Import. The event's own catch-all
-  // if it has one, otherwise its first category. Never a hardcoded id: templates
-  // such as BBQ and Picnic have no "other" category, so the old hardcoded value
-  // was not even in their list and the dropdown came up empty.
-  const fallbackCategoryId = React.useMemo(() => {
-    const catchAll = categoryOptions.find(opt => opt.value === 'other' || opt.value === 'general');
-    return catchAll?.value || categoryOptions[0]?.value || 'other';
-  }, [categoryOptions]);
+  // case for a brand new item in a plain Smart Import. The rule itself now lives
+  // in eventUtils, because the bulk items screen needs the same answer and a
+  // second copy of it is how the two would come to disagree.
+  // See DOCS/PLANING/78-bulk-category-change-writes-a-category-the-event-does-not-have.md.
+  const fallbackCategoryId = React.useMemo(
+    () => getFallbackCategoryId(categoryOptions.map(opt => opt.value)),
+    [categoryOptions]
+  );
 
   // A dropdown must never display a value it is not holding, and left alone it
   // does exactly that: React picks the first option whenever the value matches

@@ -523,7 +523,14 @@ export class FirebaseService {
               // Its own category if the event still has one, and only otherwise the
               // event's catch-all. Nobody chose to move this item, so moving it is
               // a last resort and not the default.
-              const category = (!allowedIds || allowedIds.has(item.category))
+              //
+              // A ride keeps its own category whatever the allowed set says. The
+              // ride categories are not stored on the event, they are added when
+              // a screen draws the list, so the allowed set never holds one and
+              // this line turned a lift offered while the organizer was migrating
+              // into an ordinary item.
+              // See DOCS/PLANING/80-smart-migration-turns-rides-into-ordinary-items.md.
+              const category = (!allowedIds || allowedIds.has(item.category) || isRideCategory(item.category))
                 ? item.category
                 : (categoryRules ? categoryRules.fallbackId : 'other');
               concurrentItems.push({ ...item, category });
@@ -615,7 +622,12 @@ export class FirebaseService {
           };
           keptItemIds.add(cId);
 
-          if (cItem.creatorId && !alreadyCounted) {
+          // A ride never counts against the item quota, the same exemption the
+          // two branches above already apply and this one did not. Without it a
+          // lift offered while the organizer was migrating filled a place in its
+          // owner's item quota that he never asked for.
+          // See DOCS/PLANING/31-rides-consume-the-item-quota.md.
+          if (cItem.creatorId && !alreadyCounted && !isRideCategory(cItem.category)) {
             newUserItemCounts[cItem.creatorId] = (newUserItemCounts[cItem.creatorId] || 0) + 1;
           }
         });

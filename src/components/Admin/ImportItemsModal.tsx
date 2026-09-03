@@ -19,7 +19,7 @@ import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
 import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
 import { mapRows, countRowsWithData, looksMisdecoded, ImportRow } from '../../utils/importColumns';
-import { getFallbackCategoryId } from '../../utils/eventUtils';
+import { getFallbackCategoryId, itemsEnteringMigration } from '../../utils/eventUtils';
 import { PresetItem } from '../../utils/presetLists';
 import { ConfirmationModal } from './ConfirmationModal';
 
@@ -334,8 +334,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
       const knownIds: string[] = [];
       if (migrationStartTime) {
         existingItemsByName.forEach((existing, key) => {
-          unclaimed.set(key, [...existing]);
-          existing.forEach(one => knownIds.push(one.id));
+          // A ride is not part of a migration. Keeping it out of the claim map
+          // keeps it out of the preview, and keeping its id out of the known set
+          // is what tells the write that the screen never held it: the write
+          // leaves every item it was not given exactly as it is, with the people
+          // who signed up for it.
+          // See DOCS/PLANING/80-smart-migration-turns-rides-into-ordinary-items.md.
+          const migrating = itemsEnteringMigration(existing);
+          if (migrating.length === 0) return;
+          unclaimed.set(key, migrating);
+          migrating.forEach(one => knownIds.push(one.id));
         });
       }
       const claimExisting = (name: string): MenuItem | undefined => {

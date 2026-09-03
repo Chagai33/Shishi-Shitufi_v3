@@ -53,6 +53,28 @@ export const getFallbackCategoryId = (categoryIds: string[]): string => {
   return catchAll || categoryIds[0] || '';
 };
 
+/**
+ * The items of an event that a smart migration is allowed to touch.
+ *
+ * A migration moves items between the event's categories, and a ride has no
+ * category it could be moved to. The ride categories are not stored on the
+ * event, they are added to the list when a screen draws it, so the import
+ * window, which reads the stored list, never had them in its allowed set. Every
+ * ride was therefore unrecognised, and the rule that puts anything unrecognised
+ * into the event's catch-all put it there. It stopped being a ride, stopped
+ * appearing where people look for a lift, and started taking up its owner's
+ * item quota instead of his ride quota, while its pickup point and phone number
+ * stayed on a row that was no longer a ride.
+ *
+ * So a ride is not sent for analysis and not shown in the preview. It is not in
+ * the list the write is given either, and the write keeps every item it was not
+ * given, which is what leaves the ride in the database exactly as it was, with
+ * the people who signed up for it.
+ * See DOCS/PLANING/80-smart-migration-turns-rides-into-ordinary-items.md.
+ */
+export const itemsEnteringMigration = <T extends { category?: string }>(items?: T[]): T[] =>
+  (items || []).filter(item => !isRideCategory(item.category));
+
 
 
 /**

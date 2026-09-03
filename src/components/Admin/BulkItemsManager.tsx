@@ -1367,7 +1367,6 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
             }}
             selectedItemsForSave={filteredItems.filter(item => item.isSelected).map(item => ({
               name: item.name,
-              category: item.category,
               quantity: item.quantity,
               notes: item.notes,
               isRequired: item.isRequired

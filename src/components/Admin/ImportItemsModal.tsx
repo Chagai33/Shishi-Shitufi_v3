@@ -20,6 +20,7 @@ import { compressImage } from '../../utils/imageUtils';
 import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
 import { mapRows, countRowsWithData, looksMisdecoded, ImportRow } from '../../utils/importColumns';
 import { getFallbackCategoryId } from '../../utils/eventUtils';
+import { PresetItem } from '../../utils/presetLists';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
@@ -557,8 +558,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
 
 
 
-  const handlePresetListSelect = (presetItems: { name: string; category: MenuCategory; quantity: number; notes?: string; isRequired: boolean; }[]) => {
-    const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
+  // A preset list is a list of names and quantities and carries no category of
+  // its own, because it is saved once and loaded into events that do not share
+  // categories. Which category its items land in is decided here, from the event
+  // being imported into, exactly as a file import decides it: the event's own
+  // catch-all if it has one, otherwise its first category. The organiser then
+  // sorts them in the preview, or presses the smart classification button that
+  // is on the same screen.
+  // See DOCS/PLANING/79-preset-lists-carry-friday-dinner-categories.md.
+  const handlePresetListSelect = (presetItems: PresetItem[]) => {
+    const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: fallbackCategoryId as MenuCategory, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
     setImportItems(items);
     setClassificationSummary(null);
     setFileReport(null);

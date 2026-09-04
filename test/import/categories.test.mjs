@@ -27,7 +27,11 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getFallbackCategoryId, getStartingCategoryId } from '../../src/utils/eventUtils.ts';
+import {
+  getFallbackCategoryId,
+  getStartingCategoryId,
+  resolveCategoryDisplayName,
+} from '../../src/utils/eventUtils.ts';
 
 const SRC = fileURLToPath(new URL('../../src', import.meta.url));
 
@@ -226,6 +230,71 @@ describe('the participant item form', () => {
       /rowType: initialRowType \|\|/,
       'the row type still overrides the category',
     );
+  });
+});
+
+describe('the item edit dialog on the event page', () => {
+  // The organiser's only tool on a stray item from the event page. Its dropdown
+  // was built from the event's categories alone, so an item in a category the
+  // event does not have opened reading "meat" while it sat in "main": the save
+  // wrote "main" back, and pressing "meat" was not a change at all, because the
+  // browser already had it marked.
+  //
+  // Nothing here runs React, so nothing here proves what the dropdown draws.
+  // That is proved in the product. What is proved here is that the screen was
+  // given the extra option, and that the words on it can never be a machine id.
+  // See DOCS/PLANING/88-edit-item-dialog-shows-a-category-the-item-is-not-in.md.
+  const screen = () => readFileSync(`${SRC}/components/Events/EditItemModal.tsx`, 'utf8');
+
+  test('carries the category the item is in, when the event does not have it', () => {
+    const text = screen();
+    assert.match(
+      text,
+      /availableCategories\.some\(cat => cat\.id === formData\.category\)/,
+      'nothing asks whether the item category is one of the options',
+    );
+    assert.match(
+      text,
+      /!categoryIsChooseable && \(<option value=\{formData\.category\}>/,
+      'the dropdown still has no option for the value it is holding',
+    );
+  });
+
+  test('and writes the value it was showing', () => {
+    const text = screen();
+    assert.match(text, /category: formData\.category/, 'the save no longer writes what the dropdown holds');
+  });
+
+  test('and says it in the words the other two screens use', () => {
+    // Three screens, one sentence. A fourth wording would be a fourth answer to
+    // a question the product has already answered twice.
+    const text = screen();
+    assert.match(text, /bulkEdit\.table\.unknownCategory/, 'the named wording is not reused');
+    assert.match(text, /importModal\.preview\.unknownCategory/, 'the unnamed wording is not reused');
+  });
+
+  test('and never marks a ride as a category the event does not have', () => {
+    // The picker sits inside the block drawn only for an item that is not a
+    // ride, and that test is the shared one, so the older names 'trempim' and
+    // 'rides' are covered by it too.
+    const text = screen();
+    assert.match(text, /const isRide = isRideCategory\(item\.category\)/, 'rides are recognised by a list of this screen own');
+    const gate = text.indexOf('{!isRide && (');
+    const picker = text.indexOf('!categoryIsChooseable && (<option');
+    assert.ok(gate !== -1, 'the non ride block is gone');
+    assert.ok(picker > gate, 'the category picker is drawn outside the block reserved for items that are not rides');
+  });
+
+  test('and the name on that option is a name, never a machine id', () => {
+    // The two branches the label leans on. i18next hands back the key it was
+    // given when it has no translation, and a key on screen is what record 56
+    // spent a campaign removing.
+    const noTranslation = (key) => key;
+    assert.equal(resolveCategoryDisplayName('assigned', undefined, [], noTranslation), 'assigned');
+    assert.equal(resolveCategoryDisplayName('custom-1756900000000', undefined, [], noTranslation), 'custom-1756900000000');
+
+    const knowsMain = (key) => (key === 'categories.main' ? 'מנה עיקרית' : key);
+    assert.equal(resolveCategoryDisplayName('main', undefined, [], knowsMain), 'מנה עיקרית');
   });
 });
 

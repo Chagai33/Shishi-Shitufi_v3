@@ -24,6 +24,7 @@
 | 8א | בתבנית "טיול" פריט שלא סווג נופל להצעות טרמפ | 🟠 נחשף כשהחסימה שהסתירה אותו הוסרה | [83](83-the-trip-template-hands-out-a-ride-category.md) |
 | 8א | מחיקת שם של פריט מרוקנת את מסך הפריטים בכמות | 🟠 המסך כולו נופל, לא שורה אחת | [91](91-clearing-an-item-name-empties-the-bulk-screen.md) |
 | 8א | עדכון חי מוחק את הסימון ואת מה שלא נשמר באותו מסך | 🟠 פוגע בפעולה בכמות באירוע פעיל | [92](92-a-live-update-wipes-the-selection-in-the-bulk-screen.md) |
+| 8א | טרמפ הלוך ושוב נספר כפי שניים מהמקומות שברכב | 🟠 האורח קורא מספר שאינו נכון | [93](93-a-round-trip-ride-is-counted-as-twice-the-seats.md) |
 | 8א | הייבוא אינו בודק אורך שם והערה, והשרת דוחה אחרי שהמסך אישר | 🟠 המסך מציג מה שהמסד ידחה | [81](81-import-does-not-check-name-and-note-length.md) |
 | 8א | הכפתור ששומר בחירה כרשימה מוכנה אינו יכול לשמור | 🟠 נכשל תמיד, לכל מארגן | [90](90-saving-a-selection-as-a-preset-list-cannot-work.md) |
 | 8א | רשימת קטגוריות הטרמפ כתובה ביד באחד עשר מסכים | 🟠 המסך והשרת חלוקים על אירוע ישן | [86](86-the-ride-category-list-is-written-out-by-hand-in-eleven-screens.md) |

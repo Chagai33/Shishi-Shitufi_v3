@@ -2,7 +2,10 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 // Force Deploy Update: 2026-02-01 12:15
 const { defineSecret } = require("firebase-functions/params");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const admin = require("firebase-admin");
+// firebase-admin 14 removed the single-namespace export. Same two services,
+// reached the way the library now offers them. See the note in index.js.
+const { getApps, initializeApp } = require("firebase-admin/app");
+const { getDatabase } = require("firebase-admin/database");
 
 const googleAiKey = defineSecret("GOOGLE_AI_KEY");
 
@@ -38,8 +41,8 @@ const USAGE_PATH = "aiUsage";
 // its own. Resolved on the way in rather than at module scope, because the CLI
 // loads this file during discovery and nothing there needs a database.
 function usageRef(uid) {
-  if (!admin.apps.length) admin.initializeApp();
-  return admin.database().ref(`${USAGE_PATH}/${uid}`);
+  if (!getApps().length) initializeApp();
+  return getDatabase().ref(`${USAGE_PATH}/${uid}`);
 }
 
 /**

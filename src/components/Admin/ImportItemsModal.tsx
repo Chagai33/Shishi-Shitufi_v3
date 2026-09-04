@@ -19,6 +19,8 @@ import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
 import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
 import { mapRows, countRowsWithData, looksMisdecoded, ImportRow } from '../../utils/importColumns';
+import { getFallbackCategoryId, itemsEnteringMigration } from '../../utils/eventUtils';
+import { PresetItem } from '../../utils/presetLists';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface ImportItemsModalProps {
@@ -149,14 +151,14 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
   );
 
   // Where an item goes when there is no earlier category to keep, which is the
-  // case for a brand new item in a plain Smart Import. The event's own catch-all
-  // if it has one, otherwise its first category. Never a hardcoded id: templates
-  // such as BBQ and Picnic have no "other" category, so the old hardcoded value
-  // was not even in their list and the dropdown came up empty.
-  const fallbackCategoryId = React.useMemo(() => {
-    const catchAll = categoryOptions.find(opt => opt.value === 'other' || opt.value === 'general');
-    return catchAll?.value || categoryOptions[0]?.value || 'other';
-  }, [categoryOptions]);
+  // case for a brand new item in a plain Smart Import. The rule itself now lives
+  // in eventUtils, because the bulk items screen needs the same answer and a
+  // second copy of it is how the two would come to disagree.
+  // See DOCS/PLANING/78-bulk-category-change-writes-a-category-the-event-does-not-have.md.
+  const fallbackCategoryId = React.useMemo(
+    () => getFallbackCategoryId(categoryOptions.map(opt => opt.value)),
+    [categoryOptions]
+  );
 
   // A dropdown must never display a value it is not holding, and left alone it
   // does exactly that: React picks the first option whenever the value matches
@@ -332,8 +334,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
       const knownIds: string[] = [];
       if (migrationStartTime) {
         existingItemsByName.forEach((existing, key) => {
-          unclaimed.set(key, [...existing]);
-          existing.forEach(one => knownIds.push(one.id));
+          // A ride is not part of a migration. Keeping it out of the claim map
+          // keeps it out of the preview, and keeping its id out of the known set
+          // is what tells the write that the screen never held it: the write
+          // leaves every item it was not given exactly as it is, with the people
+          // who signed up for it.
+          // See DOCS/PLANING/80-smart-migration-turns-rides-into-ordinary-items.md.
+          const migrating = itemsEnteringMigration(existing);
+          if (migrating.length === 0) return;
+          unclaimed.set(key, migrating);
+          migrating.forEach(one => knownIds.push(one.id));
         });
       }
       const claimExisting = (name: string): MenuItem | undefined => {
@@ -556,8 +566,16 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
 
 
 
-  const handlePresetListSelect = (presetItems: { name: string; category: MenuCategory; quantity: number; notes?: string; isRequired: boolean; }[]) => {
-    const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: item.category, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
+  // A preset list is a list of names and quantities and carries no category of
+  // its own, because it is saved once and loaded into events that do not share
+  // categories. Which category its items land in is decided here, from the event
+  // being imported into, exactly as a file import decides it: the event's own
+  // catch-all if it has one, otherwise its first category. The organiser then
+  // sorts them in the preview, or presses the smart classification button that
+  // is on the same screen.
+  // See DOCS/PLANING/79-preset-lists-carry-friday-dinner-categories.md.
+  const handlePresetListSelect = (presetItems: PresetItem[]) => {
+    const items: ImportItem[] = presetItems.map(item => ({ name: item.name, category: fallbackCategoryId as MenuCategory, quantity: item.quantity, notes: item.notes, isRequired: item.isRequired, selected: true }));
     setImportItems(items);
     setClassificationSummary(null);
     setFileReport(null);

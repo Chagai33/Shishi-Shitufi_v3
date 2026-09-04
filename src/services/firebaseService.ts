@@ -9,6 +9,7 @@ import { database, auth } from '../lib/firebase';
 import { ShishiEvent, MenuItem, Assignment, User, EventDetails, PresetList, PresetItem, CategoryConfig, CustomTemplate } from '../types';
 
 import { RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS, isRideCategory } from '../utils/eventUtils';
+import { presetItemsAsWritten } from '../utils/presetLists';
 import { ITEMS_PER_EVENT, EVENTS_PER_ORGANIZER, RIDES_PER_PERSON } from '../constants/limits';
 import { toast } from 'react-hot-toast';
 import i18n from '../i18n';
@@ -522,7 +523,14 @@ export class FirebaseService {
               // Its own category if the event still has one, and only otherwise the
               // event's catch-all. Nobody chose to move this item, so moving it is
               // a last resort and not the default.
-              const category = (!allowedIds || allowedIds.has(item.category))
+              //
+              // A ride keeps its own category whatever the allowed set says. The
+              // ride categories are not stored on the event, they are added when
+              // a screen draws the list, so the allowed set never holds one and
+              // this line turned a lift offered while the organizer was migrating
+              // into an ordinary item.
+              // See DOCS/PLANING/80-smart-migration-turns-rides-into-ordinary-items.md.
+              const category = (!allowedIds || allowedIds.has(item.category) || isRideCategory(item.category))
                 ? item.category
                 : (categoryRules ? categoryRules.fallbackId : 'other');
               concurrentItems.push({ ...item, category });
@@ -614,7 +622,12 @@ export class FirebaseService {
           };
           keptItemIds.add(cId);
 
-          if (cItem.creatorId && !alreadyCounted) {
+          // A ride never counts against the item quota, the same exemption the
+          // two branches above already apply and this one did not. Without it a
+          // lift offered while the organizer was migrating filled a place in its
+          // owner's item quota that he never asked for.
+          // See DOCS/PLANING/31-rides-consume-the-item-quota.md.
+          if (cItem.creatorId && !alreadyCounted && !isRideCategory(cItem.category)) {
             newUserItemCounts[cItem.creatorId] = (newUserItemCounts[cItem.creatorId] || 0) + 1;
           }
         });
@@ -1544,9 +1557,15 @@ export class FirebaseService {
     const onValueChange = (snapshot: any) => {
       if (snapshot.exists()) {
         const listsData = snapshot.val();
+        // Every list saved before a preset row stopped carrying a category still
+        // has one on every row. Reading them through here is what keeps those
+        // lists loading, and what stops the old field being carried forward the
+        // next time the organiser saves one.
+        // See DOCS/PLANING/79-preset-lists-carry-friday-dinner-categories.md.
         const listsArray: PresetList[] = Object.entries(listsData).map(([id, list]) => ({
           id,
-          ...(list as Omit<PresetList, 'id'>)
+          ...(list as Omit<PresetList, 'id'>),
+          items: presetItemsAsWritten((list as any)?.items)
         }));
 
         // Add default lists if they don't exist
@@ -1559,18 +1578,18 @@ export class FirebaseService {
             name: 'פריטים בסיסיים למשתתפים',
             type: 'participants',
             items: [
-              { name: 'חלה', category: 'main', quantity: 2, isRequired: true },
-              { name: 'יין אדום', category: 'drink', quantity: 1, isRequired: true },
-              { name: 'יין לבן', category: 'drink', quantity: 1, isRequired: false },
-              { name: 'סלט ירוק', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'חומוס', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'טחינה', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'פיתות', category: 'main', quantity: 10, isRequired: false },
-              { name: 'גבינות', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'פירות', category: 'dessert', quantity: 1, isRequired: false },
-              { name: 'עוגה', category: 'dessert', quantity: 1, isRequired: false },
-              { name: 'מיץ', category: 'drink', quantity: 2, isRequired: false },
-              { name: 'מים', category: 'drink', quantity: 2, isRequired: true }
+              { name: 'חלה', quantity: 2, isRequired: true },
+              { name: 'יין אדום', quantity: 1, isRequired: true },
+              { name: 'יין לבן', quantity: 1, isRequired: false },
+              { name: 'סלט ירוק', quantity: 1, isRequired: false },
+              { name: 'חומוס', quantity: 1, isRequired: false },
+              { name: 'טחינה', quantity: 1, isRequired: false },
+              { name: 'פיתות', quantity: 10, isRequired: false },
+              { name: 'גבינות', quantity: 1, isRequired: false },
+              { name: 'פירות', quantity: 1, isRequired: false },
+              { name: 'עוגה', quantity: 1, isRequired: false },
+              { name: 'מיץ', quantity: 2, isRequired: false },
+              { name: 'מים', quantity: 2, isRequired: true }
             ],
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -1584,15 +1603,15 @@ export class FirebaseService {
             name: 'ציוד סלון בסיסי',
             type: 'salon',
             items: [
-              { name: 'שולחנות', category: 'other', quantity: 4, isRequired: true },
-              { name: 'כיסאות', category: 'other', quantity: 20, isRequired: true },
-              { name: 'מפות שולחן', category: 'other', quantity: 4, isRequired: false },
-              { name: 'צלחות', category: 'other', quantity: 25, isRequired: true },
-              { name: 'כוסות', category: 'other', quantity: 25, isRequired: true },
-              { name: 'סכו"ם', category: 'other', quantity: 25, isRequired: true },
-              { name: 'מגשים', category: 'other', quantity: 5, isRequired: false },
-              { name: 'קנקני מים', category: 'drink', quantity: 3, isRequired: true },
-              { name: 'מפיות', category: 'other', quantity: 50, isRequired: false }
+              { name: 'שולחנות', quantity: 4, isRequired: true },
+              { name: 'כיסאות', quantity: 20, isRequired: true },
+              { name: 'מפות שולחן', quantity: 4, isRequired: false },
+              { name: 'צלחות', quantity: 25, isRequired: true },
+              { name: 'כוסות', quantity: 25, isRequired: true },
+              { name: 'סכו"ם', quantity: 25, isRequired: true },
+              { name: 'מגשים', quantity: 5, isRequired: false },
+              { name: 'קנקני מים', quantity: 3, isRequired: true },
+              { name: 'מפיות', quantity: 50, isRequired: false }
             ],
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -1609,18 +1628,18 @@ export class FirebaseService {
             name: 'פריטים בסיסיים למשתתפים',
             type: 'participants',
             items: [
-              { name: 'חלה', category: 'main', quantity: 2, isRequired: true },
-              { name: 'יין אדום', category: 'drink', quantity: 1, isRequired: true },
-              { name: 'יין לבן', category: 'drink', quantity: 1, isRequired: false },
-              { name: 'סלט ירוק', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'חומוס', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'טחינה', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'פיתות', category: 'main', quantity: 10, isRequired: false },
-              { name: 'גבינות', category: 'starter', quantity: 1, isRequired: false },
-              { name: 'פירות', category: 'dessert', quantity: 1, isRequired: false },
-              { name: 'עוגה', category: 'dessert', quantity: 1, isRequired: false },
-              { name: 'מיץ', category: 'drink', quantity: 2, isRequired: false },
-              { name: 'מים', category: 'drink', quantity: 2, isRequired: true }
+              { name: 'חלה', quantity: 2, isRequired: true },
+              { name: 'יין אדום', quantity: 1, isRequired: true },
+              { name: 'יין לבן', quantity: 1, isRequired: false },
+              { name: 'סלט ירוק', quantity: 1, isRequired: false },
+              { name: 'חומוס', quantity: 1, isRequired: false },
+              { name: 'טחינה', quantity: 1, isRequired: false },
+              { name: 'פיתות', quantity: 10, isRequired: false },
+              { name: 'גבינות', quantity: 1, isRequired: false },
+              { name: 'פירות', quantity: 1, isRequired: false },
+              { name: 'עוגה', quantity: 1, isRequired: false },
+              { name: 'מיץ', quantity: 2, isRequired: false },
+              { name: 'מים', quantity: 2, isRequired: true }
             ],
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -1631,15 +1650,15 @@ export class FirebaseService {
             name: 'ציוד סלון בסיסי',
             type: 'salon',
             items: [
-              { name: 'שולחנות', category: 'other', quantity: 4, isRequired: true },
-              { name: 'כיסאות', category: 'other', quantity: 20, isRequired: true },
-              { name: 'מפות שולחן', category: 'other', quantity: 4, isRequired: false },
-              { name: 'צלחות', category: 'other', quantity: 25, isRequired: true },
-              { name: 'כוסות', category: 'other', quantity: 25, isRequired: true },
-              { name: 'סכו"ם', category: 'other', quantity: 25, isRequired: true },
-              { name: 'מגשים', category: 'other', quantity: 5, isRequired: false },
-              { name: 'קנקני מים', category: 'drink', quantity: 3, isRequired: true },
-              { name: 'מפיות', category: 'other', quantity: 50, isRequired: false }
+              { name: 'שולחנות', quantity: 4, isRequired: true },
+              { name: 'כיסאות', quantity: 20, isRequired: true },
+              { name: 'מפות שולחן', quantity: 4, isRequired: false },
+              { name: 'צלחות', quantity: 25, isRequired: true },
+              { name: 'כוסות', quantity: 25, isRequired: true },
+              { name: 'סכו"ם', quantity: 25, isRequired: true },
+              { name: 'מגשים', quantity: 5, isRequired: false },
+              { name: 'קנקני מים', quantity: 3, isRequired: true },
+              { name: 'מפיות', quantity: 50, isRequired: false }
             ],
             createdAt: Date.now(),
             updatedAt: Date.now(),

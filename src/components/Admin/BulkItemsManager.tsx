@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import { ImportItemsModal } from './ImportItemsModal';
 import { PresetListsManager } from './PresetListsManager';
 import { getEventCategories } from '../../constants/templates';
+import { getFallbackCategoryId, groupItemsByCategory, resolveCategoryDisplayName, ItemCategoryGroup } from '../../utils/eventUtils';
 
 interface BulkItemsManagerProps {
   onBack: () => void;
@@ -50,6 +51,7 @@ const MobileItemCard = ({
   onCancel,
   categoryOptions,
   activeCategories,
+  categoryLabel,
   t
 }: {
   item: EditableItem;
@@ -61,9 +63,20 @@ const MobileItemCard = ({
   onCancel: () => void;
   categoryOptions: { value: string; label: string }[];
   activeCategories: any[]; // Changed to accept full category objects for colors
+  categoryLabel: string;
   t: any;
 }) => {
+  // What this item's category is called is the name of the group it is drawn in,
+  // handed down rather than worked out again here. The card used to ask only the
+  // event's own categories, so an item in a category the event does not have got
+  // no name at all, only the sentence saying it has none. The header above it now
+  // names that category, and one item cannot carry two different answers six
+  // lines apart. The event's categories are still what colours the badge, and
+  // still what decides whether the category is one the organiser may choose: the
+  // two ride categories are the event's own, they are simply not something an
+  // item is moved into from here.
   const categoryConfig = activeCategories.find(c => c.id === item.category);
+  const categoryIsChooseable = categoryOptions.some(opt => opt.value === item.category);
   return (
     <div className={`p-4 border-b border-gray-100 last:border-0 ${item.isSelected ? 'bg-blue-50/30' : 'bg-white'}`}>
       <div className="flex items-start gap-3">
@@ -123,8 +136,13 @@ const MobileItemCard = ({
               <select
                 value={item.category}
                 onChange={(e) => onUpdateField('category', e.target.value as MenuCategory)}
-                className="text-xs py-1 px-2 border rounded bg-white"
+                className={`text-xs py-1 px-2 border rounded bg-white ${categoryIsChooseable ? '' : 'border-amber-400 bg-amber-50 text-amber-900'}`}
               >
+                {/* The category this item is actually in, when it is not one of
+                    the ones on offer. Without it the browser shows the first
+                    option and the item keeps the category it had, so the screen
+                    says one thing and the database holds another. */}
+                {!categoryIsChooseable && (<option value={item.category}>{categoryLabel}</option>)}
                 {categoryOptions.map(opt => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
@@ -134,7 +152,7 @@ const MobileItemCard = ({
                 className="text-xs px-2 py-0.5 rounded-full text-white"
                 style={{ backgroundColor: categoryConfig?.color || '#9ca3af' }}
               >
-                {categoryOptions.find(opt => opt.value === item.category)?.label}
+                {categoryLabel}
               </span>
             )}
 
@@ -254,7 +272,10 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
   const [filterAddedBy, setFilterAddedBy] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [bulkAction, setBulkAction] = useState<'delete' | 'category' | 'required' | 'cancel_assignments' | null>(null);
-  const [bulkCategory, setBulkCategory] = useState<MenuCategory>('main');
+  // Empty, not a category id. Which category this screen starts from is a
+  // question only the event can answer, and the event is not known here.
+  // It is answered below, once the event's categories are in hand.
+  const [bulkCategory, setBulkCategory] = useState<MenuCategory>('');
   const [bulkRequired, setBulkRequired] = useState(false);
   const [editAllMode, setEditAllMode] = useState(false);
   const [showAddItemForm, setShowAddItemForm] = useState(initialShowAddItemForm);
@@ -262,7 +283,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
   const [showPresetManager, setShowPresetManager] = useState(false);
   const [newItem, setNewItem] = useState({
     name: '',
-    category: 'main' as MenuCategory,
+    category: '' as MenuCategory,
     quantity: 1,
     notes: '',
     isRequired: false
@@ -304,6 +325,22 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
       label: cat.name
     }));
 
+  // A dropdown must never display a value it is not holding, and left alone it
+  // does exactly that: React picks the first option whenever the value matches
+  // none of them. A picker that started from "main" in an event that has no such
+  // category showed "בשר" and wrote "main" onto every selected item, and an item
+  // in a category the event does not have is not shown anywhere on the event
+  // page. Here the value the select shows and the value the write uses are one
+  // expression, so they cannot disagree.
+  //
+  // This also re-seats the picker when the event under it changes, which this
+  // screen allows: items can be selected across events.
+  // See DOCS/PLANING/78-bulk-category-change-writes-a-category-the-event-does-not-have.md.
+  const categoryOptionIds = categoryOptions.map(option => option.value);
+  const chooseable = (categoryId: string) => categoryOptionIds.includes(categoryId);
+  const bulkCategoryId = (chooseable(bulkCategory) ? bulkCategory : getFallbackCategoryId(categoryOptionIds)) as MenuCategory;
+  const newItemCategoryId = (chooseable(newItem.category) ? newItem.category : getFallbackCategoryId(categoryOptionIds)) as MenuCategory;
+
   const assignedOptions = [
     { value: 'all', label: t('bulkEdit.filters.allOf') }, { value: 'assigned', label: t('bulkEdit.filters.assigned') },
     { value: 'unassigned', label: t('bulkEdit.filters.unassigned') },
@@ -334,28 +371,33 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
     });
   }, [editableItems, searchTerm, filterEvent, filterCategory, filterAssigned, filterAddedBy, allAssignments, realtimeEvents]);
 
-  // Group items by category in the desired order
-  const categorizedItems = useMemo(() => {
-    const grouped: { [key: string]: EditableItem[] } = {};
+  // The groups this screen draws, in the order it draws them. One list, because
+  // this screen used to build its groups from one and draw them from another,
+  // and an item in a category the event does not have fell in the gap between
+  // them: it was put into a bucket named 'other' and only an event that owned a
+  // category called 'other' ever drew that bucket. The rule itself is in
+  // eventUtils so that it can be run by a test.
+  // See DOCS/PLANING/89-an-item-in-an-unknown-category-is-invisible-in-the-bulk-screen.md.
+  const itemGroups = useMemo(
+    () => groupItemsByCategory(filteredItems, activeCategories),
+    [filteredItems, activeCategories]
+  );
 
-    // Initialize groups for all active categories
-    activeCategories.forEach(cat => {
-      grouped[cat.id] = [];
-    });
-
-    // Sort items into groups
-    filteredItems.forEach(item => {
-      if (grouped[item.category]) {
-        grouped[item.category].push(item);
-      } else {
-        // Fallback for items with categories not in the current list
-        if (!grouped['other']) grouped['other'] = [];
-        grouped['other'].push(item);
-      }
-    });
-
-    return grouped;
-  }, [filteredItems, activeCategories]);
+  // What a group is called. One the event has is called what the event calls it.
+  // One the event does not have is named for the category its items are really
+  // in, and says that the event does not have it, because on a wide screen this
+  // header is the only place an item's category is named at all.
+  //
+  // A name that comes back as the id itself is not a name. A custom category the
+  // organiser deleted resolves to something like "custom-1756900000000", and
+  // record 56 spent a campaign taking machine keys off screens people read.
+  const groupLabel = (group: ItemCategoryGroup<EditableItem>) => {
+    const name = resolveCategoryDisplayName(group.categoryId, event, activeCategories, t);
+    if (!group.isNotInEvent) return name;
+    return name && name !== group.categoryId
+      ? t('bulkEdit.table.unknownCategory', { category: name })
+      : t('importModal.preview.unknownCategory');
+  };
 
   const getCategoryStats = (categoryItems: EditableItem[]) => {
     const assigned = categoryItems.filter(item =>
@@ -547,8 +589,8 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
         case 'category':
           for (const item of selectedItems) {
             try {
-              await FirebaseService.updateMenuItem(item.eventId, item.id, { category: bulkCategory });
-              updateMenuItem(item.id, { category: bulkCategory });
+              await FirebaseService.updateMenuItem(item.eventId, item.id, { category: bulkCategoryId });
+              updateMenuItem(item.id, { category: bulkCategoryId });
               successCount++;
             } catch (error) {
               console.error('Error updating category:', error);
@@ -648,7 +690,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
     try {
       const itemData = {
         name: newItem.name.trim(),
-        category: newItem.category,
+        category: newItemCategoryId,
         quantity: newItem.quantity,
         notes: (newItem.notes || '').trim() || undefined,
         isRequired: newItem.isRequired,
@@ -916,7 +958,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                 </>
               ) : (
                 <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                  {bulkAction === 'category' && (<select value={bulkCategory} onChange={(e) => setBulkCategory(e.target.value as MenuCategory)} className="px-3 py-1.5 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm outline-none shadow-sm text-gray-900">{categoryOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>)}
+                  {bulkAction === 'category' && (<select value={bulkCategoryId} onChange={(e) => setBulkCategory(e.target.value as MenuCategory)} className="px-3 py-1.5 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm outline-none shadow-sm text-gray-900">{categoryOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select>)}
                   {bulkAction === 'required' && (<select value={bulkRequired.toString()} onChange={(e) => setBulkRequired(e.target.value === 'true')} className="px-3 py-1.5 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm outline-none shadow-sm text-gray-900"><option value="true">{t('importModal.preview.table.yes')}</option><option value="false">{t('importModal.preview.table.no')}</option></select>)}
                   <button onClick={executeBulkAction} disabled={isLoading} className="bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white px-4 py-1.5 rounded-md text-sm font-medium transition-colors shadow-sm">{isLoading ? '...' : t('bulkEdit.actions.execute')}</button>
                   <button onClick={() => setBulkAction(null)} className="text-gray-500 hover:text-gray-700 px-3 py-1.5 text-sm font-medium">{t('bulkEdit.actions.cancel')}</button>
@@ -939,14 +981,12 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
             <p className="text-gray-500 max-w-sm mx-auto">{t('bulkEdit.table.noItemsDesc')}</p>
           </div>
         ) : (
-          activeCategories.map(group => {
-            const category = group.id;
-            const categoryItems = categorizedItems[category] || [];
-            if (categoryItems.length === 0) return null;
+          itemGroups.map(group => {
+            const category = group.categoryId;
+            const categoryItems = group.items;
 
             const stats = getCategoryStats(categoryItems);
-            // Label is now direct from the group object from activeCategories
-            const categoryLabel = group.name;
+            const categoryLabel = groupLabel(group);
 
             // Define colors dynamically or map them?
             // We have color in group.color from templates!
@@ -961,7 +1001,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <span
                         className="w-2 h-6 rounded-full"
-                        style={{ backgroundColor: group.color || '#9ca3af' }}
+                        style={{ backgroundColor: group.category?.color || '#9ca3af' }}
                       ></span>
                       {categoryLabel}
                     </h3>
@@ -998,6 +1038,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                       onCancel={() => cancelEditing(item.id)}
                       categoryOptions={categoryOptions}
                       activeCategories={activeCategories}
+                      categoryLabel={categoryLabel}
                       t={t}
                     />
                   ))}
@@ -1227,7 +1268,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                       <label className="block text-sm font-semibold text-gray-700 mb-2">קטגוריה</label>
                       <div className="relative">
                         <select
-                          value={newItem.category}
+                          value={newItemCategoryId}
                           onChange={(e) => setNewItem(prev => ({ ...prev, category: e.target.value as MenuCategory }))}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none appearance-none bg-white text-gray-900"
                         >
@@ -1335,7 +1376,6 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
             }}
             selectedItemsForSave={filteredItems.filter(item => item.isSelected).map(item => ({
               name: item.name,
-              category: item.category,
               quantity: item.quantity,
               notes: item.notes,
               isRequired: item.isRequired

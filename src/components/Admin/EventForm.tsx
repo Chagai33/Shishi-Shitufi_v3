@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, EventDetails, EventType, CategoryConfig } from '../../types';
 import { getNextFriday, furthestEventDate } from '../../utils/dateUtils';
+import { itemsEnteringMigration } from '../../utils/eventUtils';
 import toast from 'react-hot-toast';
 import FocusTrap from 'focus-trap-react';
 import { CategoryEditor } from './CategoryEditor';
@@ -317,8 +318,17 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
         // "changed" and every single save is forced through the migration flow.
         const baselineCategories = event.details.categories || TEMPLATES['DEFAULT'].categories;
 
-        // If we have items AND categories actually changed
-        if (event.menuItems && Object.keys(event.menuItems).length > 0 && !areCategoriesEqual(formData.categories, baselineCategories)) {
+        // The items a migration would actually work on, which is not every item
+        // the event holds: a ride is not moved between categories and does not
+        // enter one. The question of whether to offer a migration and the list
+        // the migration is built from have to be the same list. An event holding
+        // nothing but rides has nothing to migrate, and offering one there saved
+        // the categories and then opened no window at all.
+        // See DOCS/PLANING/80-smart-migration-turns-rides-into-ordinary-items.md.
+        const migratableItems = itemsEnteringMigration(Object.values(event.menuItems || {}));
+
+        // If we have items to migrate AND categories actually changed
+        if (migratableItems.length > 0 && !areCategoriesEqual(formData.categories, baselineCategories)) {
           setActiveModal({
             type: 'confirm',
             title: 'שינוי קטגוריות',
@@ -334,8 +344,8 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
               await FirebaseService.updateEventDetails(event.id, eventDetails);
               toast.success('הגדרות האירוע עודכנו. פותח חלון מיגרציה...');
 
-              // 2. Prepare Migration
-              const itemsList = Object.values(event.menuItems!).map(item => `${item.name} ${item.quantity}`).join('\n');
+              // 2. Prepare Migration, from the same list the offer was made on.
+              const itemsList = migratableItems.map(item => `${item.name} ${item.quantity}`).join('\n');
               setMigrationData(itemsList);
               setMigrationStartTime(Date.now());
               setShowImportForMigration(true);

@@ -3,20 +3,17 @@ import { ITEM_NAME_MAX, ITEM_NOTE_MAX } from '../../constants/limits';
 import { X, Save, Plus, Edit, Trash2, List, CheckCircle, Users, Home } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { FirebaseService } from '../../services/firebaseService';
-import { MenuCategory } from '../../types';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useStore } from '../../store/useStore';
+import { PresetItem } from '../../utils/presetLists';
 
-
-
-interface PresetItem {
-  name: string;
-  category: MenuCategory;
-  quantity: number;
-  notes?: string;
-  isRequired: boolean;
-}
+// A preset list belongs to the organiser and not to any one event, so there is
+// no event whose categories it could be carrying. It is a list of names and
+// quantities, and the category is decided at import from the event being
+// imported into. The shape lives in src/utils/presetLists.ts, next to the
+// reader that keeps lists saved before this change loading.
+// See DOCS/PLANING/79-preset-lists-carry-friday-dinner-categories.md.
 
 interface PresetList {
   id: string;
@@ -52,39 +49,31 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
 
 
 
-  const categoryOptions = [
-    { value: 'starter', label: t('categories.starter') },
-    { value: 'main', label: t('categories.main') },
-    { value: 'dessert', label: t('categories.dessert') },
-    { value: 'drink', label: t('categories.drink') },
-    { value: 'other', label: t('categories.other') }
-  ];
-
   const getDefaultSalonList = (): PresetItem[] => [
-    { name: t('items.tables'), category: 'other', quantity: 4, isRequired: true },
-    { name: t('items.chairs'), category: 'other', quantity: 20, isRequired: true },
-    { name: t('items.tablecloths'), category: 'other', quantity: 4, isRequired: false },
-    { name: t('items.plates'), category: 'other', quantity: 25, isRequired: true },
-    { name: t('items.cups'), category: 'other', quantity: 25, isRequired: true },
-    { name: t('items.cutlery'), category: 'other', quantity: 25, isRequired: true },
-    { name: t('items.trays'), category: 'other', quantity: 5, isRequired: false },
-    { name: t('items.waterPitchers'), category: 'drink', quantity: 3, isRequired: true },
-    { name: t('items.napkins'), category: 'other', quantity: 50, isRequired: false },
+    { name: t('items.tables'), quantity: 4, isRequired: true },
+    { name: t('items.chairs'), quantity: 20, isRequired: true },
+    { name: t('items.tablecloths'), quantity: 4, isRequired: false },
+    { name: t('items.plates'), quantity: 25, isRequired: true },
+    { name: t('items.cups'), quantity: 25, isRequired: true },
+    { name: t('items.cutlery'), quantity: 25, isRequired: true },
+    { name: t('items.trays'), quantity: 5, isRequired: false },
+    { name: t('items.waterPitchers'), quantity: 3, isRequired: true },
+    { name: t('items.napkins'), quantity: 50, isRequired: false },
   ];
 
   const getDefaultParticipantsList = (): PresetItem[] => [
-    { name: t('items.challah'), category: 'main', quantity: 2, isRequired: true },
-    { name: t('items.redWine'), category: 'drink', quantity: 1, isRequired: true },
-    { name: t('items.whiteWine'), category: 'drink', quantity: 1, isRequired: false },
-    { name: t('items.greenSalad'), category: 'starter', quantity: 1, isRequired: false },
-    { name: t('items.hummus'), category: 'starter', quantity: 1, isRequired: false },
-    { name: t('items.tahini'), category: 'starter', quantity: 1, isRequired: false },
-    { name: t('items.pitas'), category: 'main', quantity: 10, isRequired: false },
-    { name: t('items.cheeses'), category: 'starter', quantity: 1, isRequired: false },
-    { name: t('items.fruit'), category: 'dessert', quantity: 1, isRequired: false },
-    { name: t('items.cake'), category: 'dessert', quantity: 1, isRequired: false },
-    { name: t('items.juice'), category: 'drink', quantity: 2, isRequired: false },
-    { name: t('items.water'), category: 'drink', quantity: 2, isRequired: true },
+    { name: t('items.challah'), quantity: 2, isRequired: true },
+    { name: t('items.redWine'), quantity: 1, isRequired: true },
+    { name: t('items.whiteWine'), quantity: 1, isRequired: false },
+    { name: t('items.greenSalad'), quantity: 1, isRequired: false },
+    { name: t('items.hummus'), quantity: 1, isRequired: false },
+    { name: t('items.tahini'), quantity: 1, isRequired: false },
+    { name: t('items.pitas'), quantity: 10, isRequired: false },
+    { name: t('items.cheeses'), quantity: 1, isRequired: false },
+    { name: t('items.fruit'), quantity: 1, isRequired: false },
+    { name: t('items.cake'), quantity: 1, isRequired: false },
+    { name: t('items.juice'), quantity: 2, isRequired: false },
+    { name: t('items.water'), quantity: 2, isRequired: true },
   ];
 
   // Load preset lists from Firebase
@@ -216,7 +205,6 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
 
     const newItem: PresetItem = {
       name: '',
-      category: 'main',
       quantity: 1,
       isRequired: false
     };
@@ -338,7 +326,6 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
               {/* Desktop Table Header */}
               <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wider rounded-t-lg border border-b-0 border-gray-200">
                 <div className="flex-1">{t('importModal.preview.table.name')}</div>
-                <div className="w-40">{t('importModal.preview.table.category')}</div>
                 <div className="w-24 text-center">{t('importModal.preview.table.quantity')}</div>
                 <div className="w-24 text-center">{t('importModal.preview.table.required')}</div>
                 <div className="w-10"></div>
@@ -370,22 +357,6 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
                           placeholder={t('importModal.preview.table.notes')}
                           disabled={editingList.id.startsWith('default-')}
                         />
-                      </div>
-
-                      {/* Category */}
-                      <div className="w-40 pt-0.5">
-                        <select
-                          value={item.category}
-                          onChange={(e) => updateItemInEditingList(index, { category: e.target.value as MenuCategory })}
-                          className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-                          disabled={editingList.id.startsWith('default-')}
-                        >
-                          {categoryOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
                       </div>
 
                       {/* Quantity */}
@@ -452,21 +423,6 @@ export function PresetListsManager({ onClose, onSelectList, selectedItemsForSave
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">{t('importModal.preview.table.category')}</label>
-                          <select
-                            value={item.category}
-                            onChange={(e) => updateItemInEditingList(index, { category: e.target.value as MenuCategory })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-50 disabled:text-gray-500"
-                            disabled={editingList.id.startsWith('default-')}
-                          >
-                            {categoryOptions.map(option => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">{t('importModal.preview.table.quantity')}</label>
                           <input

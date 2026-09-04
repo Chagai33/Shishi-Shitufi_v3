@@ -5,15 +5,22 @@
 // changing the generation of deleteUserAccount and leaving `context` undefined.
 // Dropping the suffix breaks both of them, one loudly and one quietly.
 const functions = require("firebase-functions/v1");
-const admin = require("firebase-admin");
 
-admin.initializeApp();
+// firebase-admin 14 removed the single-namespace export, so admin.auth(),
+// admin.database() and admin.apps do not exist any more. These are the same
+// three services, reached the way the library now offers them. Nothing about
+// what they do changed, only how they are asked for.
+const { initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
+const { getDatabase } = require("firebase-admin/database");
+
+initializeApp();
 
 // Resolved lazily rather than at module scope. The CLI loads this file during
 // function discovery and expects exports back within 10s; resolving the database
 // handle up front runs inside that window for no benefit, since every caller
 // below only needs it once a handler is actually invoked.
-const db = () => admin.database();
+const db = () => getDatabase();
 
 // Super-admin UID, from the environment. Trimmed on purpose: a stray space in
 // functions/.env would make the comparison below quietly never match, which is
@@ -55,7 +62,7 @@ exports.deleteUserAccount = functions.https.onCall(async (data, context) => {
   }
 
   try {
-    await admin.auth().deleteUser(uid);
+    await getAuth().deleteUser(uid);
     return { result: `Successfully initiated deletion for user ${uid}` };
   } catch (error) {
     console.error(`Error deleting user ${uid}:`, error);

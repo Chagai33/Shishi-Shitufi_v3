@@ -240,7 +240,8 @@
                 "addNote": "Add Note",
                 "required": "Required",
                 "splittable": "Splittable",
-                "assignment": "Assignment"
+                "assignment": "Assignment",
+                "unknownCategory": "{{category}} (a category this event does not have)"
             },
             "title": "Bulk Edit",
             "save": "Save Changes",

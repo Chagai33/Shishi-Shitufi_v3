@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import { ImportItemsModal } from './ImportItemsModal';
 import { PresetListsManager } from './PresetListsManager';
 import { getEventCategories } from '../../constants/templates';
-import { getFallbackCategoryId } from '../../utils/eventUtils';
+import { getFallbackCategoryId, groupItemsByCategory, resolveCategoryDisplayName, ItemCategoryGroup } from '../../utils/eventUtils';
 
 interface BulkItemsManagerProps {
   onBack: () => void;
@@ -51,6 +51,7 @@ const MobileItemCard = ({
   onCancel,
   categoryOptions,
   activeCategories,
+  categoryLabel,
   t
 }: {
   item: EditableItem;
@@ -62,15 +63,19 @@ const MobileItemCard = ({
   onCancel: () => void;
   categoryOptions: { value: string; label: string }[];
   activeCategories: any[]; // Changed to accept full category objects for colors
+  categoryLabel: string;
   t: any;
 }) => {
-  // What this item's category is called, asked of every category the event has
-  // and not only of the ones the organiser may choose: the two ride categories
-  // are the event's own, they are simply not something an item is moved into
-  // from here. Without that distinction a ride would be labelled as a category
-  // the event does not have, which is a different lie from the one being fixed.
+  // What this item's category is called is the name of the group it is drawn in,
+  // handed down rather than worked out again here. The card used to ask only the
+  // event's own categories, so an item in a category the event does not have got
+  // no name at all, only the sentence saying it has none. The header above it now
+  // names that category, and one item cannot carry two different answers six
+  // lines apart. The event's categories are still what colours the badge, and
+  // still what decides whether the category is one the organiser may choose: the
+  // two ride categories are the event's own, they are simply not something an
+  // item is moved into from here.
   const categoryConfig = activeCategories.find(c => c.id === item.category);
-  const categoryLabel = categoryConfig?.name || t('importModal.preview.unknownCategory');
   const categoryIsChooseable = categoryOptions.some(opt => opt.value === item.category);
   return (
     <div className={`p-4 border-b border-gray-100 last:border-0 ${item.isSelected ? 'bg-blue-50/30' : 'bg-white'}`}>
@@ -366,28 +371,33 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
     });
   }, [editableItems, searchTerm, filterEvent, filterCategory, filterAssigned, filterAddedBy, allAssignments, realtimeEvents]);
 
-  // Group items by category in the desired order
-  const categorizedItems = useMemo(() => {
-    const grouped: { [key: string]: EditableItem[] } = {};
+  // The groups this screen draws, in the order it draws them. One list, because
+  // this screen used to build its groups from one and draw them from another,
+  // and an item in a category the event does not have fell in the gap between
+  // them: it was put into a bucket named 'other' and only an event that owned a
+  // category called 'other' ever drew that bucket. The rule itself is in
+  // eventUtils so that it can be run by a test.
+  // See DOCS/PLANING/89-an-item-in-an-unknown-category-is-invisible-in-the-bulk-screen.md.
+  const itemGroups = useMemo(
+    () => groupItemsByCategory(filteredItems, activeCategories),
+    [filteredItems, activeCategories]
+  );
 
-    // Initialize groups for all active categories
-    activeCategories.forEach(cat => {
-      grouped[cat.id] = [];
-    });
-
-    // Sort items into groups
-    filteredItems.forEach(item => {
-      if (grouped[item.category]) {
-        grouped[item.category].push(item);
-      } else {
-        // Fallback for items with categories not in the current list
-        if (!grouped['other']) grouped['other'] = [];
-        grouped['other'].push(item);
-      }
-    });
-
-    return grouped;
-  }, [filteredItems, activeCategories]);
+  // What a group is called. One the event has is called what the event calls it.
+  // One the event does not have is named for the category its items are really
+  // in, and says that the event does not have it, because on a wide screen this
+  // header is the only place an item's category is named at all.
+  //
+  // A name that comes back as the id itself is not a name. A custom category the
+  // organiser deleted resolves to something like "custom-1756900000000", and
+  // record 56 spent a campaign taking machine keys off screens people read.
+  const groupLabel = (group: ItemCategoryGroup<EditableItem>) => {
+    const name = resolveCategoryDisplayName(group.categoryId, event, activeCategories, t);
+    if (!group.isNotInEvent) return name;
+    return name && name !== group.categoryId
+      ? t('bulkEdit.table.unknownCategory', { category: name })
+      : t('importModal.preview.unknownCategory');
+  };
 
   const getCategoryStats = (categoryItems: EditableItem[]) => {
     const assigned = categoryItems.filter(item =>
@@ -971,14 +981,12 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
             <p className="text-gray-500 max-w-sm mx-auto">{t('bulkEdit.table.noItemsDesc')}</p>
           </div>
         ) : (
-          activeCategories.map(group => {
-            const category = group.id;
-            const categoryItems = categorizedItems[category] || [];
-            if (categoryItems.length === 0) return null;
+          itemGroups.map(group => {
+            const category = group.categoryId;
+            const categoryItems = group.items;
 
             const stats = getCategoryStats(categoryItems);
-            // Label is now direct from the group object from activeCategories
-            const categoryLabel = group.name;
+            const categoryLabel = groupLabel(group);
 
             // Define colors dynamically or map them?
             // We have color in group.color from templates!
@@ -993,7 +1001,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <span
                         className="w-2 h-6 rounded-full"
-                        style={{ backgroundColor: group.color || '#9ca3af' }}
+                        style={{ backgroundColor: group.category?.color || '#9ca3af' }}
                       ></span>
                       {categoryLabel}
                     </h3>
@@ -1030,6 +1038,7 @@ function BulkItemsManager({ onBack, event, allEvents = [], initialShowAddItemFor
                       onCancel={() => cancelEditing(item.id)}
                       categoryOptions={categoryOptions}
                       activeCategories={activeCategories}
+                      categoryLabel={categoryLabel}
                       t={t}
                     />
                   ))}

@@ -4,6 +4,10 @@
 > הראשון מתוך שלושה, יחד עם [79](79-preset-lists-carry-friday-dinner-categories.md)
 > ו-[80](80-smart-migration-turns-rides-into-ordinary-items.md).
 >
+> ✅ **ומוזג, נדחף ונפרס. 04/09/2026.** **אומת מול האתר החי ולא לפי דיווח:**
+> החבילה שמוגשת מ-`shishi-shitufi.netlify.app` התחלפה ומכילה את המפתח
+> `bulkEdit.table.unknownCategory` שהקמפיין הזה הוסיף.
+>
 > **מה נבנה, ובשלושת המקומות שהרשומה מנתה.**
 >
 > **הבורר של הפעולה בכמות.** ערך ההתחלה אינו מחרוזת קשיחה יותר. **הערך שהתפריט

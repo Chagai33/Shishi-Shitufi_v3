@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { getEventCategories } from '../../constants/templates';
-import { isRideCategory } from '../../utils/eventUtils';
+import { isRideCategory, resolveCategoryDisplayName } from '../../utils/eventUtils';
 
 interface EditItemModalProps {
     item: MenuItem;
@@ -301,6 +301,45 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
             return prev;
         });
     }, [rideDirection]);
+
+    // Whether the category this item is really in is one of the ones on offer.
+    //
+    // A dropdown cannot show a value that is not among its options: handed one,
+    // React draws the first option instead while the state keeps the old value.
+    // An item saved in a category this event does not have therefore opened
+    // here reading "meat" while it sat in "main", the organiser corrected a
+    // quantity, and the save wrote "main" straight back. The screen said the
+    // item was sorted and it was still missing from the board.
+    //
+    // And this dropdown is the only tool the organiser has on that item from
+    // the event page, which is what turned a wrong label into a dead end: the
+    // browser already had "meat" marked, so pressing "meat", the obvious
+    // repair, was not a change. No event, no save, nothing said. He could see
+    // what he wanted, already selected, and could not reach it.
+    //
+    // An extra option carrying the value the item actually holds is the
+    // treatment the import window and the bulk items screen were both given,
+    // and it unsticks the repair on its own: once what is shown is what is
+    // held, pressing "meat" is a real change and it saves.
+    //
+    // A ride never arrives here. The whole block this sits in is drawn only
+    // when the item is not a ride, and that test covers the older names
+    // 'trempim' and 'rides' too, so none of them can be called a category the
+    // event does not have.
+    // See DOCS/PLANING/88-edit-item-dialog-shows-a-category-the-item-is-not-in.md.
+    const categoryIsChooseable = availableCategories.some(cat => cat.id === formData.category);
+
+    // What that extra option is called: the category the item is really in,
+    // saying that the event does not have it. A name that comes back as the id
+    // itself is not a name, since a custom category the organiser deleted
+    // resolves to something like "custom-1756900000000", and record 56 spent a
+    // campaign taking machine keys off screens people read.
+    const heldCategoryLabel = () => {
+        const name = resolveCategoryDisplayName(formData.category, event || undefined, availableCategories, t);
+        return name && name !== formData.category
+            ? t('bulkEdit.table.unknownCategory', { category: name })
+            : t('importModal.preview.unknownCategory');
+    };
 
     // Accessibility: Unique IDs for ARIA labeling
     const titleId = useId();
@@ -785,8 +824,14 @@ export function EditItemModal({ item, eventId, assignments, onClose }: EditItemM
                                                 value={formData.category}
                                                 onChange={(e) => handleInputChange('category', e.target.value)}
                                                 disabled={isSubmitting}
-                                                className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                                                className={`w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 ${categoryIsChooseable ? 'border-gray-300 bg-white' : 'border-amber-400 bg-amber-50 text-amber-900'}`}
                                             >
+                                                {/* The category this item is actually in, when it is not one of
+                                                    the ones on offer. Without it the browser shows the first
+                                                    option and the item keeps the category it had, so the screen
+                                                    says one thing and the database holds another, and pressing
+                                                    the category you want is not a change at all. */}
+                                                {!categoryIsChooseable && (<option value={formData.category}>{heldCategoryLabel()}</option>)}
                                                 {availableCategories.map(cat => (
                                                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                                                 ))}

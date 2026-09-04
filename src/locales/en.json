@@ -942,7 +942,8 @@
                 "missingName": "Name is required to add an item",
                 "success": "Item added successfully!",
                 "generalError": "Error adding item",
-                "permissionDenied": "The item was not added and nothing was saved. Refresh the page and try again; if it keeps happening, contact the event organizer"
+                "permissionDenied": "The item was not added and nothing was saved. Refresh the page and try again; if it keeps happening, contact the event organizer",
+                "categoryRequired": "Choose a category for this item"
             },
             "stepper": {
                 "decrease": "Decrease",

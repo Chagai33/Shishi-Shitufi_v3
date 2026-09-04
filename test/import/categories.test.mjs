@@ -27,7 +27,11 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { getFallbackCategoryId } from '../../src/utils/eventUtils.ts';
+import {
+  getFallbackCategoryId,
+  getStartingCategoryId,
+  resolveCategoryDisplayName,
+} from '../../src/utils/eventUtils.ts';
 
 const SRC = fileURLToPath(new URL('../../src', import.meta.url));
 
@@ -105,6 +109,195 @@ describe('the category an event hands out when nobody chose one', () => {
   });
 });
 
+describe('the category an item form opens on', () => {
+  // The rule the participant item form now uses. What the screen asked for when
+  // the event has it, otherwise the event's own catch-all, and never an id
+  // typed into the code.
+  // See DOCS/PLANING/82-participant-item-form-starts-from-a-hardcoded-category.md.
+
+  test('is a category that template has, in every template, when nobody asked', () => {
+    for (const [template, ids] of Object.entries(TEMPLATES)) {
+      const chosen = getStartingCategoryId(undefined, ids);
+      assert.ok(
+        ids.includes(chosen),
+        `${template} opens on "${chosen}", which is not one of its categories`,
+      );
+    }
+  });
+
+  test('is never "main" in an event that has no such category', () => {
+    for (const [template, ids] of Object.entries(TEMPLATES)) {
+      if (ids.includes('main')) continue;
+      assert.notEqual(
+        getStartingCategoryId(undefined, ids),
+        'main',
+        `${template} opens on "main", and it has no such category`,
+      );
+    }
+    // The literal the form used to hold, and the event the record was opened
+    // for. This is the assertion that fails on the source as it was.
+    assert.equal(getStartingCategoryId(undefined, TEMPLATES['על האש']), 'general');
+  });
+
+  test('is the category the screen asked for, when the event has it', () => {
+    assert.equal(getStartingCategoryId('salads', TEMPLATES['על האש']), 'salads');
+    assert.equal(getStartingCategoryId('dessert', TEMPLATES['ארוחת שישי']), 'dessert');
+  });
+
+  test('and is the event catch-all when the screen asks for something the event does not have', () => {
+    // Standing in the "assigned" or "unassigned" filter on the event page and
+    // pressing add handed the form the name of the filter as if it were a
+    // category. The item was saved in a category called 'assigned', and the
+    // organiser's own event grew one by that name.
+    assert.equal(getStartingCategoryId('assigned', TEMPLATES['על האש']), 'general');
+    assert.equal(getStartingCategoryId('unassigned', TEMPLATES['על האש']), 'general');
+    assert.equal(getStartingCategoryId('main', TEMPLATES['על האש']), 'general');
+    assert.equal(getStartingCategoryId('custom-1756900000000', TEMPLATES['מסיבה']), 'alcohol');
+  });
+
+  test('honours a ride the screen asked for, including the names never added to an event', () => {
+    // The ride categories are only added to an event's list while the ride
+    // switches are on, and 'trempim' and 'rides' are never added at all. Asking
+    // whether the event has one would send an offered lift to the catch-all.
+    assert.equal(getStartingCategoryId('ride_offers', TEMPLATES['על האש']), 'ride_offers');
+    assert.equal(getStartingCategoryId('ride_requests', TEMPLATES['על האש']), 'ride_requests');
+    assert.equal(getStartingCategoryId('trempim', TEMPLATES['על האש']), 'trempim');
+    assert.equal(getStartingCategoryId('rides', TEMPLATES['מסיבה']), 'rides');
+  });
+
+  test('but never opens an ordinary item on a ride', () => {
+    // "Trip" has no catch-all and names ride offers first, so the fallback over
+    // its whole list is a lift. Bread and charcoal would land where people look
+    // for a driver, and be counted against the ride quota.
+    // See DOCS/PLANING/83-the-trip-template-hands-out-a-ride-category.md.
+    assert.equal(getStartingCategoryId(undefined, TEMPLATES['טיול']), 'food');
+    assert.equal(getStartingCategoryId('assigned', TEMPLATES['טיול']), 'food');
+    for (const [template, ids] of Object.entries(TEMPLATES)) {
+      const chosen = getStartingCategoryId(undefined, ids);
+      assert.ok(
+        !['ride_offers', 'ride_requests', 'trempim', 'rides'].includes(chosen),
+        `${template} opens an ordinary item on "${chosen}", which is a ride`,
+      );
+    }
+  });
+
+  test('says nothing rather than guessing when the event has nothing to offer', () => {
+    // An event whose only categories are rides. Nothing is marked in the grid,
+    // and the form refuses to save rather than inventing an answer.
+    assert.equal(getStartingCategoryId(undefined, []), '');
+    assert.equal(getStartingCategoryId(undefined, ['ride_offers', 'ride_requests']), '');
+    assert.equal(getStartingCategoryId('assigned', ['ride_offers']), '');
+  });
+});
+
+describe('the participant item form', () => {
+  // What no test of a pure function can see: the rule can be right and the
+  // screen can still hold its own literal. These read the source.
+  const screen = () => readFileSync(`${SRC}/components/Events/UserMenuItemForm.tsx`, 'utf8');
+
+  test('opens on the category the rule returns', () => {
+    const text = screen();
+    assert.match(text, /getStartingCategoryId\(initialCategory,/, 'the form does not use the rule');
+    assert.doesNotMatch(text, /initialCategory \|\| 'main'/, "the form still opens on the literal 'main'");
+  });
+
+  test('and pins the grid shut only for a category the rule accepted', () => {
+    // Otherwise the name of a filter, handed over as though it were a category,
+    // hides the grid and is saved as the item's category.
+    const text = screen();
+    assert.match(text, /const isLocked = defaultCat === initialCategory/, 'the grid is pinned by any request at all');
+  });
+
+  test('and refuses to save while no button in the grid is marked', () => {
+    const text = screen();
+    assert.match(
+      text,
+      /categoryOptions\.some\(option => option\.value === formData\.category\)/,
+      'nothing checks that a category was chosen',
+    );
+    assert.match(text, /userItemForm\.errors\.categoryRequired/, 'nothing says why the save stopped');
+  });
+
+  test('and does not carry a row type onto an ordinary item', () => {
+    // The add button on the event page's category screen asks for "offers" and
+    // names no category. An ordinary item carrying that row type is read as a
+    // lift, and only the old literal 'main' hid it, being one of the six names
+    // the reader treats as food.
+    const text = screen();
+    assert.match(text, /rowType: isRideCategory\(defaultCat\)/, 'the row type still comes from the screen');
+    assert.doesNotMatch(
+      text,
+      /rowType: initialRowType \|\|/,
+      'the row type still overrides the category',
+    );
+  });
+});
+
+describe('the item edit dialog on the event page', () => {
+  // The organiser's only tool on a stray item from the event page. Its dropdown
+  // was built from the event's categories alone, so an item in a category the
+  // event does not have opened reading "meat" while it sat in "main": the save
+  // wrote "main" back, and pressing "meat" was not a change at all, because the
+  // browser already had it marked.
+  //
+  // Nothing here runs React, so nothing here proves what the dropdown draws.
+  // That is proved in the product. What is proved here is that the screen was
+  // given the extra option, and that the words on it can never be a machine id.
+  // See DOCS/PLANING/88-edit-item-dialog-shows-a-category-the-item-is-not-in.md.
+  const screen = () => readFileSync(`${SRC}/components/Events/EditItemModal.tsx`, 'utf8');
+
+  test('carries the category the item is in, when the event does not have it', () => {
+    const text = screen();
+    assert.match(
+      text,
+      /availableCategories\.some\(cat => cat\.id === formData\.category\)/,
+      'nothing asks whether the item category is one of the options',
+    );
+    assert.match(
+      text,
+      /!categoryIsChooseable && \(<option value=\{formData\.category\}>/,
+      'the dropdown still has no option for the value it is holding',
+    );
+  });
+
+  test('and writes the value it was showing', () => {
+    const text = screen();
+    assert.match(text, /category: formData\.category/, 'the save no longer writes what the dropdown holds');
+  });
+
+  test('and says it in the words the other two screens use', () => {
+    // Three screens, one sentence. A fourth wording would be a fourth answer to
+    // a question the product has already answered twice.
+    const text = screen();
+    assert.match(text, /bulkEdit\.table\.unknownCategory/, 'the named wording is not reused');
+    assert.match(text, /importModal\.preview\.unknownCategory/, 'the unnamed wording is not reused');
+  });
+
+  test('and never marks a ride as a category the event does not have', () => {
+    // The picker sits inside the block drawn only for an item that is not a
+    // ride, and that test is the shared one, so the older names 'trempim' and
+    // 'rides' are covered by it too.
+    const text = screen();
+    assert.match(text, /const isRide = isRideCategory\(item\.category\)/, 'rides are recognised by a list of this screen own');
+    const gate = text.indexOf('{!isRide && (');
+    const picker = text.indexOf('!categoryIsChooseable && (<option');
+    assert.ok(gate !== -1, 'the non ride block is gone');
+    assert.ok(picker > gate, 'the category picker is drawn outside the block reserved for items that are not rides');
+  });
+
+  test('and the name on that option is a name, never a machine id', () => {
+    // The two branches the label leans on. i18next hands back the key it was
+    // given when it has no translation, and a key on screen is what record 56
+    // spent a campaign removing.
+    const noTranslation = (key) => key;
+    assert.equal(resolveCategoryDisplayName('assigned', undefined, [], noTranslation), 'assigned');
+    assert.equal(resolveCategoryDisplayName('custom-1756900000000', undefined, [], noTranslation), 'custom-1756900000000');
+
+    const knowsMain = (key) => (key === 'categories.main' ? 'מנה עיקרית' : key);
+    assert.equal(resolveCategoryDisplayName('main', undefined, [], knowsMain), 'מנה עיקרית');
+  });
+});
+
 describe('no screen starts a category picker from a category typed into the code', () => {
   // The four shapes the defect takes. A picker seeded with a literal id shows
   // the first option of a list that does not contain it, and writes the literal.
@@ -118,11 +311,14 @@ describe('no screen starts a category picker from a category typed into the code
   // The screens that still do it, each named, so that "what is still open" is
   // something this suite answers rather than something a report claims. Remove
   // a line here when its record is closed, and the scan starts guarding it.
+  //
+  // It is empty. The last two were the participant item form, which opened on
+  // the literal 'main' whenever the screen that called it named no category,
+  // and a piece of state on the event page seeded with the same literal that
+  // was written once and never read. Both closed with record 82, and the scan
+  // now guards every screen rather than all but two.
   // See DOCS/PLANING/82-participant-item-form-starts-from-a-hardcoded-category.md.
-  const STILL_OPEN = new Set([
-    'UserMenuItemForm.tsx: main',
-    'EventPage.tsx: main',
-  ]);
+  const STILL_OPEN = new Set([]);
 
   test('and the ones that still do are the ones with a record open', () => {
     const offenders = [];

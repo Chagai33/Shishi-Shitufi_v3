@@ -54,6 +54,43 @@ export const getFallbackCategoryId = (categoryIds: string[]): string => {
 };
 
 /**
+ * Which category an item form opens on.
+ *
+ * The category the screen asked for, when this event actually has it or when it
+ * is a ride, and otherwise the event's own catch-all. Never an id typed into
+ * the code.
+ *
+ * The participant item form used to open holding the literal 'main' whenever
+ * the screen named no category, and "on the fire" has no such category. Nothing
+ * on screen showed it: the grid of category buttons is drawn from the event, so
+ * the value the form was holding appeared nowhere in it and simply left every
+ * button unmarked. The participant could not have chosen that category and
+ * never saw it, filled in a name and a quantity, and saved into a category the
+ * event does not have, which is a category the board cannot draw.
+ *
+ * A ride the screen asks for is always honoured. The ride categories are only
+ * added to an event's list while the organiser's ride switches are on, and the
+ * older ids `trempim` and `rides` are never added at all, so asking whether the
+ * event has one would send an offered lift to the catch-all.
+ *
+ * And the catch-all is taken over the list with the rides removed, because a
+ * ride is not somewhere an ordinary item may start. "Trip" has no catch-all and
+ * names ride offers first, so the fallback over its whole list is a lift.
+ * See DOCS/PLANING/83-the-trip-template-hands-out-a-ride-category.md.
+ * See DOCS/PLANING/82-participant-item-form-starts-from-a-hardcoded-category.md.
+ */
+export const getStartingCategoryId = (
+  requestedCategoryId: string | undefined,
+  eventCategoryIds: string[],
+): string => {
+  const requestIsReal =
+    !!requestedCategoryId &&
+    (eventCategoryIds.includes(requestedCategoryId) || isRideCategory(requestedCategoryId));
+  if (requestIsReal) return requestedCategoryId as string;
+  return getFallbackCategoryId(eventCategoryIds.filter(id => !isRideCategory(id)));
+};
+
+/**
  * The items of an event that a smart migration is allowed to touch.
  *
  * A migration moves items between the event's categories, and a ride has no

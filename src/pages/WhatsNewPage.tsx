@@ -19,14 +19,15 @@ import { ArrowRight } from 'lucide-react';
 // See DOCS/PLANING/61-whats-new-page.md.
 //
 // Two rendering details that are not decoration:
-//   - Every section heading carries its own classes. The stylesheet defines
-//     .prose h1 and .prose h2 only, and an element selector there beats a
-//     utility class, so an h3 with no rule of its own renders exactly like a
-//     paragraph and the six sections would vanish into one wall of text.
+//   - Every section heading carries its own classes. The stylesheet now also
+//     defines .prose h3, at the same values as the const below, so the two
+//     agree and this page renders the same either way. Keep them in step: an
+//     element selector in the stylesheet beats a utility class written here,
+//     so if the two ever disagree the stylesheet is what shows.
 //   - Each language block declares its own dir. Without it both halves inherit
 //     the interface language's direction, and one of them is always laid out
-//     backwards. The legal pages carry that defect today.
-//     See DOCS/PLANING/62-legal-pages-headings-and-direction.md.
+//     backwards. The legal pages carried that defect until the fix in
+//     DOCS/PLANING/62-legal-pages-headings-and-direction.md.
 
 const sectionHeading = 'text-lg font-semibold text-neutral-800 mt-6 mb-2';
 

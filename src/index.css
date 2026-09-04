@@ -86,14 +86,30 @@ body,
   @apply text-xl font-semibold text-neutral-800 mt-6 mb-3 border-b pb-2;
 }
 
+/* The third tier. Without a rule of its own an h3 renders exactly like a
+   paragraph: preflight resets every heading to inherit, so it takes 16px and
+   weight 300 from the body and the section headings of a long legal document
+   disappear into the text. A utility class written on the element does not
+   save it either, because .prose h2 and .prose h1 outrank a bare class and
+   whoever adds the next clause will not know that. The values are the ones
+   WhatsNewPage already writes on each of its h3s, so that page renders
+   unchanged. See DOCS/PLANING/62-legal-pages-headings-and-direction.md. */
+.prose h3 {
+  @apply text-lg font-semibold text-neutral-800 mt-6 mb-2;
+}
+
 .prose p,
 .prose ul,
 .prose li {
   @apply text-base leading-relaxed;
 }
 
+/* ps, not pl. The bullet gutter belongs on the inline start, and a physical
+   left padding puts it on the wrong side in Hebrew: the markers press against
+   the text and 20px of dead space sits opposite them. It also flattens the
+   nested list in the smart import clause into one column. */
 .prose ul {
-  @apply list-disc pl-5 space-y-2;
+  @apply list-disc ps-5 space-y-2;
 }
 
 .prose a {

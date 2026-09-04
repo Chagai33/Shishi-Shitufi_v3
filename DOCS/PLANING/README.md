@@ -27,6 +27,7 @@
 | 8א | טרמפ הלוך ושוב נספר כפי שניים מהמקומות שברכב | 🟠 האורח קורא מספר שאינו נכון | [93](93-a-round-trip-ride-is-counted-as-twice-the-seats.md) |
 | 8א | הדיאלוג של שינוי הקטגוריות מבטיח תצוגה שאינה קיימת | 🔴 המארגן מסכים בכתב למה שלא יקרה, והפריטים נעלמים לאורחים | [94](94-the-category-change-dialog-promises-a-display-that-does-not-exist.md) |
 | 8א | פעולה בכמות מוציאה טרמפ מהטרמפים ואין דרך להחזיר | 🔴 הטרמפ חי בקטגוריה הלא נכונה ואי אפשר להזיז אותו | [95](95-the-bulk-screen-is-a-one-way-door-for-a-ride.md) |
+| 8א | למארגן אין דרך לדעת שפריט נפל מהאירוע | 🟠 התיקון קיים ואינו מגיע לאף אחד | [96](96-the-organiser-has-no-way-to-know-an-item-fell-out-of-the-event.md) |
 | 8א | הייבוא אינו בודק אורך שם והערה, והשרת דוחה אחרי שהמסך אישר | 🟠 המסך מציג מה שהמסד ידחה | [81](81-import-does-not-check-name-and-note-length.md) |
 | 8א | הכפתור ששומר בחירה כרשימה מוכנה אינו יכול לשמור | 🟠 נכשל תמיד, לכל מארגן | [90](90-saving-a-selection-as-a-preset-list-cannot-work.md) |
 | 8א | רשימת קטגוריות הטרמפ כתובה ביד באחד עשר מסכים | 🟠 המסך והשרת חלוקים על אירוע ישן | [86](86-the-ride-category-list-is-written-out-by-hand-in-eleven-screens.md) |

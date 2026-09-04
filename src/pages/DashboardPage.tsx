@@ -6,7 +6,7 @@ import { useStore } from '../store/useStore';
 import { FirebaseService } from '../services/firebaseService';
 import { ShishiEvent, EventDetails } from '../types';
 import { toast } from 'react-hot-toast';
-import { Plus, Calendar, MapPin, Clock, ChefHat, Home, ListChecks, ArrowRight, Trash2, Edit, Sparkles, Share2, MoreVertical } from 'lucide-react';
+import { Plus, Calendar, MapPin, Clock, ChefHat, Home, ListChecks, ArrowRight, Trash2, Edit, Sparkles, Share2, MoreVertical, AlertCircle } from 'lucide-react';
 import { ImportItemsModal } from '../components/Admin/ImportItemsModal';
 import { BulkItemsManager } from '../components/Admin/BulkItemsManager';
 import { PresetListsManager } from '../components/Admin/PresetListsManager';
@@ -15,6 +15,8 @@ import FocusTrap from 'focus-trap-react';
 import { useTranslation } from 'react-i18next';
 import { EventForm } from '../components/Admin/EventForm';
 import EmailVerificationNotice from '../components/Common/EmailVerificationNotice';
+import { getEventCategories } from '../constants/templates';
+import { itemsLeftOutOfEvent } from '../utils/eventUtils';
 
 // --- Event card component ---
 const EventCard: React.FC<{
@@ -47,6 +49,16 @@ const EventCard: React.FC<{
         ? new Set(Object.values(event.assignments).map(a => a.userId)).size
         : 0;
     const assignmentPercentage = menuItemsCount > 0 ? (assignmentsCount / menuItemsCount) * 100 : 0;
+
+    // Items the event page shows under no tile. This is where the organiser
+    // looks before opening an event at all, so it is said here too, as a
+    // short text and not an icon alone: an icon explains itself on hover,
+    // and a phone has no hover. Pressing it opens the screen that repairs
+    // them. See DOCS/PLANING/96-the-organiser-has-no-way-to-know-an-item-fell-out-of-the-event.md.
+    const leftOutCount = itemsLeftOutOfEvent(
+        Object.values(event.menuItems || {}),
+        getEventCategories(event, t),
+    ).length;
 
     return (
         <div
@@ -108,6 +120,18 @@ const EventCard: React.FC<{
                             <span className="text-neutral-900">{t('dashboard.eventCard.stats.items', { count: assignmentsCount, total: menuItemsCount })}</span>
                             <span className="mx-2">|</span>
                             <span className="text-neutral-900">{t('dashboard.eventCard.stats.participants', { count: participantsWithAssignmentsCount })}</span>
+                            {leftOutCount > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={(e) => handleActionClick(e, () => onBulkEdit(event))}
+                                    title={t('dashboard.eventCard.stats.leftOutExplained', { count: leftOutCount })}
+                                    aria-label={t('dashboard.eventCard.stats.leftOutExplained', { count: leftOutCount })}
+                                    className="relative z-20 mt-1.5 inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition-colors"
+                                >
+                                    <AlertCircle size={12} className="shrink-0" aria-hidden="true" />
+                                    {t('dashboard.eventCard.stats.leftOut', { count: leftOutCount })}
+                                </button>
+                            )}
                         </p>
                     ) : (
                         <p className="text-xs text-neutral-500 mb-2 font-medium">

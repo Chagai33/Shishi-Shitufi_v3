@@ -111,6 +111,10 @@ describe('the three screens ask this function and not a rule of their own', () =
     assert.match(read('pages/EventPage.tsx'), /itemsLeftOutOfEvent\(/);
   });
 
+  test('the dashboard card', () => {
+    assert.match(read('pages/DashboardPage.tsx'), /itemsLeftOutOfEvent\(/);
+  });
+
   test('and the dialog no longer promises a display under the old category name', () => {
     assert.doesNotMatch(read('components/Admin/EventForm.tsx'), /יוצגו תחת שם הקטגוריה הישן/);
   });

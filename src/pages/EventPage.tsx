@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PERSON_NAME_MAX } from '../constants/limits';
 import { useTranslation } from 'react-i18next';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useStore, selectMenuItems, selectAssignments, selectParticipants, selectAssignmentsByItemId } from '../store/useStore';
 import { FirebaseService } from '../services/firebaseService';
 import { auth } from '../lib/firebase';
@@ -19,7 +19,7 @@ import { EditItemModal } from '../components/Events/EditItemModal';
 import { CategorySelector } from '../components/Events/CategorySelector';
 import { ParticipantsListModal } from '../components/Events/ParticipantsListModal';
 import { getEventCategories } from '../constants/templates';
-import { resolveCategoryDisplayName, isCarpoolLogic, isRideCategory, RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS } from '../utils/eventUtils';
+import { resolveCategoryDisplayName, isCarpoolLogic, isRideCategory, itemsLeftOutOfEvent, RIDE_OFFER_CATEGORY_IDS, RIDE_REQUEST_CATEGORY_IDS } from '../utils/eventUtils';
 import { useDebounce } from '../hooks/useDebounce';
 
 
@@ -174,6 +174,19 @@ const EventPage: React.FC = () => {
         return !!currentEvent?.details.allowUserItems;
     }, [selectedCategory, canAddInSelectedCategory, currentEvent]);
     const eventCategories = useMemo(() => getEventCategories(currentEvent || undefined, t), [currentEvent, t]);
+
+    // How many items this page shows under no tile at all. Only the organiser
+    // is told, and told here, because this is the page they open; the screen
+    // that repairs it is one they do not, and a fix nobody is led to reaches
+    // nobody. Guests are not told, and are deliberately not shown the items
+    // in a block of their own: an item people can sign up for is an item
+    // nobody hurries to fix, and its category stays wrong for good.
+    // See DOCS/PLANING/96-the-organiser-has-no-way-to-know-an-item-fell-out-of-the-event.md.
+    const leftOutCount = useMemo(
+        () => (isOrganizer ? itemsLeftOutOfEvent(menuItems, eventCategories).length : 0),
+        [isOrganizer, menuItems, eventCategories],
+    );
+    const navigate = useNavigate();
     const getCategoryName = useCallback((id: string) => {
         return resolveCategoryDisplayName(id, currentEvent || undefined, eventCategories, t);
     }, [eventCategories, t, currentEvent]);
@@ -771,6 +784,25 @@ const EventPage: React.FC = () => {
                             className="text-xs text-neutral-500 hover:text-red-600 underline transition-colors"
                         >
                             {t('eventPage.leaveEvent.button')}
+                        </button>
+                    </div>
+                )}
+
+                {/* One quiet line, for the organiser only. The bulk edit screen
+                    lives inside the dashboard and not at an address of its own,
+                    so the link goes there and asks it to open on this event. */}
+                {leftOutCount > 0 && currentEvent && (
+                    <div role="status" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                        <span className="flex items-start gap-2 flex-1 min-w-[12rem]">
+                            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                            <span>{t('eventPage.leftOut.message', { count: leftOutCount })}</span>
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => navigate('/dashboard', { state: { bulkEditEventId: currentEvent.id } })}
+                            className="shrink-0 font-semibold underline underline-offset-2 hover:text-amber-700 whitespace-nowrap"
+                        >
+                            {t('eventPage.leftOut.fix')}
                         </button>
                     </div>
                 )}

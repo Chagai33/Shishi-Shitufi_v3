@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.tsx
 
 import React, { useState, useEffect, useCallback, useRef, useId } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { FirebaseService } from '../services/firebaseService';
 import { ShishiEvent, EventDetails } from '../types';
@@ -290,6 +290,22 @@ const DashboardPage: React.FC = () => {
         setBulkEditInitialAddForm(showAddForm);
         setShowBulkManager(true);
     };
+
+    // The event page can send the organiser here to repair an item that fell
+    // out of the event, and the bulk edit screen is a state of this page and
+    // not an address, so the request arrives as navigation state and is
+    // honoured once the events are in hand. The state is cleared straight
+    // away, or a refresh would open the screen a second time.
+    // See DOCS/PLANING/96-the-organiser-has-no-way-to-know-an-item-fell-out-of-the-event.md.
+    const location = useLocation();
+    const navigate = useNavigate();
+    const requestedBulkEditEventId = (location.state as { bulkEditEventId?: string } | null)?.bulkEditEventId;
+    useEffect(() => {
+        if (!requestedBulkEditEventId || isLoadingEvents) return;
+        const requested = events.find(e => e.id === requestedBulkEditEventId);
+        if (requested) handleBulkEdit(requested);
+        navigate('/dashboard', { replace: true, state: null });
+    }, [requestedBulkEditEventId, isLoadingEvents, events]);
 
 
 

@@ -190,6 +190,36 @@ export const groupItemsByCategory = <T extends { category?: string }>(
 };
 
 /**
+ * The items that are in the event and not in any of its categories, which is
+ * to say the items the event page does not show under any tile.
+ *
+ * The event page draws a tile per category of the event and hides a tile with
+ * nothing in it, so an item in a category the event does not have is counted
+ * toward no tile and shown under none. It is still in the database, still
+ * counted in the heading, still found by search and by the assigned and
+ * unassigned chips. It is just not where anybody looks.
+ *
+ * This is not a second rule. It is the one rule, `groupItemsByCategory` and
+ * its `isNotInEvent`, read from the other side: not "which groups are foreign"
+ * but "which items are in a foreign group". Three screens ask that question,
+ * the dialog that changes an event's categories, the event page and the
+ * dashboard card, and they have to agree with each other and with the bulk
+ * items screen about which items those are. Handing each of them the grouping
+ * function and a filter would be three chances to get the filter wrong.
+ *
+ * A ride is never left out, for the reason the grouping gives.
+ * See DOCS/PLANING/94-the-category-change-dialog-promises-a-display-that-does-not-exist.md
+ * and DOCS/PLANING/96-the-organiser-has-no-way-to-know-an-item-fell-out-of-the-event.md.
+ */
+export const itemsLeftOutOfEvent = <T extends { category?: string }>(
+  items: T[] | undefined,
+  categories: CategoryConfig[] | undefined,
+): T[] =>
+  groupItemsByCategory(items, categories)
+    .filter(group => group.isNotInEvent)
+    .flatMap(group => group.items);
+
+/**
  * Regex for detecting carpool/ride sharing keywords in Hebrew and English.
  * @deprecated Ideally rely on category ID 'trempim' or rowType 'offers'
  */

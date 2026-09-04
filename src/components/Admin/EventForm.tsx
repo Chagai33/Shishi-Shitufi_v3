@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { FirebaseService } from '../../services/firebaseService';
 import { ShishiEvent, EventDetails, EventType, CategoryConfig } from '../../types';
 import { getNextFriday, furthestEventDate } from '../../utils/dateUtils';
-import { itemsEnteringMigration } from '../../utils/eventUtils';
+import { itemsEnteringMigration, itemsLeftOutOfEvent, isRideCategory } from '../../utils/eventUtils';
 import toast from 'react-hot-toast';
 import FocusTrap from 'focus-trap-react';
 import { CategoryEditor } from './CategoryEditor';
@@ -146,7 +146,18 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
     confirmLabel?: string;
     secondaryLabel?: string;
     onSecondary?: () => void;
+    // The items the categories about to be saved would leave out of the event,
+    // and the way to bring them home in one press. Only the category change
+    // dialog sets it, and only when there are such items.
+    strays?: {
+      count: number;
+      targets: CategoryConfig[];
+      onMove: (categoryId: string) => void;
+    };
   } | null>(null);
+
+  // The category the stray items are offered a move to, chosen in the dialog.
+  const [strayTarget, setStrayTarget] = useState('');
 
   const [templateName, setTemplateName] = useState('');
 
@@ -329,16 +340,60 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
 
         // If we have items to migrate AND categories actually changed
         if (migratableItems.length > 0 && !areCategoriesEqual(formData.categories, baselineCategories)) {
+          // The items the categories about to be saved would leave out of the
+          // event: in a category the organiser just removed, or in one the
+          // event never had. This dialog used to promise they would "be shown
+          // under the old category name". They were shown under nothing: the
+          // event page draws a tile per category of the event and hides an
+          // empty tile, so an item in a category the event does not have sits
+          // under no tile at all. The moment the organiser removes the category
+          // is the moment the damage is done, so this is where it is repaired:
+          // the dialog says how many items that is and moves them in one
+          // press, and if the organiser saves without moving them, it has
+          // told the truth about where they will and will not appear.
+          // See DOCS/PLANING/94-the-category-change-dialog-promises-a-display-that-does-not-exist.md.
+          const strays = itemsLeftOutOfEvent(
+            Object.entries(event.menuItems || {}).map(([id, item]) => ({ id, ...item })),
+            formData.categories,
+          );
+          const strayTargets = formData.categories.filter(c => !isRideCategory(c.id));
+          setStrayTarget(strayTargets[0]?.id || '');
+
+          const moveStraysAndSave = async (categoryId: string) => {
+            setActiveModal(null);
+            setIsSubmitting(true);
+            try {
+              await FirebaseService.updateEventDetails(event.id, eventDetails);
+              for (const stray of strays) {
+                await FirebaseService.updateMenuItem(event.id, stray.id, { category: categoryId });
+              }
+              const targetName = strayTargets.find(c => c.id === categoryId)?.name || categoryId;
+              toast.success(strays.length === 1
+                ? `האירוע עודכן והפריט הועבר ל${targetName}`
+                : `האירוע עודכן ו${strays.length} פריטים הועברו ל${targetName}`);
+              onSuccess?.();
+              onClose();
+            } catch (error: any) {
+              console.error('Error moving items out of a removed category:', error);
+              toast.error(error?.message || 'שגיאה בהעברת הפריטים. אפשר להעביר אותם במסך העריכה המרוכזת.');
+            } finally {
+              setIsSubmitting(false);
+            }
+          };
+
           setActiveModal({
             type: 'confirm',
             title: 'שינוי קטגוריות',
-            message: 'שינית את הקטגוריות של האירוע, ויש בו כבר פריטים.\n\nהגירה חכמה: ניתוח הפריטים וסידורם מחדש לפי הקטגוריות החדשות.\nשמור בלי הגירה: הפריטים יישמרו כמו שהם. פריטים שהקטגוריה שלהם בוטלה יוצגו תחת שם הקטגוריה הישן, וללא סינון ייעודי.\nביטול: חזרה לטופס בלי לשמור.',
+            message: 'שינית את הקטגוריות של האירוע, ויש בו כבר פריטים.\n\nהגירה חכמה: ניתוח הפריטים וסידורם מחדש לפי הקטגוריות החדשות.\nשמור בלי הגירה: הפריטים יישמרו כמו שהם.\nביטול: חזרה לטופס בלי לשמור.',
             confirmLabel: 'הגירה חכמה',
-            secondaryLabel: 'שמור בלי הגירה',
+            secondaryLabel: strays.length > 0 ? 'שמור בלי להעביר' : 'שמור בלי הגירה',
             onSecondary: async () => {
               setActiveModal(null);
               await saveWithoutMigration();
             },
+            strays: strays.length > 0
+              ? { count: strays.length, targets: strayTargets, onMove: moveStraysAndSave }
+              : undefined,
             onConfirm: async () => {
               // 1. Save Event Details first
               await FirebaseService.updateEventDetails(event.id, eventDetails);
@@ -935,6 +990,44 @@ export function EventForm({ event, onClose, onSuccess }: EventFormProps) {
             }] : [])
           ]}
         >
+          {activeModal.strays && (
+            <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <span>
+                  {activeModal.strays.count === 1
+                    ? 'פריט אחד נמצא בקטגוריה שכבר לא באירוע.'
+                    : `${activeModal.strays.count} פריטים נמצאים בקטגוריות שכבר לא באירוע.`}
+                  {' '}
+                  אם תשמור בלי להעביר, הם יישמרו אבל לא יופיעו בעמוד האירוע עד שתשנה להם קטגוריה, במסך העריכה המרוכזת בלוח הבקרה.
+                </span>
+              </p>
+              {activeModal.strays.targets.length > 0 && (
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <label className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="shrink-0">העבר ל:</span>
+                    <select
+                      value={strayTarget}
+                      onChange={(e) => setStrayTarget(e.target.value)}
+                      className="flex-1 min-w-0 text-sm py-1 px-2 border border-amber-300 rounded bg-white text-gray-900"
+                    >
+                      {activeModal.strays.targets.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => activeModal.strays?.onMove(strayTarget)}
+                    disabled={!strayTarget}
+                    className="shrink-0 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  >
+                    {activeModal.strays.count === 1 ? 'העבר את הפריט ושמור' : `העבר ${activeModal.strays.count} פריטים ושמור`}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
           {activeModal.type === 'prompt' && (
             <input
               type="text"

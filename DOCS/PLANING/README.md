@@ -23,7 +23,7 @@
 | 8א | מחיקת שם של פריט מרוקנת את מסך הפריטים בכמות | 🟠 המסך כולו נופל, לא שורה אחת | [91](91-clearing-an-item-name-empties-the-bulk-screen.md) |
 | 8א | עדכון חי מוחק את הסימון ואת מה שלא נשמר באותו מסך | 🟠 פוגע בפעולה בכמות באירוע פעיל | [92](92-a-live-update-wipes-the-selection-in-the-bulk-screen.md) |
 | 8א | טרמפ הלוך ושוב נספר כפי שניים מהמקומות שברכב | 🟠 האורח קורא מספר שאינו נכון | [93](93-a-round-trip-ride-is-counted-as-twice-the-seats.md) |
-| 8א | הדיאלוג של שינוי הקטגוריות מבטיח תצוגה שאינה קיימת | 🔴 המארגן מסכים בכתב למה שלא יקרה, והפריטים נעלמים לאורחים | [94](94-the-category-change-dialog-promises-a-display-that-does-not-exist.md) |
+| 8א | הדיאלוג של שינוי הקטגוריות מבטיח תצוגה שאינה קיימת. **עם [96](96-the-organiser-has-no-way-to-know-an-item-fell-out-of-the-event.md), פרומפט 24 מוכן** | 🔴 המארגן מסכים בכתב למה שלא יקרה, והפריטים נעלמים לאורחים | [94](94-the-category-change-dialog-promises-a-display-that-does-not-exist.md) |
 | 8א | פעולה בכמות מוציאה טרמפ מהטרמפים ואין דרך להחזיר | 🔴 הטרמפ חי בקטגוריה הלא נכונה ואי אפשר להזיז אותו | [95](95-the-bulk-screen-is-a-one-way-door-for-a-ride.md) |
 | 8א | למארגן אין דרך לדעת שפריט נפל מהאירוע | 🟠 התיקון קיים ואינו מגיע לאף אחד | [96](96-the-organiser-has-no-way-to-know-an-item-fell-out-of-the-event.md) |
 | 8א | כפתור ההוספה מוצע גם כשעומדים במסנן ולא בקטגוריה | 🟡 הנזק כבר תוקן, נשארה שאלת מסך | [97](97-the-add-button-is-offered-while-standing-in-a-filter.md) |

@@ -173,8 +173,6 @@ const EventPage: React.FC = () => {
         if (isRideCategory(selectedCategory ?? '')) return canAddInSelectedCategory;
         return !!currentEvent?.details.allowUserItems;
     }, [selectedCategory, canAddInSelectedCategory, currentEvent]);
-    const [lastManualCategory, setLastManualCategory] = useState<string>('main');
-
     const eventCategories = useMemo(() => getEventCategories(currentEvent || undefined, t), [currentEvent, t]);
     const getCategoryName = useCallback((id: string) => {
         return resolveCategoryDisplayName(id, currentEvent || undefined, eventCategories, t);
@@ -1142,7 +1140,6 @@ const EventPage: React.FC = () => {
                     onClose={() => setModalState(null)}
                     category={modalState.category as any}
                     isOrganizer={isOrganizer}
-                    onSuccess={(cat) => setLastManualCategory(cat)}
                     initialCategory={modalState.category}
                     initialRowType={modalState.rowType}
                 />

@@ -11,7 +11,7 @@ import { useAuth } from '../../hooks/useAuth';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import FocusTrap from 'focus-trap-react';
-import { isCarpoolLogic, isRideCategory } from '../../utils/eventUtils';
+import { isCarpoolLogic, isRideCategory, getStartingCategoryId } from '../../utils/eventUtils';
 
 // ============================================================================
 // HELPER COMPONENTS - Card View Style
@@ -181,6 +181,7 @@ interface FormErrors {
   name?: string;
   quantity?: string;
   phoneNumber?: string;
+  category?: string;
 }
 
 export function UserMenuItemForm({
@@ -198,10 +199,31 @@ export function UserMenuItemForm({
   const [participantName, setParticipantName] = useState('');
   const [showNameInput, setShowNameInput] = useState(false);
 
-  // Decide initial category: prop > explicit category > 'main'
-  // Only lock if initialCategory is explicitly provided
-  const isLocked = !!initialCategory;
-  const defaultCat = initialCategory || 'main';
+  // Get dynamic categories from the event using shared helper
+  const eventCategories = React.useMemo(() => {
+    return getEventCategories(event, t);
+  }, [event]);
+
+  // Which category this form opens on, and whether the screen pinned it.
+  //
+  // It used to open on the literal 'main' whenever the screen named no
+  // category, and "on the fire" has no such category. Nothing on screen said
+  // so: the grid below is drawn from the event, so a value the event does not
+  // have appears in no button and simply leaves all of them unmarked. The
+  // participant could not have chosen it and never saw it, and saved an item
+  // into a category the board cannot draw.
+  //
+  // And the grid is pinned shut only when the screen named a category this
+  // event really has. Standing in the "assigned" or "unassigned" filter on the
+  // event page and pressing add used to hand this form the name of the filter
+  // as though it were a category: the grid was hidden, the item was saved in a
+  // category called 'assigned', and because only an organiser can reach those
+  // two filters, the branch below then added a category by that name to the
+  // organiser's own event. Now that request is refused, the grid opens, and the
+  // person chooses.
+  // See DOCS/PLANING/82-participant-item-form-starts-from-a-hardcoded-category.md.
+  const defaultCat = getStartingCategoryId(initialCategory, eventCategories.map(cat => cat.id));
+  const isLocked = defaultCat === initialCategory;
 
 
   // Default to 1 for regular users, 0 for organizers (so they can just add items)
@@ -263,7 +285,19 @@ export function UserMenuItemForm({
     isSplittable: (isRideOffer || defaultCat === 'ride_requests'),
     isRequired: false,
     phoneNumber: '',
-    rowType: initialRowType || (defaultCat === 'ride_offers' || defaultCat === 'trempim' ? 'offers' : (defaultCat === 'ride_requests' ? 'needs' : undefined))
+    // The row type follows the category, which is what already happens the
+    // moment anyone taps a different button in the grid: tapping an ordinary
+    // category clears it. It used to be taken from the screen instead, and the
+    // add button on the event page's category screen asks for "offers" while
+    // naming no category at all. An ordinary item carrying that row type is
+    // read as a lift, drawn as a ride card and counted against the ride quota
+    // rather than the item quota. That never showed because the form used to
+    // start on 'main', one of the six names the reader treats as food. Starting
+    // on the event's own catch-all instead, "general" in "on the fire", would
+    // have turned every item added from that button into a lift.
+    rowType: isRideCategory(defaultCat)
+      ? (initialRowType || (defaultCat === 'ride_requests' ? 'needs' : 'offers'))
+      : undefined
   });
 
   const isRideForm = formData.category === 'ride_offers' || formData.category === 'ride_requests' || formData.category === 'trempim' || formData.category === 'rides';
@@ -301,11 +335,6 @@ export function UserMenuItemForm({
   // For rides, don't allow self-assignment
   const effectiveMyQuantity = isRideCategorySelected ? 0 : myQuantity;
 
-
-  // Get dynamic categories from the event using shared helper
-  const eventCategories = React.useMemo(() => {
-    return getEventCategories(event, t);
-  }, [event]);
 
   // Ensure "trempim" and ride options are filtered out for manual selection unless active
   const categoryOptions = React.useMemo(() => {
@@ -416,6 +445,17 @@ export function UserMenuItemForm({
 
     const qtyErr = getFieldError('quantity', formData.quantity);
     if (qtyErr) newErrors.quantity = qtyErr;
+
+    // A grid with no button marked is not a state to save from. The name and
+    // the quantity were always asked for and the category never was, so the
+    // item was saved into whatever the form happened to be holding, which was
+    // an id nothing on this screen had offered. The question asked here is the
+    // one the person can answer by looking: is one of the buttons marked.
+    // A pinned category is always one of them, so this only refuses a grid the
+    // person can actually see.
+    if (!categoryOptions.some(option => option.value === formData.category)) {
+      newErrors.category = t('userItemForm.errors.categoryRequired');
+    }
 
     if (isRide) {
       const phoneErr = getFieldError('phoneNumber', formData.phoneNumber);
@@ -872,6 +912,12 @@ export function UserMenuItemForm({
                         );
                       })}
                     </div>
+                    {errors.category && (
+                      <p id="category-error" role="alert" className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.category}
+                      </p>
+                    )}
                   </div>
                 )}
 

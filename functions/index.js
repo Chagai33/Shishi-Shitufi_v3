@@ -1,4 +1,10 @@
-const functions = require("firebase-functions");
+// The /v1 suffix is load-bearing and not a style choice. Since firebase-functions
+// 6.0.0 the package root is the v2 API, where `auth` does not exist at all - so
+// onUserDeleted below stops loading outright - and where `https.onCall` builds a
+// 2nd Gen callable that hands its handler one argument instead of two, silently
+// changing the generation of deleteUserAccount and leaving `context` undefined.
+// Dropping the suffix breaks both of them, one loudly and one quietly.
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 
 admin.initializeApp();

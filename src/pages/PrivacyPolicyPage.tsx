@@ -27,7 +27,7 @@ const PrivacyPolicyPage: React.FC = () => (
           <ul>
               <li><strong>עבור מנהלי אירועים:</strong> שם להצגה, כתובת דוא"ל וסיסמה מוצפנת.</li>
               <li><strong>עבור משתתפים (אורחים):</strong> שם להצגה. בעת כניסה ראשונה, מוקצה לך מזהה אנונימי וייחודי.</li>
-              <li><strong>תוכן שנוצר על ידך:</strong> פרטי אירועים (כותרת, תאריך, מיקום), שמות פריטים והערות.</li>
+              <li><strong>תוכן שנוצר על ידך:</strong> פרטי אירועים (כותרת, תאריך ומיקום), שמות פריטים, הערות, ונקודת האיסוף בטרמפ. המיקום ונקודת האיסוף הם כתובת או שם מקום שאדם מקליד בעצמו, ולא מיקום שנקרא מהמכשיר.</li>
               <li><strong>מונה השימוש בייבוא החכם:</strong> מספר הפעולות שביצעת ב"ייבוא חכם" ומועד תחילת חלון הספירה, לצורך אכיפת מגבלת שימוש הוגן. המונה אינו מכיל תוכן של רשימות.</li>
           </ul>
 
@@ -49,7 +49,7 @@ const PrivacyPolicyPage: React.FC = () => (
           <p>אנו שומרים מידע אישי רק למשך הזמן הנחוץ למטרות שלשמן הוא נאסף.</p>
           <ul>
               <li><strong>מידע פעיל:</strong> מידע אישי של מנהל או משתתף נשמר במערכת הפעילה כל עוד החשבון או האירוע קיימים. עם קבלת בקשה למחיקת חשבון, המידע יוסר מהמערכת הפעילה באופן מיידי.</li>
-              <li><strong>גיבויים:</strong> לצורכי שחזור במקרה של כשל טכני (Disaster Recovery), אנו שומרים גיבויים של בסיס הנתונים לתקופה של עד 30 ימים. מידע שנמחק מהמערכת הפעילה עשוי להישאר בגיבויים אלו ויימחק מהם סופית ומלאה לאחר 30 יום לכל היותר.</li>
+              <li><strong>גיבויים:</strong> לצורכי שחזור במקרה של כשל טכני (Disaster Recovery), בסיס הנתונים מגובה אוטומטית על ידי Firebase בגיבוי יומי. הגיבויים מוחזקים ומנוהלים על ידי Google ואינם בשליטתנו. מידע שנמחק מהמערכת הפעילה עשוי להישאר בעותקי הגיבוי לתקופה מוגבלת, ואין באפשרותנו לאתר או למחוק רשומה בודדת מתוך עותק גיבוי.</li>
           </ul>
 
           <h2>6. פרטיות ילדים</h2>
@@ -86,7 +86,7 @@ const PrivacyPolicyPage: React.FC = () => (
             <ul>
                 <li><strong>For Event Managers:</strong> Display name, email address, and an encrypted password.</li>
                 <li><strong>For Particip-ants (Guests):</strong> A display name. Upon first entry, you are assigned a unique anonymous identifier.</li>
-                <li><strong>Content You Create:</strong> Event details (title, date, location), item names, and notes.</li>
+                <li><strong>Content You Create:</strong> Event details (title, date, and location), item names, notes, and the ride pickup point. The location and the pickup point are an address or a place name that a person types in, not a position read from the device.</li>
                 <li><strong>Smart Import Usage Counter:</strong> The number of "Smart Import" operations you performed and the time the counting window started, in order to enforce a fair use limit. The counter holds no list content.</li>
             </ul>
 
@@ -108,7 +108,7 @@ const PrivacyPolicyPage: React.FC = () => (
             <p>We retain personal information only for the necessary duration.</p>
              <ul>
                 <li><strong>Active Data:</strong> Personal information of a manager or participant is stored in the active system as long as the account or event exists. Upon a deletion request, the information will be immediately removed from the active system.</li>
-                <li><strong>Backups:</strong> For disaster recovery purposes, we maintain backups of the database for a period of up to 30 days. Information deleted from the active system may remain in these backups and will be permanently and completely deleted after a maximum of 30 days.</li>
+                <li><strong>Backups:</strong> For disaster recovery purposes, the database is backed up automatically by Firebase, once a day. The backups are held and operated by Google and are not under our control. Information deleted from the active system may remain in the backup copies for a limited period, and we are not able to locate or delete an individual record inside a backup copy.</li>
             </ul>
             
             <h2>6. Children's Privacy</h2>

@@ -357,7 +357,8 @@
                 "title": "Community Meal Management",
                 "titleHighlight": "Made Easy",
                 "subtitle": "The platform that turns logistical coordination into a seamless experience, so you can focus on food and human connection.",
-                "cta": "Start for Free"
+                "cta": "Start for Free",
+                "boardAlt": "A sample event board: one item already sixty percent taken with the names of who took it, one still free, and a claim button on each"
             },
             "useCases": {
                 "title": "Perfect for Any Gathering",
@@ -380,11 +381,13 @@
                 "title": "Tools to Make Your Life Easier",
                 "smartImport": {
                     "title": "Smart AI Import",
-                    "description": "Enter a list as text, voice message, or upload an image - our Artificial Intelligence will build the event item list for you in seconds."
+                    "description": "Enter a list as text, voice message, or upload an image - our Artificial Intelligence will build the event item list for you in seconds.",
+                    "alt": "A messy message pasted into the import box, and below it the list of items and quantities produced from it"
                 },
                 "carpooling": {
                     "title": "Smart Carpooling",
-                    "description": "No need for a separate WhatsApp group for rides. Participants can offer available seats or request a ride directly through the event page."
+                    "description": "No need for a separate WhatsApp group for rides. Participants can offer available seats or request a ride directly through the event page.",
+                    "alt": "A ride offer card with departure time, pickup point, the number of free seats and a join button"
                 },
                 "noRegistration": {
                     "title": "No Registration Required",

@@ -1,7 +1,20 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, CheckCircle, ArrowLeft, Bot, Car, Zap } from 'lucide-react';
+import { Calendar, Users, CheckCircle, ArrowLeft, Zap } from 'lucide-react';
 import LanguageSwitcher from '../components/Common/LanguageSwitcher';
+
+// Screenshots of the product, not drawings of it. This is a visual product and
+// the page used to describe it in words only, which asked a stranger to imagine
+// the one thing a single picture explains.
+// See DOCS/PLANING/107-the-landing-page-never-shows-the-product.md
+//
+// The board comes in two crops on purpose. The wide one is a desktop screen and
+// would shrink to unreadable text on a phone, so a phone is served a portrait
+// crop of the same board instead. Each screen downloads one of them, never both.
+import boardWide from '../assets/landing/event-board-wide.webp';
+import boardNarrow from '../assets/landing/event-board-narrow.webp';
+import smartImportShot from '../assets/landing/smart-import.webp';
+import rideOfferShot from '../assets/landing/ride-offer.webp';
 
 const LandingPage = () => {
   const { t } = useTranslation();
@@ -59,6 +72,20 @@ const LandingPage = () => {
               {t('landing.hero.cta')}
               <ArrowLeft className="mr-2 w-5 h-5" aria-hidden="true" />
             </Link>
+
+            {/* Below the button and not above it. Above it the button would drop
+                off a phone screen, and the button being large and above the fold
+                is one of the things this page already got right. */}
+            <picture>
+              <source media="(min-width: 768px)" srcSet={boardWide} width={1500} height={1073} />
+              <img
+                src={boardNarrow}
+                width={756}
+                height={1186}
+                alt={t('landing.hero.boardAlt')}
+                className="mt-12 mx-auto w-full max-w-sm md:max-w-4xl h-auto rounded-2xl shadow-xl ring-1 ring-gray-900/5"
+              />
+            </picture>
           </div>
         </section>
 
@@ -68,23 +95,41 @@ const LandingPage = () => {
             <h2 id="core-features-heading" className="text-3xl font-bold text-gray-900 mb-12 text-center">
               {t('landing.features.title')}
             </h2>
-            <div className="grid md:grid-cols-3 gap-8">
-              {/* Smart Import */}
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-transform hover:-translate-y-1 hover:shadow-md duration-300">
-                <div className="bg-purple-100 p-4 rounded-full text-purple-600 mb-6">
-                  <Bot className="w-8 h-8" />
+            <div className="grid md:grid-cols-3 gap-8 items-start">
+              {/* Smart Import. The icon here was a generic robot; what convinces
+                  is the messy message an organiser already has in hand, and the
+                  list that comes out of it. */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col text-center transition-transform hover:-translate-y-1 hover:shadow-md duration-300">
+                <img
+                  src={smartImportShot}
+                  width={700}
+                  height={897}
+                  loading="lazy"
+                  decoding="async"
+                  alt={t('landing.features.smartImport.alt')}
+                  className="w-full h-auto border-b border-gray-100"
+                />
+                <div className="p-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">{t('landing.features.smartImport.title')}</h3>
+                  <p className="text-gray-600 leading-relaxed">{t('landing.features.smartImport.description')}</p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('landing.features.smartImport.title')}</h3>
-                <p className="text-gray-600 leading-relaxed">{t('landing.features.smartImport.description')}</p>
               </div>
 
-              {/* Carpooling */}
-              <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-transform hover:-translate-y-1 hover:shadow-md duration-300">
-                <div className="bg-blue-100 p-4 rounded-full text-blue-600 mb-6">
-                  <Car className="w-8 h-8" />
+              {/* Carpooling. The one thing here no comparable product does. */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col text-center transition-transform hover:-translate-y-1 hover:shadow-md duration-300">
+                <img
+                  src={rideOfferShot}
+                  width={720}
+                  height={581}
+                  loading="lazy"
+                  decoding="async"
+                  alt={t('landing.features.carpooling.alt')}
+                  className="w-full h-auto border-b border-gray-100"
+                />
+                <div className="p-8">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">{t('landing.features.carpooling.title')}</h3>
+                  <p className="text-gray-600 leading-relaxed">{t('landing.features.carpooling.description')}</p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{t('landing.features.carpooling.title')}</h3>
-                <p className="text-gray-600 leading-relaxed">{t('landing.features.carpooling.description')}</p>
               </div>
 
               {/* No Registration */}

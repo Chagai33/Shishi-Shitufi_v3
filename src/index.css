@@ -104,6 +104,14 @@ body,
   @apply text-base leading-relaxed;
 }
 
+/* Preflight zeroes the margin on every p, and nothing here put it back, so
+   adjacent paragraphs ran together as one block on all three long-text pages.
+   Not on the li, which gets its spacing from space-y-2 below. */
+.prose p,
+.prose ul {
+  @apply mb-4;
+}
+
 /* ps, not pl. The bullet gutter belongs on the inline start, and a physical
    left padding puts it on the wrong side in Hebrew: the markers press against
    the text and 20px of dead space sits opposite them. It also flattens the

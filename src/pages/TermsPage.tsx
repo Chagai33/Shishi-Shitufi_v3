@@ -106,7 +106,7 @@ const TermsPage: React.FC = () => (
       <hr className="my-10" />
 
       <div lang="en" dir="ltr">
-        <h1 className="text-3xl font-bold mb-4">Terms of Use & Privacy Policy - Shishi Shitufi</h1>
+        <h1 className="text-3xl font-bold mb-4">Terms of Use - Shishi Shitufi</h1>
         <p className="text-sm text-neutral-500 mb-6">Last Updated: 5 September 2026</p>
 
         <div className="prose">

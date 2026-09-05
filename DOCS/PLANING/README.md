@@ -76,7 +76,7 @@
 | 18א | ספריית firebase של הלקוח תקועה בגרסה ראשית 10 | 🟢 היגיינת גרסאות, הקוד הפגיע אינו נשלח | [72](72-firebase-client-sdk-v11.md) |
 | 19 | רקב הקישורים ב-README שבשורש | 🟢 תיעוד | [22](22-readme-rot.md) |
 | 20 | משטח הפרסום אינו קיים ואינו קריא לזחלנים | 🟢 תשתית שיווק | [59](59-marketing-surface-not-crawlable.md) |
-| 9 | תמונת השיתוף אינה מוצגת בוואטסאפ, וכתובתה יחסית | 🟠 **הועלה מירוק 05/09**: ערוץ ההפצה היחיד של המוצר | [60](60-orange-theme-color-and-heavy-share-image.md) |
+| 9 | הדלת הקדמית: תמונת השיתוף ועמוד הנחיתה. **פרומפט 28 מוכן** | 🟠 התמונה אינה מוצגת בוואטסאפ, והעמוד אינו מראה את המוצר | [60](60-orange-theme-color-and-heavy-share-image.md) [107](107-the-landing-page-never-shows-the-product.md) [106](106-what-a-domain-switch-will-touch.md) |
 | 23 | Netlify מזריק לעמוד תגיות שיווק וקישורי הפניה | 🟢 תוכן של צד שלישי בעמוד | [105](105-netlify-injects-referral-tags-into-the-page.md) |
 | 24 | במה ייגע מעבר לדומיין | 🟢 רשימה שנכתבה מראש, ליום שיהיה דומיין | [106](106-what-a-domain-switch-will-touch.md) |
 | 25 | עמוד הנחיתה מסביר את המוצר ואינו מראה אותו | 🟢 אין בו אף צילום מסך, ואין קריאה לפעולה בסוף | [107](107-the-landing-page-never-shows-the-product.md) |

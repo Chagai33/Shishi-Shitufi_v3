@@ -207,6 +207,20 @@ const LandingPage = () => {
                 </p>
               </div>
             </div>
+
+            {/* The story is the most convincing thing on this page and it sits
+                last. Whoever it convinced used to arrive at the footer with
+                nothing to click and had to scroll all the way back up. Same
+                wording as the button at the top, and the same destination. */}
+            <div className="mt-12 text-center">
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-accent-dark rounded-full hover:bg-accent-dark/90 hover:shadow-lg hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+              >
+                {t('landing.hero.cta')}
+                <ArrowLeft className="mr-2 w-5 h-5" aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         </section>
 

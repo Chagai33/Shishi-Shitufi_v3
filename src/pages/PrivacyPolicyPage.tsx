@@ -17,7 +17,7 @@ const PrivacyPolicyPage: React.FC = () => (
       
       <div lang="he" dir="rtl">
         <h1 className="text-3xl font-bold mb-4">מדיניות פרטיות לאפליקציית "שישי שיתופי"</h1>
-        <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: 29 באוגוסט 2026</p>
+        <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: 5 בספטמבר 2026</p>
 
         <div className="prose">
           <p>אנו מכבדים את פרטיות המשתמשים שלנו ("<strong>אתה</strong>", "<strong>המשתמש</strong>") ומחויבים להגן עליה. מדיניות פרטיות זו מתארת איזה מידע אישי אנו אוספים, כיצד אנו משתמשים בו, עם מי אנו חולקים אותו, ומהן זכויותיך בנוגע למידע זה.</p>
@@ -70,6 +70,8 @@ const PrivacyPolicyPage: React.FC = () => (
                   דרך כתובת המייל: <a href="mailto:Shishi.Shitufi.App@gmail.com">Shishi.Shitufi.App@gmail.com</a>.
               </li>
           </ul>
+          <p><strong>זמן מענה:</strong> נענה לפנייה בנושא עיון, תיקון או מחיקה <strong>בתוך 30 יום</strong> מיום קבלתה.</p>
+          <p><strong>מגבלה שחשוב שתדע עליה, אם הצטרפת לאירוע כאורח.</strong> לאורח אין במוצר כתובת מייל ואין לו סיסמה, ולכן אין לנו דרך טכנית לוודא שהפונה הוא האדם שהמידע שייך לו. <strong>לא נוכל להראות לאורח את המידע שלו על סמך שם בלבד</strong>, כי אז כל אדם היה יכול לבקש כך את המידע של אחר. מה שכן אפשר: אורח יכול למחוק את המידע שלו בעצמו, בכפתור "מחק את המידע שלי" שבכותרת התחתונה, מהדפדפן שבו הצטרף. ואם אין לך גישה לדפדפן ההוא, פנה אלינו עם פרטי האירוע והשם שמסרת, ונעשה כמיטב יכולתנו לאתר את הרשומה ולמחוק אותה.</p>
 
           <h2>8. שינויים במדיניות הפרטיות</h2>
           <p>אנו שומרים לעצמנו את הזכות לעדכן מדיניות זו מעת לעת.</p>
@@ -80,7 +82,8 @@ const PrivacyPolicyPage: React.FC = () => (
       <hr className="my-8" />
 
       <div lang="en" dir="ltr">
-        <h1 className="text-3xl font-bold mb-4">Privacy Policy (English)</h1>
+        <h1 className="text-3xl font-bold mb-4">Privacy Policy - Shishi Shitufi</h1>
+        <p className="text-sm text-neutral-500 mb-6">Last Updated: 5 September 2026</p>
 
         <div className="prose">
             <h2>1. What Information Do We Collect?</h2>
@@ -130,8 +133,10 @@ const PrivacyPolicyPage: React.FC = () => (
             <li>
                 Via email at: <a href="mailto:Shishi.Shitufi.App@gmail.com">Shishi.Shitufi.App@gmail.com</a>.
             </li>
-        </ul>
-            
+            </ul>
+            <p><strong>Response time:</strong> we answer a request to review, correct, or delete information <strong>within 30 days</strong> of receiving it.</p>
+            <p><strong>A limit you should know about, if you joined an event as a guest.</strong> A guest has no email address and no password in the product, so we have no technical way to confirm that the person asking is the person the information belongs to. <strong>We cannot show a guest their information on the strength of a name alone</strong>, because anyone could then ask for somebody else's information that way. What is possible: a guest can delete their own information, using the "Delete my information" button in the footer, from the browser they joined in. And if you no longer have that browser, contact us with the event details and the name you gave, and we will do our best to locate the record and delete it.</p>
+
             <h2>8. Changes to the Privacy Policy</h2>
             <p>We reserve the right to update this policy from time to time.</p>
         </div>

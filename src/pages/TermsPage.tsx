@@ -17,7 +17,7 @@ const TermsPage: React.FC = () => (
 
       <div lang="he" dir="rtl">
         <h1 className="text-3xl font-bold mb-4">תקנון ותנאי שימוש - שישי שיתופי</h1>
-        <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: אוגוסט 2026</p>
+        <p className="text-sm text-neutral-500 mb-6">תאריך עדכון אחרון: 5 בספטמבר 2026</p>
 
         <div className="prose">
           <p>ברוכים הבאים ל"שישי שיתופי" (להלן: "<strong>האפליקציה</strong>" או "<strong>השירות</strong>"), פלטפורמת תכנון האירועים הקהילתיים שפותחה במסגרת פרויקט Web Coding על ידי חגי יחיאל (להלן: "<strong>המפתח</strong>").</p>
@@ -51,7 +51,8 @@ const TermsPage: React.FC = () => (
             <li><strong>ייבוא חכם (Smart Import):</strong> המערכת נעזרת בשירותי הבינה המלאכותית של Google (Google AI Studio) לעיבוד טקסטים או תמונות שמוזנים על ידי מנהלי אירועים לבניית רשימות פריטים מהירה.
               <ul>
                 <li>התוכן נשלח לשירות של Google. מה נשלח, למי, ומה Google עשויה לעשות בו, מפורט ב<Link to="/privacy">מדיניות הפרטיות</Link>.</li>
-                <li>לפיכך, <strong>חל עליך איסור מוחלט</strong> להזין למערכת פרטים אישיים, שמות אנשים, טלפונים, פרטים פיננסיים, מידע רפואי או כל מידע רגיש ואישי אחר אודות משתתפים. הכלי נועד אך ורק לניתוח שמות מוצרי מזון.</li>
+                <li><strong>אל תזין לתיבת הייבוא</strong> פרטים אישיים, שמות אנשים, טלפונים, פרטים פיננסיים, מידע רפואי או כל מידע רגיש אחר אודות משתתפים. הכלי נועד לניתוח שמות של מוצרי מזון.</li>
+                <li><strong>ושים לב מה נשלח גם בלי שהקלדת אותו:</strong> כפתור הסיווג האוטומטי שולח לשירות של Google את שמות הפריטים שברשימה שלפניך, ובכלל זה פריטים שכבר היו באירוע. <strong>לכן מומלץ לא לכלול שמות של אנשים בשמות של פריטים</strong>, למשל "הסלט של דנה".</li>
                 <li>טכנולוגיית ה-AI ניסיונית ועשויה לספק תוצאות שגויות. מנהל האירוע נדרש לאמת את נכונות הרשימה בטרם פרסומה.</li>
                 <li><strong>שימוש הוגן ומגבלת קצב:</strong> השימוש ב"ייבוא חכם" מוגבל למספר פעולות לכל משתמש בשעה וביום. המגבלה נאכפת בשרת, ונועדה למנוע שימוש לרעה ולשמור על עלות השירות. כשמגיעים אליה האפליקציה אומרת זאת ומציינת מתי אפשר לנסות שוב, והוספת פריטים וסיווגם ידנית נשארים זמינים ללא הגבלה. המפתח רשאי לשנות את המגבלה, להשעות את הפיצ'ר או להפסיקו בכל עת, לרבות כלפי משתמש שעושה בו שימוש לרעה.</li>
               </ul>
@@ -106,7 +107,7 @@ const TermsPage: React.FC = () => (
 
       <div lang="en" dir="ltr">
         <h1 className="text-3xl font-bold mb-4">Terms of Use & Privacy Policy - Shishi Shitufi</h1>
-        <p className="text-sm text-neutral-500 mb-6">Last Updated: August 2026</p>
+        <p className="text-sm text-neutral-500 mb-6">Last Updated: 5 September 2026</p>
 
         <div className="prose">
           <p>Welcome to "Shishi Shitufi" (hereinafter: "<strong>The Application</strong>" or "<strong>The Service</strong>"), a community potluck event planning platform developed by Chagai Yechiel (hereinafter: "<strong>The Developer</strong>").</p>
@@ -140,7 +141,8 @@ const TermsPage: React.FC = () => (
             <li><strong>Smart Import:</strong> The system utilizes Google's Artificial Intelligence services (Google AI Studio) to process texts or images entered by event managers to quickly build item lists.
               <ul>
                 <li>The content is sent to a Google service. What is sent, to whom, and what Google may do with it is set out in the <Link to="/privacy">Privacy Policy</Link>.</li>
-                <li>Therefore, <strong>you are strictly prohibited</strong> from entering names of people, phone numbers, financial details, medical records, or any other sensitive and personal information about participants into the Smart Import (AI) system. The tool is intended solely for analyzing generic grocery lists.</li>
+                <li><strong>Do not enter</strong> personal details, names of people, phone numbers, financial details, medical records, or any other sensitive information about participants into the import box. The tool is intended for analyzing the names of grocery items.</li>
+                <li><strong>And note what is sent even when you did not type it:</strong> the automatic classification button sends Google's service the item names in the list in front of you, including items that were already in the event. <strong>For that reason it is better not to put people's names into item names</strong>, for example "Dana's salad".</li>
                 <li>AI technology is experimental and may provide incorrect results (Hallucinations). The event manager is required to review the extracted items and verify their accuracy before publishing them to the participants.</li>
                 <li><strong>Fair Use and Rate Limit:</strong> Use of the "Smart Import" is limited to a number of operations per user per hour and per day. The limit is enforced on the server, and exists to prevent abuse and to keep the cost of the service under control. When you reach it the Application says so and states when you may try again, while adding and classifying items by hand remain available without any limit. The Developer may change the limit, suspend the feature, or discontinue it at any time, including for a user who abuses it.</li>
               </ul>

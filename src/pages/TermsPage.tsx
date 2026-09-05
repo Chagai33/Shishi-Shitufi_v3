@@ -21,7 +21,7 @@ const TermsPage: React.FC = () => (
 
         <div className="prose">
           <p>ברוכים הבאים ל"שישי שיתופי" (להלן: "<strong>האפליקציה</strong>" או "<strong>השירות</strong>"), פלטפורמת תכנון האירועים הקהילתיים שפותחה במסגרת פרויקט Web Coding על ידי חגי יחיאל (להלן: "<strong>המפתח</strong>").</p>
-          <p>השימוש באפליקציה, שירותיה ותכניה כפוף לתנאים המפורטים להלן ("<strong>תנאי השימוש</strong>" ו"<strong>מדיניות הפרטיות</strong>"). אנא קרא אותם בעיון. שימושך באפליקציה, בכל דרך שהיא, לרבות יצירת אירוע או השתתפות בו, מהווה הסכמה בלתי מסויגת לתנאים אלו במלואם. אם אינך מסכים להם, אינך רשאי לעשות שימוש בשירות.</p>
+          <p>השימוש באפליקציה, שירותיה ותכניה כפוף לתנאי השימוש המפורטים להלן ול<Link to="/privacy">מדיניות הפרטיות</Link> של השירות. אנא קרא אותם בעיון. שימושך באפליקציה, בכל דרך שהיא, לרבות יצירת אירוע או השתתפות בו, מהווה הסכמה בלתי מסויגת לתנאים אלו במלואם. אם אינך מסכים להם, אינך רשאי לעשות שימוש בשירות.</p>
 
           <h2>חלק א': תנאי שימוש</h2>
 
@@ -50,7 +50,7 @@ const TermsPage: React.FC = () => (
             <li><strong>תשתיות חיצוניות:</strong> מערכת האפליקציה כוללת קישורים והפניות ליישומים ומערכות חיצוניות (כגון Waze, Google Maps, Apple Maps, Google Calendar). השימוש בשירותים אלו כפוף לתנאי השימוש הרשמיים ולמדיניות הפרטיות של החברות המפעילות אותם.</li>
             <li><strong>ייבוא חכם (Smart Import):</strong> המערכת נעזרת בשירותי הבינה המלאכותית של Google (Google AI Studio) לעיבוד טקסטים או תמונות שמוזנים על ידי מנהלי אירועים לבניית רשימות פריטים מהירה.
               <ul>
-                <li>תוכן שאתה מזין לשירות "ייבוא חכם" נשלח לצד שלישי ויכול לשמש את גוגל כדי לשפר ולפתח את מוצריה. גישה אנושית מטעם גוגל עשויה להתבצע לטקסטים אלו.</li>
+                <li>התוכן נשלח לשירות של Google. מה נשלח, למי, ומה Google עשויה לעשות בו, מפורט ב<Link to="/privacy">מדיניות הפרטיות</Link>.</li>
                 <li>לפיכך, <strong>חל עליך איסור מוחלט</strong> להזין למערכת פרטים אישיים, שמות אנשים, טלפונים, פרטים פיננסיים, מידע רפואי או כל מידע רגיש ואישי אחר אודות משתתפים. הכלי נועד אך ורק לניתוח שמות מוצרי מזון.</li>
                 <li>טכנולוגיית ה-AI ניסיונית ועשויה לספק תוצאות שגויות. מנהל האירוע נדרש לאמת את נכונות הרשימה בטרם פרסומה.</li>
                 <li><strong>שימוש הוגן ומגבלת קצב:</strong> השימוש ב"ייבוא חכם" מוגבל למספר פעולות לכל משתמש בשעה וביום. המגבלה נאכפת בשרת, ונועדה למנוע שימוש לרעה ולשמור על עלות השירות. כשמגיעים אליה האפליקציה אומרת זאת ומציינת מתי אפשר לנסות שוב, והוספת פריטים וסיווגם ידנית נשארים זמינים ללא הגבלה. המפתח רשאי לשנות את המגבלה, להשעות את הפיצ'ר או להפסיקו בכל עת, לרבות כלפי משתמש שעושה בו שימוש לרעה.</li>
@@ -61,15 +61,14 @@ const TermsPage: React.FC = () => (
           <h3>6. תוכן משתמשים (User-Generated Content)</h3>
           <p>הינך האחראי הבלעדי לכל תוכן שאתה (כמנהל או כמשתתף) יוצר ומעלה לאפליקציה. אין להעלות לשירות תוכן בלתי חוקי, פוגעני, גזעני, מאיים, מהווה לשון הרע, או המפר זכויות יוצרים ופגיעה בפרטיות של דרג שלישי. כל זכויות הקניין באפליקציה ובקוד המקור שלה שייכות למפתח, ואייקונים בממשק מקורם באתר Flaticon.</p>
 
-          <h2>חלק ב': מדיניות פרטיות</h2>
+          <h2>חלק ב': המידע שאנחנו אוספים במסגרת השירות</h2>
+          <p>חלק זה מתאר את המידע שהשירות אוסף כדי לתפקד, ואת מה שאפשר לעשות איתו. <strong>מדיניות הפרטיות המלאה של השירות היא מסמך נפרד</strong> והיא נמצאת <Link to="/privacy">כאן</Link>. שם מפורט למי המידע נמסר, מה נשלח לשירותי הבינה המלאכותית של Google, ומהן זכויותיך לגבי המידע שלך.</p>
 
           <h3>1. איזה מידע אנו אוספים ומה השימוש בו?</h3>
           <ul>
             <li><strong>ממנהלי אירועים (מארגנים):</strong> אנו אוספים ומאחסנים בגוגל את כתובת הדוא"ל, סיסמה מוצפנת, ושם תצוגה כדי לספק גישה וזיהוי מאובטח לחשבונך.</li>
             <li><strong>ממשתתפים (אורחים):</strong> אנו שומרים את השם (להצגה) שהזנת כדי להציגו למארגן ולחברי הקבוצה.</li>
-            <li><strong>תכונת הטרמפים (טלפונים):</strong> על מנת לקשר בין נהגים לנוסעים באירוע מסוים, מערכת הטרמפים דורשת הזנת <strong>מספר טלפון</strong>. הוספת מספר טלפון לאפליקציה מהווה הסכמה שפרט זה ייאסף על ידי המערכת וייחשף אך ורק למשתתפים הרלוונטיים באותו אירוע ולמנהל הקבוצה, לשם תיאום הנסיעה. אם אינך מעוניין בחשיפת מספר הטלפון שלך - אל תשתמש במערכת תיאום הטרמפים.</li>
             <li><strong>Cookies ו-Local Storage:</strong> האפליקציה עושה שימוש בטכנולוגיית Local Storage של הדפדפן ובשירותי הזיהוי של Firebase כדי לאפשר למשתמש להישאר מחובר למערכת ולשמור על העדפות שפה.</li>
-            <li><strong>נתונים טכניים (אנליטיקה):</strong> האפליקציה משתמשת בשירות Google Analytics כדי לאסוף מידע סטטיסטי לשיפור ביצועיה, כגון שגיאות, סוג הדפדפן ומספר הכניסות. האפליקציה אינה מבקשת הרשאת מיקום ואינה ניגשת לחיישן המיקום (GPS) של המכשיר שלך.</li>
             <li><strong>מונה השימוש בייבוא החכם:</strong> כדי לאכוף את מגבלת הקצב, המערכת שומרת לכל מזהה משתמש את מספר הפעולות שביצע ב"ייבוא חכם" ואת מועד תחילת חלון הספירה. מידע זה אינו גלוי לאף משתמש באפליקציה, אינו כולל את תוכן הרשימות עצמן, ואינו משמש לשום מטרה אחרת.</li>
           </ul>
 
@@ -111,7 +110,7 @@ const TermsPage: React.FC = () => (
 
         <div className="prose">
           <p>Welcome to "Shishi Shitufi" (hereinafter: "<strong>The Application</strong>" or "<strong>The Service</strong>"), a community potluck event planning platform developed by Chagai Yechiel (hereinafter: "<strong>The Developer</strong>").</p>
-          <p>Your use of the Application, its services, and content is subject to the terms detailed below ("<strong>Terms of Use</strong>" and "<strong>Privacy Policy</strong>"). Please read them carefully. Your use of the Application in any way, including creating an event or participating in one, constitutes unconditional agreement to these terms in full. If you do not agree to them, you may not use the Service.</p>
+          <p>Your use of the Application, its services, and content is subject to the Terms of Use detailed below and to the Service's <Link to="/privacy">Privacy Policy</Link>. Please read them carefully. Your use of the Application in any way, including creating an event or participating in one, constitutes unconditional agreement to these terms in full. If you do not agree to them, you may not use the Service.</p>
 
           <h2>Part A: Terms of Use</h2>
 
@@ -140,7 +139,7 @@ const TermsPage: React.FC = () => (
             <li><strong>External Infrastructures:</strong> The Application system includes links and referrals to external applications and systems (such as Waze, Google Maps, Apple Maps, Google Calendar). Use of these services is subject to the official terms of use and privacy policies of the companies operating them.</li>
             <li><strong>Smart Import:</strong> The system utilizes Google's Artificial Intelligence services (Google AI Studio) to process texts or images entered by event managers to quickly build item lists.
               <ul>
-                <li>Content (Prompts) that you enter into the "Smart Import" service is sent to a third party and may be used by Google to improve and develop its products (in accordance with Google API Terms for Unpaid services). Human reviewers on behalf of Google may read these inputs.</li>
+                <li>The content is sent to a Google service. What is sent, to whom, and what Google may do with it is set out in the <Link to="/privacy">Privacy Policy</Link>.</li>
                 <li>Therefore, <strong>you are strictly prohibited</strong> from entering names of people, phone numbers, financial details, medical records, or any other sensitive and personal information about participants into the Smart Import (AI) system. The tool is intended solely for analyzing generic grocery lists.</li>
                 <li>AI technology is experimental and may provide incorrect results (Hallucinations). The event manager is required to review the extracted items and verify their accuracy before publishing them to the participants.</li>
                 <li><strong>Fair Use and Rate Limit:</strong> Use of the "Smart Import" is limited to a number of operations per user per hour and per day. The limit is enforced on the server, and exists to prevent abuse and to keep the cost of the service under control. When you reach it the Application says so and states when you may try again, while adding and classifying items by hand remain available without any limit. The Developer may change the limit, suspend the feature, or discontinue it at any time, including for a user who abuses it.</li>
@@ -151,15 +150,14 @@ const TermsPage: React.FC = () => (
           <h3>6. User-Generated Content</h3>
           <p>You are solely responsible for any content you (as a manager or participant) create and upload to the Application. You may not upload content to the Service that is illegal, offensive, racist, threatening, defamatory, or violates copyrights and privacy of a third party. All property rights in the Application and its source code belong to the Developer, and interface icons originate from the Flaticon website.</p>
 
-          <h2>Part B: Privacy Policy</h2>
+          <h2>Part B: Information We Collect in the Course of the Service</h2>
+          <p>This part describes the information the Service collects in order to work, and what may be done with it. <strong>The Service's full Privacy Policy is a separate document</strong> and it lives <Link to="/privacy">here</Link>. It sets out who the information is disclosed to, what is sent to Google's artificial intelligence services, and what your rights are regarding your information.</p>
 
           <h3>1. What Information Do We Collect and How is it Used?</h3>
           <ul>
             <li><strong>From Event Managers (Organizers):</strong> We collect and store in Google the email address, encrypted password, and display name to provide access and secure identification for your account.</li>
             <li><strong>From Participants (Guests):</strong> We save the display name you entered to show it to the organizer and group members.</li>
-            <li><strong>The Rides Feature (Phone Numbers):</strong> In order to connect drivers and passengers in a specific event, the rides system requires the entry of a <strong>phone number</strong> of the ride creator and the passenger. Adding a phone number to the Application constitutes consent that this detail will be collected by the system and exposed solely to the relevant participants in that event and the group manager, for the purpose of resolving the voluntary ride process. The Developer is not responsible for harassment, spam, or any misuse made by participants who were exposed to this information. If you do not wish to expose your phone number - do not join or offer rides in the system.</li>
             <li><strong>Cookies and Local Storage:</strong> The Application uses the browser's Local Storage technology and Firebase authentication services to allow the user to stay connected to the system and maintain language preferences.</li>
-            <li><strong>Technical Data (Analytics):</strong> The Application uses the Google Analytics cloud service to collect statistical information (such as errors, browser type, and application visits) to improve its performance. The Application <strong>does not</strong> ask for location permission and does not read your device's GPS sensor.</li>
             <li><strong>Smart Import Usage Counter:</strong> In order to enforce the rate limit, the system stores for each user identifier the number of "Smart Import" operations performed and the time the counting window started. This information is not visible to any user of the Application, does not include the content of the lists themselves, and is not used for any other purpose.</li>
           </ul>
 

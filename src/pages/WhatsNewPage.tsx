@@ -142,11 +142,34 @@ const WhatsNewPage: React.FC = () => (
             כל קטגוריה מציגה כמה כבר נלקח מתוך מה שצריך, ויש חיפוש לפי שם פריט.
           </p>
 
+          <p>
+            <strong>ואם המארגן אישר להוסיף פריטים משלכם</strong>, הכפתור עצמו נושא מונה חי של מה
+            שניצלתם מתוך המכסה, למשל שניים מתוך שלושה, כדי שלא תגלו את המכסה רק כשהיא נגמרת.
+          </p>
+
+          <h3 className={sectionHeading}>אף אחד לא דורס אף אחד</h3>
+
+          <p>
+            <strong>מי שיצר פריט יכול לערוך אותו ולמחוק אותו</strong>, גם אם אינו המארגן.
+            אבל אם כבר נרשמו אליו אנשים, המחיקה נעצרת ואומרת כמה אנשים רשומים.
+          </p>
+
+          <p>
+            <strong>ולפני עריכה של פריט או נסיעה שאנשים כבר הצטרפו אליהם</strong> מופיעה אזהרה
+            שנוקבת במספר הנרשמים ומזכירה שהם לא יקבלו הודעה על השינוי.
+          </p>
+
+          <p>
+            <strong>וכשהמארגן מסיר שיבוץ של מישהו אחר</strong>, האישור נוקב בשם של אותו אדם ומזכיר
+            למארגן להודיע לו קודם.
+          </p>
+
           <h3 className={sectionHeading}>טרמפים</h3>
 
           <p>
             <strong>להציע נסיעה, או לבקש אחת.</strong>{' '}
-            עם נקודת יציאה, מספר מקומות, שעת יציאה, וכמה גמישות יש בה.
+            עם נקודת יציאה, מספר מקומות ושעת יציאה.
+            ולשעה יש חמש רמות גמישות: בדיוק, רבע שעה, חצי שעה, שעה, או גמיש לגמרי.
           </p>
 
           <p>
@@ -156,13 +179,20 @@ const WhatsNewPage: React.FC = () => (
           </p>
 
           <p>
-            <strong>מספר טלפון מוצג רק בין הנהג לנוסעים שלו</strong>, עם כפתור חיוג וכפתור וואטסאפ לידו.
-            שאר המשתתפים באירוע אינם רואים אותו.
+            <strong>מספר טלפון מוצג רק אחרי שיש סיבה להציג אותו.</strong>{' '}
+            הוא אינו יושב על הכרטיס לעיני כל האירוע: הוא נפתח בין הנהג לבין מי שתפס אצלו מקום,
+            עם כפתור חיוג וכפתור וואטסאפ לידו. שאר המשתתפים אינם רואים אותו.
           </p>
 
           <p>
             <strong>וטרמפים אינם נספרים במכסת הפריטים שלכם.</strong>{' '}
-            יש להם מכסה משלהם, ומי שפרסם כמה נסיעות עדיין יכול להביא אוכל.
+            יש להם מכסה משלהם, שתי נסיעות שאתם מציעים ושתיים שאתם מבקשים בכל אירוע, ומי שפרסם
+            כמה נסיעות עדיין יכול להביא אוכל.
+          </p>
+
+          <p>
+            <strong>והמספר שהזנתם נשמר בדפדפן שלכם לפעם הבאה</strong>, כדי שלא תקלידו אותו שוב בכל
+            נסיעה. הוא נשאר במכשיר בלבד.
           </p>
 
           <p>
@@ -176,6 +206,20 @@ const WhatsNewPage: React.FC = () => (
             האירועים מחולקים לפעילים ולשעברו, עם מונה לכל צד.
             כל כרטיס מראה כמה מהפריטים כבר נלקחו, כמה משתתפים יש, ומתריע אם פריט נפל מחוץ
             לקטגוריות של האירוע. את הקישור הציבורי מעתיקים משם בלחיצה.
+          </p>
+
+          <p>
+            <strong>ואירוע של יום שישי בערב אינו קופץ ל"שעברו" בחצות.</strong>{' '}
+            עד שלוש לפנות בוקר הלוח עדיין סופר אותו כאירוע של אתמול, כי ארוחה שנמשכת אינה אירוע
+            שנגמר.
+          </p>
+
+          <h3 className={sectionHeading}>נגישות</h3>
+
+          <p>
+            קישור "דלג לתוכן הראשי" נפתח בלחיצה על Tab, מקש Escape סוגר כל חלון במוצר{' '}
+            <strong>ואינו סוגר אותו באמצע שמירה או ייבוא</strong>, ומיקוד המקלדת נשאר בתוך חלון
+            פתוח וחוזר למקום שממנו נפתח כשהוא נסגר.
           </p>
 
           <h3 className={sectionHeading}>החשבון והמידע שלכם</h3>
@@ -312,12 +356,38 @@ const WhatsNewPage: React.FC = () => (
             search box for finding an item by name.
           </p>
 
+          <p>
+            <strong>And where the organiser allows you to add items of your own</strong>, the button
+            itself carries a live count of what you have used out of your allowance, two out of
+            three for instance, so you do not discover the allowance only when it runs out.
+          </p>
+
+          <h3 className={sectionHeading}>Nobody overrides anybody</h3>
+
+          <p>
+            <strong>Whoever created an item can edit it and delete it</strong>, organiser or not.
+            But once people have signed up to it, the deletion stops and tells you how many are on
+            it.
+          </p>
+
+          <p>
+            <strong>And before you edit an item or a ride that people have already joined</strong>,
+            a warning gives the number of people signed up and reminds you that they will not be
+            notified of the change.
+          </p>
+
+          <p>
+            <strong>When the organiser removes somebody else's sign-up</strong>, the confirmation
+            names that person and reminds the organiser to tell them first.
+          </p>
+
           <h3 className={sectionHeading}>Rides</h3>
 
           <p>
             <strong>Offer a lift, or ask for one.</strong>{' '}
-            With a departure point, a number of seats, a departure time, and how flexible that time
-            is.
+            With a departure point, a number of seats and a departure time. The time comes with five
+            levels of flexibility: exactly, a quarter of an hour, half an hour, an hour, or fully
+            flexible.
           </p>
 
           <p>
@@ -327,14 +397,21 @@ const WhatsNewPage: React.FC = () => (
           </p>
 
           <p>
-            <strong>A phone number is shown only between a driver and their own passengers</strong>,
-            with a call button and a WhatsApp button beside it. Nobody else at the event sees it.
+            <strong>A phone number appears only once there is a reason to show it.</strong>{' '}
+            It does not sit on the card for the whole event to read: it opens between a driver and
+            whoever took a seat with them, with a call button and a WhatsApp button beside it.
+            Nobody else at the event sees it.
           </p>
 
           <p>
             <strong>And rides do not count against your item allowance.</strong>{' '}
-            They have an allowance of their own, so somebody who posted a few journeys can still
-            bring food.
+            They have an allowance of their own, two journeys you offer and two you ask for in each
+            event, so somebody who posted a few journeys can still bring food.
+          </p>
+
+          <p>
+            <strong>The number you entered is kept in your browser for next time</strong>, so you do
+            not type it again for every journey. It stays on the device.
           </p>
 
           <p>
@@ -350,6 +427,21 @@ const WhatsNewPage: React.FC = () => (
             how many items have been claimed, how many participants there are, and warns you if an
             item has fallen outside the event's categories. The public link is copied from there in
             one press.
+          </p>
+
+          <p>
+            <strong>And a Friday evening event does not jump into "past" at midnight.</strong>{' '}
+            Until three in the morning the board still counts it as yesterday's event, because a
+            meal that is still going is not a meal that is over.
+          </p>
+
+          <h3 className={sectionHeading}>Accessibility</h3>
+
+          <p>
+            A "skip to main content" link appears on Tab, the Escape key closes every dialog in the
+            product <strong>and refuses to close one in the middle of a save or an import</strong>,
+            and keyboard focus stays inside an open dialog and returns to where it came from when
+            that dialog closes.
           </p>
 
           <h3 className={sectionHeading}>Your account and your information</h3>

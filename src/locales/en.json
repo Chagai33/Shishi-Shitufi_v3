@@ -286,7 +286,10 @@
                     "delete": "Delete Event"
                 },
                 "messages": {
-                    "linkCopied": "Link copied!"
+                    "linkCopied": "Details and link copied!"
+                },
+                "share": {
+                    "when": "{{date}} at {{time}}"
                 }
             },
             "eventForm": {
@@ -350,15 +353,17 @@
         },
         "landing": {
             "header": {
-                "login": "Login"
+                "login": "Organiser login"
             },
             "hero": {
-                "badge": "Smart Event Management",
-                "title": "Community Meal Management",
-                "titleHighlight": "Made Easy",
-                "subtitle": "The platform that turns logistical coordination into a seamless experience, so you can focus on food and human connection.",
-                "cta": "Start for Free",
-                "boardAlt": "A sample event board: one item already sixty percent taken with the names of who took it, one still free, and a claim button on each"
+                "badge": "Organising a shared meal?",
+                "title": "Who brings what,",
+                "titleHighlight": "without a spreadsheet",
+                "subtitle": "You open an event, write what needs to be brought, and copy one link into the WhatsApp group. Participants choose what they are bringing and offer rides, with no registration and nothing to install.",
+                "cta": "Sign up and open an event, free",
+                "boardAlt": "The event board as a participant sees it: a hamburgers item with a required quantity of 10 and progress at sixty percent, beside it the names of the two participants who already took it, a kebab item with a required quantity of 12 that nobody has taken yet, and an I will bring this button on each",
+                "ctaNote": "No credit card. Opening an event means registering once with an email and a password, and whoever gets the link opens no account and downloads nothing.",
+                "boardCaption": "This is the screen of whoever got the link. Pick an item, type a name, done."
             },
             "useCases": {
                 "title": "Perfect for Any Gathering",
@@ -366,39 +371,40 @@
                     "Family picnics in the park",
                     "Friends' trips and camping",
                     "Community Shabbat and holiday meals",
-                    "Office parties and corporate events"
+                    "Office parties and corporate events",
+                    "Class parties and trips run by the parents' committee"
                 ]
             },
             "differentiator": {
-                "title": "Simplest for Participants",
+                "title": "Instead of a spreadsheet and messages in the group",
                 "text": {
-                    "part1": "Our biggest advantage is simplicity:",
+                    "part1": "The organiser writes a list and copies one link into the group. Participants open it on their phone, choose what to bring, and whoever has a free seat offers a ride on that same page.",
                     "highlight": "Participants don't need to register!",
-                    "part2": "Just send them a link, they choose what to bring, and that's it.\nNo passwords, no downloads, no headache."
+                    "part2": "In a spreadsheet it only takes one person deleting a row by mistake, and editing on a phone is clumsy.\nHere each person signs themselves up, nobody deletes their row by accident, and the list updates for everyone at that same moment."
                 }
             },
             "features": {
-                "title": "Tools to Make Your Life Easier",
+                "title": "What is inside",
                 "smartImport": {
-                    "title": "Smart AI Import",
-                    "description": "Enter a list as text, voice message, or upload an image - our Artificial Intelligence will build the event item list for you in seconds.",
-                    "alt": "A messy message pasted into the import box, and below it the list of items and quantities produced from it"
+                    "title": "Smart Import",
+                    "description": "Paste the message from the group, dictate the list out loud, or upload a photo of a note. The AI breaks it into items and quantities, and you review the result before it enters the event. And if you already have a spreadsheet, you can upload it as an Excel or CSV file.",
+                    "alt": "A message from the group pasted into the import box with a microphone button beside it, and below it the five items with the quantities produced from it"
                 },
                 "carpooling": {
-                    "title": "Smart Carpooling",
-                    "description": "No need for a separate WhatsApp group for rides. Participants can offer available seats or request a ride directly through the event page.",
-                    "alt": "A ride offer card with departure time, pickup point, the number of free seats and a join button"
+                    "title": "Rides on the same page",
+                    "description": "No need for a separate WhatsApp group for rides. Whoever has a free seat offers a ride on the event page itself, and if you also switch on ride requests for the event, someone with no lift can ask for one.",
+                    "alt": "A ride offer card for the trip out and back: each ride has a departure time, a pickup point, three free seats and a join button"
                 },
                 "noRegistration": {
                     "title": "No Registration Required",
-                    "description": "Your guests do not need to create an account, remember passwords, or download an app. Simple entry via a link and they are in."
+                    "description": "A participant is asked for a name, and for a phone number only when they offer or request a ride, in order to arrange the journey. There is no invite list to maintain and no permissions to hand out."
                 }
             },
             "story": {
-                "title": "Why did we build this?",
-                "p1": "\"Sometimes the best ideas are born not in the office, but around a Shabbat table. As someone who participates in community meals, I experienced the magic of shared meals - but also the logistical headache.\"",
-                "p2": "\"Managing 'who brings what' via Google Sheets was cumbersome, not mobile-friendly, and prone to errors. Someone accidentally deleted a row, others struggled with editing on the phone, and the event manager worked too hard.\"",
-                "p3": "\"Shishi-Shitufi was born to solve exactly this. We built a dedicated solution that creates a seamless experience, zero errors, and peace of mind for event managers.\""
+                "title": "Why I built this",
+                "p1": "Sometimes the best ideas are born not in the office, but around the table. I take part in shared Friday meals now and then, and I know the logistics that come before the table is laid.",
+                "p2": "It starts with phone calls, with messages repeating in the WhatsApp group, and with a spreadsheet in Google Sheets. Someone offers to bring something and then cannot, someone else is not coming at all and everyone has to be told. Nobody knows what is still free without scrolling back through the group. In short, a complete mess, and the organiser cannot get their head around what is still missing.",
+                "p3": "I built Shishi-Shitufi to solve exactly that. The list saves itself, each person signs themselves up, and the organiser sees what is already taken and what is still missing without chasing anyone on WhatsApp. All that is left is the moment everyone sits down to the full table."
             },
             "nav": {
                 "main": "Main navigation"

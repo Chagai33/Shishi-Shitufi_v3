@@ -73,6 +73,16 @@ const LandingPage = () => {
               <ArrowLeft className="mr-2 w-5 h-5" aria-hidden="true" />
             </Link>
 
+            {/* Cost, and who has to sign up. Those are the two questions the
+                button raises, and both are answerable in one sentence. Before
+                this line the word בחינם appeared exactly once on the whole
+                page, inside the button label, and nothing anywhere mentioned
+                the account. Only under the top button: repeating it after the
+                story would read as filler. */}
+            <p className="mt-4 text-sm text-gray-500 max-w-xl mx-auto leading-relaxed">
+              {t('landing.hero.ctaNote')}
+            </p>
+
             {/* Below the button and not above it. Above it the button would drop
                 off a phone screen, and the button being large and above the fold
                 is one of the things this page already got right. */}
@@ -86,6 +96,15 @@ const LandingPage = () => {
                 className="mt-12 mx-auto w-full max-w-sm md:max-w-4xl h-auto rounded-2xl shadow-xl ring-1 ring-gray-900/5"
               />
             </picture>
+
+            {/* The board above is the PARTICIPANT's screen, and nothing else on
+                a page addressed to the organiser says so, which left the page's
+                strongest proof reading like an admin console. The image proves
+                it on its own: the הוסף פריט (0/3) quota counter renders only
+                for a non organiser, EventPage.tsx showLimit={!showAdminButton}. */}
+            <p className="mt-4 text-sm text-gray-600">
+              {t('landing.hero.boardCaption')}
+            </p>
           </div>
         </section>
 

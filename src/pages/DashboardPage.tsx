@@ -26,15 +26,40 @@ const EventCard: React.FC<{
     onImport: (event: ShishiEvent) => void,
     onBulkEdit: (event: ShishiEvent) => void;
 }> = ({ event, onDelete, onEdit, onImport, onBulkEdit }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [showAdminActions, setShowAdminActions] = useState(false);
     const eventUrl = `${window.location.origin}/event/${event.id}`;
     const isPast = new Date(event.details.date) < new Date();
 
+    // What lands in the WhatsApp group. The preview card WhatsApp draws is the
+    // same for every event, because the site is one static page, so the only place
+    // the event can name itself is the message body above the card.
+    //
+    // Composed by filtering and not by a template string: the form requires all four
+    // fields but the database rules require none of them, so an event written outside
+    // the form can arrive with a missing time, and a template would paste a dangling
+    // "בשעה" into somebody's group. Worst case this degrades to a bare URL, which is
+    // exactly the old behaviour.
+    //
+    // en-GB and not the en-US used on the event page: en-US renders 11/09 as 9/11,
+    // and in a WhatsApp invitation a misread date is the whole failure.
+    const shareText = (() => {
+        const locale = i18n.language === 'he' ? 'he-IL' : 'en-GB';
+        const when = event.details.date
+            ? new Date(event.details.date).toLocaleDateString(locale, {
+                weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric',
+            })
+            : '';
+        const whenLine = when && event.details.time
+            ? t('dashboard.eventCard.share.when', { date: when, time: event.details.time })
+            : when;
+        return [event.details.title, whenLine, eventUrl].filter(Boolean).join('\n');
+    })();
+
     const copyToClipboard = (e: React.MouseEvent) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(eventUrl);
+        navigator.clipboard.writeText(shareText);
         toast.success(t('dashboard.eventCard.messages.linkCopied'));
     };
 

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { MenuItem, Assignment, CategoryConfig } from '../../types';
+import { CategoryIcon } from '../Common/CategoryIcon';
 
 interface CategorySelectorProps {
   menuItems: MenuItem[];
@@ -40,8 +41,9 @@ const RideSplitCard: React.FC<{
           type="button"
         >
           <div className="relative z-10 flex flex-col items-center">
-            <img
-              src="/Icons/car.gif"
+            <CategoryIcon
+              icon="car.gif"
+              name={t('categorySelector.rideOffers.title')}
               alt="Offer Ride"
               className="w-14 h-14 mb-2 object-contain transition-transform group-hover/offer:scale-110"
             />
@@ -62,8 +64,9 @@ const RideSplitCard: React.FC<{
           type="button"
         >
           <div className="relative z-10 flex flex-col items-center">
-            <img
-              src="/Icons/car.gif"
+            <CategoryIcon
+              icon="car.gif"
+              name={t('categorySelector.rideRequests.title')}
               alt="Request Ride"
               className="w-14 h-14 mb-2 object-contain transition-transform group-hover/request:scale-110 brightness-110 hue-rotate-15 contrast-125"
               style={{ transform: 'scaleX(-1)' }}
@@ -193,13 +196,12 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               <div className="aurora-glow" style={{ backgroundColor: category.color + '40' }}></div>
 
               <div className="relative z-10 flex flex-col items-center h-full">
-                <img
-                  src={`/Icons/${category.icon}`}
+                <CategoryIcon
+                  icon={category.icon}
+                  name={category.name}
+                  color={category.color}
                   alt={category.name}
                   className="w-20 h-20 mx-auto mb-3 object-contain transition-transform duration-300 group-hover:scale-110"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/Icons/general.png';
-                  }}
                 />
                 <h3 className="text-xl font-bold text-neutral-800 mb-2">{category.name}</h3>
 

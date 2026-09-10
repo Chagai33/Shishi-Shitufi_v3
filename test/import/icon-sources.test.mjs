@@ -7,20 +7,22 @@
 // the folder, so a category with a missing icon showed the participant a broken
 // image square on the screen the invitation link lands on. Netlify answers an
 // unknown path with index.html at status 200, so nothing anywhere reported a
-// failure.
+// failure. See DOCS/PLANING/110-the-fallback-icon-does-not-exist.md.
 //
-// These scans are the guard. The first says every icon path written in the
-// source names a file that exists. The second says the picker offers exactly
-// the files that are in the folder, no more and no fewer, which is what makes a
-// future rename of those files visible here instead of on a participant's phone.
-// See DOCS/PLANING/110-the-fallback-icon-does-not-exist.md.
+// The same folder is also the heaviest thing on that screen. The GIFs are 640
+// by 640 and are drawn at eighty, so each one is rebuilt at 240 as an animated
+// WebP and the screens ask for that instead. The stored strings still name the
+// GIF, so the pairing below is what keeps the mapping honest: a GIF with no
+// converted file beside it is a category that silently falls back to the heavy
+// original, and a converted file with no GIF is one nothing will ever ask for.
+// See DOCS/PLANING/108-category-icons-are-seven-megabytes-of-gif.md.
 //
 // It needs no emulator. Run it with:
 //   node --test test/import/*.test.mjs
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const SRC = fileURLToPath(new URL('../../src', import.meta.url));
@@ -37,22 +39,31 @@ function sourceFiles(dir = SRC) {
   return found;
 }
 
-// public/Icons is the only folder that matters. dist/ holds a stale copy of it
-// and is not what Netlify builds from.
+// public/Icons is the only folder that matters. dist/ holds a copy of it and is
+// not what Netlify builds from.
 const onDisk = readdirSync(ICONS).sort();
+const gifs = onDisk.filter((name) => name.endsWith('.gif'));
+const converted = onDisk.filter((name) => name.endsWith('.webp'));
+const files = sourceFiles();
 
 // A literal path only. `/Icons/${category.icon}` is a value the database
 // supplies at run time, not a filename this test can check, and the `$` stops
 // the match before it.
 const ICON_PATH = /\/Icons\/([A-Za-z0-9_][A-Za-z0-9_.-]*)/g;
 
-const files = sourceFiles();
+// Measured on the built set: the heaviest is meat.webp at 731,964 and the
+// seventeen together are 5,401,434. These are ceilings with a little room, not
+// the numbers themselves, and they exist so that a rebuild at the wrong size or
+// the wrong quality is caught here.
+const CEILING_PER_FILE = 800_000;
+const CEILING_TOTAL = 5_600_000;
 
 describe('the icon files the source asks for', () => {
   test('the scan reaches the source and the folder', () => {
     // A scan that passes because it found nothing is not a scan.
     assert.ok(files.length > 50, `only ${files.length} source files were read`);
-    assert.ok(onDisk.length > 0, 'public/Icons was read as empty');
+    assert.ok(gifs.length > 0, 'public/Icons was read as holding no GIF at all');
+    assert.ok(converted.length > 0, 'public/Icons was read as holding no converted file at all');
   });
 
   test('every icon path written in the source names a file that is there', () => {
@@ -87,11 +98,46 @@ describe('the icon picker the organiser chooses from', () => {
     );
   });
 
-  test('offers every file that is in the folder', () => {
+  test('offers every original that is in the folder', () => {
+    const originals = onDisk.filter((name) => !name.endsWith('.webp'));
     assert.deepEqual(
-      onDisk.filter((name) => !listed.includes(name)),
+      originals.filter((name) => !listed.includes(name)),
       [],
       'these are in public/Icons, and the picker does not offer them',
+    );
+  });
+});
+
+describe('the converted icons the screens actually load', () => {
+  test('every GIF has one built beside it', () => {
+    assert.deepEqual(
+      gifs.filter((name) => !converted.includes(name.replace(/\.gif$/, '.webp'))),
+      [],
+      'these GIFs have no converted file, so they would still be served whole',
+    );
+  });
+
+  test('none was built for a file that is gone', () => {
+    assert.deepEqual(
+      converted.filter((name) => !gifs.includes(name.replace(/\.webp$/, '.gif'))),
+      [],
+      'these converted files have no original, so nothing will ever ask for them',
+    );
+  });
+
+  test('none of them is heavier than the ceiling', () => {
+    const offenders = converted
+      .map((name) => [name, statSync(`${ICONS}/${name}`).size])
+      .filter(([, size]) => size > CEILING_PER_FILE)
+      .map(([name, size]) => `${name}: ${size}`);
+    assert.deepEqual(offenders, [], `these are over ${CEILING_PER_FILE} bytes each`);
+  });
+
+  test('and together they stay under the ceiling', () => {
+    const total = converted.reduce((sum, name) => sum + statSync(`${ICONS}/${name}`).size, 0);
+    assert.ok(
+      total <= CEILING_TOTAL,
+      `the converted icons are ${total} bytes, over the ceiling of ${CEILING_TOTAL}`,
     );
   });
 });

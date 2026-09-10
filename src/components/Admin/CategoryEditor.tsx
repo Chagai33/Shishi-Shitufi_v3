@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CATEGORY_NAME_MAX } from '../../constants/limits';
 import { CategoryConfig } from '../../types';
 import { AVAILABLE_ICONS } from '../../constants/templates';
+import { CategoryIcon } from '../Common/CategoryIcon';
 import { Trash2, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 
 interface CategoryEditorProps {
@@ -123,7 +124,12 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({ categories, onCh
                 onClick={() => setShowIconPicker(showIconPicker === category.id ? null : category.id)}
                 className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 overflow-hidden"
               >
-                <img src={`/Icons/${category.icon}`} alt="" className="w-8 h-8 object-contain" />
+                <CategoryIcon
+                  icon={category.icon}
+                  name={category.name}
+                  color={category.color}
+                  className="w-8 h-8 object-contain"
+                />
               </button>
 
               {/* Icon Picker Dropdown */}
@@ -139,7 +145,7 @@ export const CategoryEditor: React.FC<CategoryEditorProps> = ({ categories, onCh
                       }}
                       className={`p-1 rounded hover:bg-gray-100 ${category.icon === icon ? 'bg-blue-100 ring-2 ring-blue-400' : ''}`}
                     >
-                      <img src={`/Icons/${icon}`} alt="" className="w-full h-full object-contain" />
+                      <CategoryIcon icon={icon} className="w-full h-full object-contain" />
                     </button>
                   ))}
                   <button

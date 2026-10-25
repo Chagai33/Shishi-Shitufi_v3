@@ -53,7 +53,7 @@
 
 | מה | מי עושה | מצב |
 |---|---|---|
-| הייבוא החכם מת, נגמרו הקרדיטים, [121](121-the-smart-import-is-down-the-credits-ran-out.md) | **בעל המוצר, בקונסולה** | ממתין |
+| ~~הייבוא החכם מת, נגמרו הקרדיטים~~, [121](121-the-smart-import-is-down-the-credits-ran-out.md) | בעל המוצר | ✅ **קרדיט מולא, אומת חי 25/10** |
 | ~~התרעה על שגיאות בפונקציה~~, [124](124-nobody-was-watching-and-the-board-does-not-drain.md) | המתאם | ✅ **נוצרה ואומתה 25/10** |
 | המשתמש משלם מכסה על טעות, והשגיאה אינה ברורה, [125](125-you-cannot-tell-who-spent-the-credit.md) ו-[121](121-the-smart-import-is-down-the-credits-ran-out.md) | צ'אט מבצע | **פרומפט 34 מוכן** |
 | מודל זול פי תשעה, והמחיר הנוכחי מוכפל ב-1 בינואר, [126](126-the-model-doubles-in-price-in-january.md) | צ'אט מבצע | **פרומפט 35 מוכן, רץ אחרי 34** |

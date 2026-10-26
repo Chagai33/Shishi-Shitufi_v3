@@ -148,8 +148,21 @@ Rules:
 
   const items = JSON.parse(jsonString);
 
+  // Marked, and not left to be recognised by its wording.
+  //
+  // This is an answer we cannot use, exactly like an answer that stopped in the
+  // middle, and the organiser needs the same sentence: we could not read it,
+  // try wording the list more clearly. classifyModelError used to decide that
+  // by looking for the word JSON in the message, and this message does not
+  // contain it, so the organiser was told the fault was ours and that nothing
+  // in their list was worth changing. See the branch in
+  // functions/smartImportPolicy.js and record
+  // DOCS/PLANING/128-an-answer-we-could-not-use-is-reported-as-our-fault.md.
   if (!Array.isArray(items)) {
-    throw new Error("AI returned invalid structure (not an array).");
+    throw Object.assign(
+      new Error("The model answered with valid JSON that is not an array of items."),
+      { unreadableAnswer: true },
+    );
   }
 
   return { items };

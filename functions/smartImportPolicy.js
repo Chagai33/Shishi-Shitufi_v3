@@ -244,11 +244,29 @@ function classifyModelError(error, modelName) {
     );
   }
 
-  // 5. Parsing Errors (JSON)
-  if (error.message?.includes("JSON")) {
+  // 5. The answer arrived and could not be used.
+  //
+  //    Three ways in, and the first two say what the failure is rather than
+  //    describe it. UNREADABLE_ANSWER is set where the answer is checked, in
+  //    functions/smartImport.js, and a SyntaxError is what JSON.parse throws.
+  //
+  //    The word JSON stays as the third, because JSON.parse writes it into
+  //    every message it produces and a provider wrapper may pass the text on
+  //    without the error object. It is a word and not a number, which is the
+  //    rule the two branches above are held to.
+  //
+  //    The marker exists because of what it cost not to have it. An answer of
+  //    valid JSON that is not an array is an ordinary failure of a model, and
+  //    the line that caught it threw "AI returned invalid structure (not an
+  //    array)", which does not contain the word JSON. It fell past this branch
+  //    into the general one, and the organiser was told the fault was ours and
+  //    that there was nothing in their list worth changing. They pressed the
+  //    same button again. Record
+  //    DOCS/PLANING/128-an-answer-we-could-not-use-is-reported-as-our-fault.md.
+  if (error.unreadableAnswer || error instanceof SyntaxError || message.includes("JSON")) {
     return new ImportRefusal(
       "data-loss",
-      "Failed to parse AI response. Please try with clearer text/image.",
+      "The model's answer could not be read. Please try with clearer text/image.",
       { originalError: "JSON_PARSE_ERROR" },
     );
   }

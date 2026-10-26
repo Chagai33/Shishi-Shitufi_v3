@@ -212,6 +212,90 @@ describe('the organiser is told when it is their own connection', () => {
   });
 });
 
+// An answer we cannot use is not a fault of ours. Record 128, found by the
+// independent pass over the map this suite's first block was written from.
+describe('an answer we could not use is not reported as our own fault', () => {
+  // functions/smartImport.js cannot be loaded here: its first line reaches for
+  // firebase-functions, and functions/node_modules is not installed in this
+  // repository. So the marker is read as text at the throw site and run
+  // through the branch that answers it. Both halves, because either one alone
+  // would pass while the organiser still read the wrong sentence.
+  const handler = () =>
+    readFileSync(new URL('../../functions/smartImport.js', import.meta.url), 'utf8').replace(
+      /\r\n/g,
+      '\n',
+    );
+
+  test('the answer check marks what it throws, instead of describing it', () => {
+    assert.match(
+      handler(),
+      /if \(!Array\.isArray\(items\)\) \{\s*\n\s*throw Object\.assign\([\s\S]{0,200}unreadableAnswer: true/,
+      'the not-an-array throw is unmarked again, and an unmarked one reads as a fault of ours',
+    );
+  });
+
+  // The claim itself. The message deliberately does not contain the word JSON,
+  // which is what used to decide this.
+  test('and a marked answer reaches the sentence for an answer we could not read', () => {
+    const thrown = Object.assign(
+      new Error('The model answered with valid JSON that is not an array of items.'),
+      { unreadableAnswer: true },
+    );
+
+    const refusal = classifyModelError(thrown, MODEL);
+
+    assert.equal(
+      refusal.code,
+      'data-loss',
+      'an answer we could not use is reported as a fault of ours, which sends the organiser to press the same button again',
+    );
+    assert.equal(refusal.details?.originalError, 'JSON_PARSE_ERROR');
+  });
+
+  // The marker has to carry it on its own, because the wording is the thing
+  // that failed last time.
+  test('and the marker alone is enough, with no helpful word in the message', () => {
+    const wordless = Object.assign(new Error('the answer was the wrong shape'), {
+      unreadableAnswer: true,
+    });
+
+    assert.equal(classifyModelError(wordless, MODEL).details?.originalError, 'JSON_PARSE_ERROR');
+  });
+
+  // What JSON.parse actually throws, rather than a plain Error carrying its
+  // wording. This is the truncated answer of record 127 as it arrives in
+  // production.
+  test('and what JSON.parse really throws lands there by what it is', () => {
+    let real;
+    try {
+      JSON.parse('[{"name":"חלה","quan');
+    } catch (error) {
+      real = error;
+    }
+
+    assert.ok(real instanceof SyntaxError, 'JSON.parse no longer throws a SyntaxError');
+    assert.equal(classifyModelError(real, MODEL).details?.originalError, 'JSON_PARSE_ERROR');
+  });
+
+  // The branch it must not have swallowed. An unknown failure is still ours.
+  test('and a failure nobody recognises is still reported as ours', () => {
+    const unknown = new Error('socket hang up');
+
+    const refusal = classifyModelError(unknown, MODEL);
+
+    assert.equal(refusal.code, 'internal');
+    assert.equal(refusal.details?.originalError, 'INTERNAL_ERROR');
+  });
+
+  // And no operational detail on the way out, for the one sentence this
+  // reaches. The rule at the head of src/utils/smartImportErrors.ts.
+  test('and the organiser is told to reword the list, not what broke', () => {
+    for (const language of ['he', 'en']) {
+      assert.doesNotMatch(sentences(language).parse, /JSON|array|מערך|קוד/i);
+    }
+  });
+});
+
 // The organiser whose phone handed over a picture the browser could not open,
 // and who was then told that reading his list had failed. No list had been
 // sent.

@@ -211,3 +211,63 @@ describe('the organiser is told when it is their own connection', () => {
     }
   });
 });
+
+// The organiser whose phone handed over a picture the browser could not open,
+// and who was then told that reading his list had failed. No list had been
+// sent.
+describe('the organiser is told when the picture is the problem', () => {
+  // ImportItemsModal.tsx is the live screen. SmartImportModal.tsx is a third
+  // call point on the same function that nothing imports, measured on the whole
+  // of src and recorded in 06-dead-code.md, so it is deliberately not here.
+  const screen = () =>
+    readFileSync(
+      new URL('../../src/components/Admin/ImportItemsModal.tsx', import.meta.url),
+      'utf8',
+    ).replace(/\r\n/g, '\n');
+
+  test('preparing the picture is marked where it fails, before the call goes out', () => {
+    assert.match(
+      screen(),
+      /try \{\s*\n\s*imageBase64 = await compressImage\(smartImage\);\s*\n\s*\} catch[\s\S]{0,200}code: IMAGE_PREP_FAILED/,
+      'compressImage can fail unmarked again, and an unmarked failure reaches the sentence for an unreadable answer',
+    );
+  });
+
+  // The two halves have to agree on the code, and a test is the only thing that
+  // notices when one of them is renamed.
+  test('and the code it is marked with is the one the sentences are chosen by', () => {
+    assert.match(screen(), /IMAGE_PREP_FAILED/);
+    assert.match(client(), /export const IMAGE_PREP_FAILED = 'smartImport\/image-prep-failed'/);
+    assert.match(
+      client(),
+      /case IMAGE_PREP_FAILED:\s*\n\s*return i18n\.t\('importModal\.smart\.errors\.image'\)/,
+      'the image failure no longer reaches a sentence of its own',
+    );
+  });
+
+  test('and the sentence exists in both languages, and names the picture', () => {
+    for (const [language, word] of [
+      ['he', /תמונה/],
+      ['en', /image|photo/i],
+    ]) {
+      const sentence = sentences(language).image;
+      assert.ok(sentence, `importModal.smart.errors.image is missing from ${language}.json`);
+      assert.match(sentence, word, `the sentence in ${language}.json does not name the picture`);
+    }
+  });
+
+  // What it must not say, which is what it used to say.
+  test('and does not blame the list, which was never sent', () => {
+    assert.doesNotMatch(sentences('he').image, /פענוח|רשימה נכשל/);
+    assert.notEqual(sentences('he').image, sentences('he').general);
+    assert.notEqual(sentences('en').image, sentences('en').general);
+  });
+
+  // The rule at the head of src/utils/smartImportErrors.ts, applied to the one
+  // sentence this round adds.
+  test('and tells the organiser nothing operational', () => {
+    for (const language of ['he', 'en']) {
+      assert.doesNotMatch(sentences(language).image, /base64|canvas|jpeg|קנבס|קוד|Gemini/i);
+    }
+  });
+});

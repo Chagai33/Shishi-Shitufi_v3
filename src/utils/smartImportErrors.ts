@@ -16,10 +16,35 @@ import i18n from '../i18n';
  *
  * See DOCS/PLANING/53-ai-limits-and-costs.md.
  */
+/**
+ * The code for a failure that happened on this device, before anything was
+ * sent anywhere.
+ *
+ * There is one so far: the browser could not open the picture the organiser
+ * chose. It is thrown at the call point and read here, so that the sentence and
+ * the code that reaches it stay in the one file, which is what this file is
+ * for. It cannot collide with a code from the client library, since every one
+ * of those is prefixed with functions/.
+ */
+export const IMAGE_PREP_FAILED = 'smartImport/image-prep-failed';
+
 export function getSmartImportErrorMessage(error: any): string {
   const details = error?.details || {};
 
   switch (error?.code) {
+    // Nothing was sent, so nothing here is about the model or the list. The
+    // picture is being resized and re-encoded in the browser before it goes,
+    // and that is what failed: a format this browser cannot open, which a
+    // phone can hand over without either of them doing anything unusual.
+    //
+    // It used to fall through to the general sentence, "reading the list
+    // failed, try again". That named a list that had never been sent and sent
+    // the organiser off to reword text that was not the problem, while the one
+    // thing that would have worked, choosing another picture, was never
+    // mentioned.
+    case IMAGE_PREP_FAILED:
+      return i18n.t('importModal.smart.errors.image');
+
     case 'functions/resource-exhausted':
       // Two different things arrive under this one code: this caller has used
       // their own allowance up, or the model's quota is gone for everybody.

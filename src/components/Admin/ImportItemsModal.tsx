@@ -17,7 +17,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../lib/firebase';
 import { useTranslation, Trans } from 'react-i18next';
 import { compressImage } from '../../utils/imageUtils';
-import { getSmartImportErrorMessage } from '../../utils/smartImportErrors';
+import { getSmartImportErrorMessage, IMAGE_PREP_FAILED } from '../../utils/smartImportErrors';
 import { mapRows, countRowsWithData, looksMisdecoded, ImportRow } from '../../utils/importColumns';
 import { getFallbackCategoryId, itemsEnteringMigration } from '../../utils/eventUtils';
 import { PresetItem } from '../../utils/presetLists';
@@ -304,7 +304,22 @@ export function ImportItemsModal({ event, onClose, onAddSingleItem, onImported, 
       let imageBase64 = null;
       if (smartImage) {
         // Compress image before sending (Client-side optimization)
-        imageBase64 = await compressImage(smartImage);
+        //
+        // Marked rather than left to fall where it falls. This happens in the
+        // browser and before the call goes out, so the organiser's problem is
+        // the picture and not the list: the file picker takes any image/*, and
+        // a phone can hand over a format this browser cannot open. What it
+        // rejects with is whatever the decoder gave it, usually an event with
+        // no message at all, which is why this used to arrive at the sentence
+        // for an answer that could not be read. Record 127.
+        try {
+          imageBase64 = await compressImage(smartImage);
+        } catch (failure) {
+          throw Object.assign(new Error('The browser could not open the chosen image.'), {
+            code: IMAGE_PREP_FAILED,
+            cause: failure,
+          });
+        }
       }
 
       // Build allowed categories list for AI

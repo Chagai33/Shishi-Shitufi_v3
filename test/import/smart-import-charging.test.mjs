@@ -24,10 +24,11 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { ImportRefusal, runImport } = require('../../functions/smartImportPolicy.js');
+const { ImportRefusal, classifyModelError, runImport } = require('../../functions/smartImportPolicy.js');
 
 // Stands in for chargeOneCall and for the paid call, and counts how many times
 // each was reached. The question every test below asks is the same one the
@@ -140,5 +141,104 @@ describe('and pays for everything that reached the model', () => {
       1,
       'a failed call was refunded, which lets a caller who can break the model call without limit',
     );
+  });
+});
+
+// And the other half of the organiser's bad afternoon: being told the wrong
+// thing about why it failed.
+//
+// Credit that has run out and a quota that has run out look alike in a log and
+// are opposites in what an organiser should do. A quota comes back within the
+// hour, so trying again is right. Credit does not come back until somebody
+// pays, so trying again is advice that cannot work, and the screen used to give
+// exactly that advice: it fell through to the general branch and said "שגיאה
+// פנימית בשרת. נסה שוב מאוחר יותר".
+//
+// See DOCS/PLANING/121-the-smart-import-is-down-the-credits-ran-out.md.
+describe('credit that has run out is not a quota that has run out', () => {
+  // The error as it was measured in the production log on 25/10/2026.
+  const depleted = () => {
+    const error = new Error('[402 Payment Required] Your prepayment credits are depleted.');
+    error.status = 402;
+    return error;
+  };
+
+  // The two wrong answers, both of which end in advice to try again. The
+  // general branch is where this used to land, and it is the one that produced
+  // "שגיאה פנימית בשרת. נסה שוב מאוחר יותר".
+  test('the measured 402 is neither the quota refusal nor the general one', () => {
+    const refusal = classifyModelError(depleted(), 'gemini-3.6-flash');
+
+    assert.notEqual(
+      refusal.code,
+      'resource-exhausted',
+      'credit that ran out was reported as a quota, which tells the organiser to wait an hour for nothing',
+    );
+    assert.notEqual(
+      refusal.details?.originalError,
+      'INTERNAL_ERROR',
+      'credit that ran out fell through to the general branch, which is the bug this closes',
+    );
+  });
+
+  test('it is the code the screens answer with "not available, add by hand"', () => {
+    const refusal = classifyModelError(depleted(), 'gemini-3.6-flash');
+
+    assert.ok(refusal instanceof ImportRefusal);
+    assert.equal(refusal.code, 'unavailable');
+    assert.equal(refusal.details?.originalError, 'CREDIT_DEPLETED');
+  });
+
+  // Either signal alone is enough, since a provider that changes its wording
+  // still answers 402, and one that answers through a wrapper still says
+  // depleted.
+  test('a 402 with no message, and a depleted message with no status, both land there', () => {
+    const statusOnly = Object.assign(new Error(''), { status: 402 });
+    const wordOnly = new Error('prepayment credits are depleted');
+
+    for (const error of [statusOnly, wordOnly]) {
+      const refusal = classifyModelError(error, 'gemini-3.6-flash');
+      assert.equal(refusal.details?.originalError, 'CREDIT_DEPLETED', error.message || '(no message)');
+    }
+  });
+
+  // The branch it has to stay out of the way of. If the two were ever swapped
+  // this is the test that would say so.
+  test('a real quota is still the quota refusal', () => {
+    const refusal = classifyModelError(new Error('429 Too Many Requests: quota exceeded'), 'x');
+
+    assert.equal(refusal.code, 'resource-exhausted');
+    assert.equal(refusal.details?.originalError, 'QUOTA_EXCEEDED');
+  });
+
+  // And the rule the whole thing is held to: the organiser is not told why our
+  // account is empty. The message above is written for the log, and the screen
+  // reaches a sentence of its own from the code. Read as text, because
+  // importing that file starts i18n, which this suite has no use for.
+  test('no screen is handed the server message, or the word credit', () => {
+    const client = readFileSync(
+      new URL('../../src/utils/smartImportErrors.ts', import.meta.url),
+      'utf8',
+    );
+
+    assert.ok(
+      /case 'functions\/unavailable':/.test(client),
+      'the client no longer answers functions/unavailable, which is where CREDIT_DEPLETED arrives',
+    );
+    assert.ok(
+      !/return[^;]*error\??\.message/.test(client),
+      'the client hands a server message to the screen, which the rule at the head of that file forbids',
+    );
+
+    const strings = JSON.parse(
+      readFileSync(new URL('../../src/locales/he.json', import.meta.url), 'utf8'),
+    ).translation.importModal.smart.errors;
+
+    for (const [key, sentence] of Object.entries(strings)) {
+      assert.ok(
+        !/קרדיט|חיוב|Gemini|402/i.test(sentence),
+        `importModal.smart.errors.${key} tells the organiser an operational detail`,
+      );
+    }
   });
 });

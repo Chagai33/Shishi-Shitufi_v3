@@ -153,7 +153,37 @@ function validateInput(data) {
  * returns describes the model or the answer it gave, and never the request.
  */
 function classifyModelError(error, modelName) {
-  // 1. Quota / Billing Errors
+  // 1. The account behind the model has no credit left. It arrives as a 402
+  //    whose message says the prepayment credits are depleted.
+  //
+  //    First, and kept apart from the quota branch below, because the two are
+  //    not the same thing and the advice differs. A quota comes back by itself
+  //    within the hour. Credit does not come back until somebody pays. Telling
+  //    an organiser to try again later is wrong here, and they would sit there
+  //    retrying and burning their own allowance on a thing that is switched
+  //    off.
+  //
+  //    unavailable, so the screens reach the sentence that already exists for
+  //    exactly this: the service is not available right now, and items can be
+  //    added by hand.
+  //
+  //    The 402 and the word depleted are what was measured in the production
+  //    log on 25/10/2026, and nothing beyond them is guessed at. See
+  //    DOCS/PLANING/121-the-smart-import-is-down-the-credits-ran-out.md.
+  //
+  //    CREDIT_DEPLETED is for the log and for telling this apart from a quota.
+  //    No screen ever says the word credit: the rule at the head of
+  //    src/utils/smartImportErrors.ts is that an organiser is not told why our
+  //    account is empty.
+  if (error.status === 402 || error.message?.includes("402") || /depleted/i.test(error.message || "")) {
+    return new ImportRefusal(
+      "unavailable",
+      "The AI account is out of prepaid credit, so the request was not sent.",
+      { originalError: "CREDIT_DEPLETED" },
+    );
+  }
+
+  // 2. Quota / Billing Errors
   if (
     error.message?.includes("429") ||
     error.message?.includes("quota") ||
@@ -164,14 +194,14 @@ function classifyModelError(error, modelName) {
     });
   }
 
-  // 2. Safety / Policy Errors
+  // 3. Safety / Policy Errors
   if (error.response?.promptFeedback?.blockReason || error.message?.includes("blocked")) {
     return new ImportRefusal("failed-precondition", "The input was blocked by AI safety filters.", {
       originalError: "SAFETY_BLOCK",
     });
   }
 
-  // 3. Retired / unknown model - surfaces as a 404 from the Gemini API
+  // 4. Retired / unknown model - surfaces as a 404 from the Gemini API
   if (error.status === 404 || error.message?.includes("no longer available")) {
     return new ImportRefusal(
       "unavailable",
@@ -180,7 +210,7 @@ function classifyModelError(error, modelName) {
     );
   }
 
-  // 4. Parsing Errors (JSON)
+  // 5. Parsing Errors (JSON)
   if (error.message?.includes("JSON")) {
     return new ImportRefusal(
       "data-loss",
@@ -189,7 +219,7 @@ function classifyModelError(error, modelName) {
     );
   }
 
-  // 5. General / Unknown Errors
+  // 6. General / Unknown Errors
   return new ImportRefusal(
     "internal",
     "An unexpected error occurred while processing the list.",

@@ -42,13 +42,21 @@ export function getSmartImportErrorMessage(error: any): string {
     case 'functions/data-loss':
       return i18n.t('importModal.smart.errors.parse');
 
-    // The function is not answering at all, and none of our code ran.
+    // The service on the other end is switched off, in one of several ways.
     //
     // This is what a spending ceiling looks like from here: when billing on the
     // project is stopped the function stops being served, and the client sees a
     // 404 or a 403 depending on how it was stopped, never anything we wrote.
     // The same three arrive when it has not been deployed yet, or when it is
     // being deployed right now.
+    //
+    // The function also answers this way on purpose, in two cases where it did
+    // run: the counter could not be reached, and the account behind the model
+    // is out of prepaid credit. The second is marked CREDIT_DEPLETED, which is
+    // read in the log and nowhere else. It is deliberately not the quota
+    // sentence: a quota comes back within the hour and credit does not come
+    // back until somebody pays, so "try again later" is the wrong advice.
+    // See DOCS/PLANING/121-the-smart-import-is-down-the-credits-ran-out.md.
     //
     // So they say the service is not available and that items can be added by
     // hand, rather than "try again": trying again does not help while the thing

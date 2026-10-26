@@ -23,6 +23,25 @@ const { classifyModelError } = require('../../functions/smartImportPolicy.js');
 
 const MODEL = 'gemini-3.6-flash';
 
+// src/utils/smartImportErrors.ts is read as text rather than run, and so are
+// the two string files. Running it means importing src/i18n.ts, which reaches
+// for i18next, and functions aside this suite is deliberately runnable with
+// nothing installed. Product owner's decision, 26/10/2026: a test that proves
+// the branch exists and that the sentence it reaches exists in both languages,
+// against one manual press after the deploy, since the counter counts presses.
+//
+// Newlines are normalised because the working copy is checked out with CRLF.
+const client = () =>
+  readFileSync(new URL('../../src/utils/smartImportErrors.ts', import.meta.url), 'utf8').replace(
+    /\r\n/g,
+    '\n',
+  );
+
+const sentences = (language) =>
+  JSON.parse(
+    readFileSync(new URL(`../../src/locales/${language}.json`, import.meta.url), 'utf8'),
+  ).translation.importModal.smart.errors;
+
 // An answer that stopped in the middle, said the way the runtime says it. The
 // number is a character count and nothing else.
 const truncated = (position) =>
@@ -87,13 +106,8 @@ describe('an answer that stopped in the middle is not a bill', () => {
   // suggests wording the list more clearly. Read as text, because importing
   // that file starts i18n.
   test('and data-loss is the branch that says the answer could not be read', () => {
-    const client = readFileSync(
-      new URL('../../src/utils/smartImportErrors.ts', import.meta.url),
-      'utf8',
-    );
-
     assert.match(
-      client,
+      client(),
       /case 'functions\/data-loss':\s*\n\s*return i18n\.t\('importModal\.smart\.errors\.parse'\)/,
       'data-loss no longer reaches importModal.smart.errors.parse',
     );
@@ -154,5 +168,46 @@ describe('and a bill is still a bill', () => {
       'the log says the request was not sent, and it was sent, counted and charged',
     );
     assert.match(refusal.message, /sent and counted/i);
+  });
+});
+
+// The organiser with no reception, who was being told the product had fallen
+// over. The sentence for it was written and then never reached a screen once.
+describe('the organiser is told when it is their own connection', () => {
+  test('the connection sentence is not reached by a word in a server message', () => {
+    assert.doesNotMatch(
+      client(),
+      /error\??\.message[\s\S]{0,60}'network'/,
+      'the dead branch is back: no message the function writes contains the word network, so this never shows',
+    );
+  });
+
+  test('it is reached from what the browser reports, under functions/internal', () => {
+    assert.match(
+      client(),
+      /case 'functions\/internal':\s*\n\s*return browserSaysOffline\(\)\s*\n\s*\? i18n\.t\('importModal\.smart\.errors\.network'\)\s*\n\s*: i18n\.t\('importModal\.smart\.errors\.internal'\)/,
+      'importModal.smart.errors.network is dead code again, or functions/internal lost its default',
+    );
+  });
+
+  // The constraint the branch is designed around: a browser reporting no
+  // connection is right, and a browser reporting one proves nothing, so the
+  // check may only ever be read in the negative.
+  test('and only in the direction the browser can be trusted', () => {
+    assert.match(client(), /navigator\.onLine === false/);
+    assert.doesNotMatch(
+      client(),
+      /navigator\.onLine === true|if \(navigator\.onLine\)|navigator\.onLine \?/,
+      'the browser reporting a connection is being treated as proof that the request arrived',
+    );
+  });
+
+  test('and the sentence it reaches exists in both languages', () => {
+    for (const language of ['he', 'en']) {
+      assert.ok(
+        sentences(language).network,
+        `importModal.smart.errors.network is missing from ${language}.json`,
+      );
+    }
   });
 });

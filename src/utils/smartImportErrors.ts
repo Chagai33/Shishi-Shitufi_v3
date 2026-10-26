@@ -67,8 +67,27 @@ export function getSmartImportErrorMessage(error: any): string {
     case 'functions/permission-denied':
       return i18n.t('importModal.smart.errors.unavailable');
 
+    // Two unrelated things arrive under this one code, and the error itself
+    // cannot tell them apart: the request never left the device, and the
+    // function on the other end threw.
+    //
+    // Measured in the client library on 26/10/2026. codeForHTTPStatus maps
+    // status 0 to internal, and its own comment on that line says "This can
+    // happen if the server returns 500". The line that catches a failed fetch
+    // says the same in words: there is no way to know, because an unhandled
+    // error on the backend fails to set the CORS header and is therefore seen
+    // by fetch as a network error.
+    //
+    // So the distinction has to come from somewhere other than the error, and
+    // it is only taken in the direction that is worth anything. A browser
+    // saying it has no connection is right about that. A browser saying it has
+    // one proves nothing about whether this request reached anything, which is
+    // why the sentence this code has always had stays the default and the
+    // connection sentence is the exception.
     case 'functions/internal':
-      return i18n.t('importModal.smart.errors.internal');
+      return browserSaysOffline()
+        ? i18n.t('importModal.smart.errors.network')
+        : i18n.t('importModal.smart.errors.internal');
 
     // The caller's own sign-in is gone. Everybody here is signed in, most of
     // them anonymously and without ever being asked, so this is a session that
@@ -82,11 +101,26 @@ export function getSmartImportErrorMessage(error: any): string {
       return i18n.t('importModal.smart.errors.tooSlow');
   }
 
-  if (typeof error?.message === 'string' && error.message.includes('network')) {
-    return i18n.t('importModal.smart.errors.network');
-  }
-
   return i18n.t('importModal.smart.errors.general');
+}
+
+/**
+ * Whether the browser says this device has no way out at all.
+ *
+ * The connection sentence used to be reached by asking whether the error
+ * message contained the word network, and it was never once shown: no message
+ * the function writes contains that word, so the branch was dead from the day
+ * it was written. Measured 26/10/2026, record 127. It is not worth putting
+ * back, because the server cannot know about the organiser's connection and the
+ * message it sends is not evidence about it either way.
+ *
+ * This is trustworthy in one direction only, which is why the caller uses it to
+ * replace a sentence and never to keep one. False means the browser has no
+ * route out and is right about it. True means an interface is up, which says
+ * nothing about whether anything was reached.
+ */
+function browserSaysOffline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
 /**

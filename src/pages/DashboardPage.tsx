@@ -17,6 +17,7 @@ import { EventForm } from '../components/Admin/EventForm';
 import EmailVerificationNotice from '../components/Common/EmailVerificationNotice';
 import { getEventCategories } from '../constants/templates';
 import { itemsLeftOutOfEvent } from '../utils/eventUtils';
+import { isEventFinished } from '../utils/dateUtils';
 
 // --- Event card component ---
 const EventCard: React.FC<{
@@ -30,7 +31,13 @@ const EventCard: React.FC<{
     const navigate = useNavigate();
     const [showAdminActions, setShowAdminActions] = useState(false);
     const eventUrl = `${window.location.origin}/event/${event.id}`;
-    const isPast = new Date(event.details.date) < new Date();
+    // The same question the event page asks before it closes an event, and not a
+    // second version of it. This used to read the date string on its own, and a
+    // date string with no hour is midnight UTC, so the badge said "הסתיים" from
+    // 02:00 on winter clock and 03:00 on summer clock, on the morning of the
+    // event itself, while the event page was still open for assignments.
+    // See DOCS/PLANING/114-dashboard-badge-says-ended-from-three-in-the-morning.md.
+    const isPast = isEventFinished(event.details.date, event.details.time);
 
     // What lands in the WhatsApp group. The preview card WhatsApp draws is the
     // same for every event, because the site is one static page, so the only place

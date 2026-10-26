@@ -114,11 +114,14 @@ describe('the ceilings on the screens and the ceilings in the rules', () => {
   // is inside functions/, and never src/constants/limits.json. The screens build
   // that text and hold the same number in order to say so before sending it.
   // Three copies of one ceiling is what this file exists to stop drifting.
+  //
+  // The refusal itself sits in functions/smartImportPolicy.js, which is where
+  // the function keeps the decisions it makes before anything is spent.
   test('the smart import text ceiling is the same on the screens and in the function', () => {
-    const functionSource = read('../../functions/smartImport.js');
+    const functionSource = read('../../functions/smartImportPolicy.js');
     assert.ok(
       functionSource.includes(`text.length > ${limits.aiTextMax}`),
-      `functions/smartImport.js does not refuse text past ${limits.aiTextMax}, which is aiTextMax`,
+      `functions/smartImportPolicy.js does not refuse text past ${limits.aiTextMax}, which is aiTextMax`,
     );
   });
 

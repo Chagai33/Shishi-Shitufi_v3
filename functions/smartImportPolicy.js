@@ -147,12 +147,39 @@ function validateInput(data) {
 }
 
 /**
+ * The sentences a provider writes when the account behind the model has no
+ * prepaid credit left, and when the caller is being rate limited.
+ *
+ * Words, and never digits, and that is the whole reason they are here. The two
+ * branches below used to recognise credit by asking whether the message held
+ * the characters "402" anywhere in it, and a rate limit by asking the same
+ * about "429". An answer that stopped in the middle arrives as "Unexpected end
+ * of JSON input at position 1402", and that position is a number: of the 20,772
+ * places an answer can stop at, 41 carry 402 and another 41 carry 429, and not
+ * one of them has anything to do with money. The organiser was told the service
+ * was switched off, or that their quota was gone, and gave up on a list that a
+ * second press would have read. Measured 26/10/2026, and the record is
+ * DOCS/PLANING/127-the-message-half-did-not-land-and-a-new-bug-came-with-it.md.
+ *
+ * So the rule those branches are now held to, and the one not to cross again: a
+ * status code is read from the status field, and a message is only ever matched
+ * on words that mean something. "Too Many Requests" is the reason phrase that
+ * comes with a 429, so it carries what the digits carried without being able to
+ * turn up inside a character count.
+ */
+const CREDIT_DEPLETED =
+  /\bcredits?\b[\s\S]{0,40}\bdepleted\b|\bdepleted\b[\s\S]{0,40}\bcredits?\b/i;
+const RATE_LIMITED = /\bquota\b|\bexhausted\b|too many requests/i;
+
+/**
  * What a failure of the model itself was, said as a refusal.
  *
  * Only ever reached for a call that got as far as the model, so everything it
  * returns describes the model or the answer it gave, and never the request.
  */
 function classifyModelError(error, modelName) {
+  const message = typeof error.message === "string" ? error.message : "";
+
   // 1. The account behind the model has no credit left. It arrives as a 402
   //    whose message says the prepayment credits are depleted.
   //
@@ -171,24 +198,31 @@ function classifyModelError(error, modelName) {
   //    log on 25/10/2026, and nothing beyond them is guessed at. See
   //    DOCS/PLANING/121-the-smart-import-is-down-the-credits-ran-out.md.
   //
+  //    The status is the signal. The sentence is the second signal, for a
+  //    wrapper that passes the message on and drops the status, and it is read
+  //    as a sentence: see CREDIT_DEPLETED above for what reading it as a number
+  //    cost.
+  //
   //    CREDIT_DEPLETED is for the log and for telling this apart from a quota.
   //    No screen ever says the word credit: the rule at the head of
   //    src/utils/smartImportErrors.ts is that an organiser is not told why our
   //    account is empty.
-  if (error.status === 402 || error.message?.includes("402") || /depleted/i.test(error.message || "")) {
+  //
+  //    And the request was sent. It reached the provider, the provider refused
+  //    it for payment, and charge() had already run, so it is counted against
+  //    the organiser's own allowance. This line used to say it had not been
+  //    sent, which left anybody reading the log later with the opposite of what
+  //    happened.
+  if (error.status === 402 || CREDIT_DEPLETED.test(message)) {
     return new ImportRefusal(
       "unavailable",
-      "The AI account is out of prepaid credit, so the request was not sent.",
+      "The AI account is out of prepaid credit. The request was sent and counted.",
       { originalError: "CREDIT_DEPLETED" },
     );
   }
 
   // 2. Quota / Billing Errors
-  if (
-    error.message?.includes("429") ||
-    error.message?.includes("quota") ||
-    error.message?.includes("exhausted")
-  ) {
+  if (error.status === 429 || RATE_LIMITED.test(message)) {
     return new ImportRefusal("resource-exhausted", "AI quota exceeded. Please try again later.", {
       originalError: "QUOTA_EXCEEDED",
     });

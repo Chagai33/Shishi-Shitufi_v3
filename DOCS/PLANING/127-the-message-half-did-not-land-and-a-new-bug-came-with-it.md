@@ -202,7 +202,7 @@ if (error.status === 402 || error.message?.includes("402") || /depleted/i.test(.
 | המודל הוצא משירות | `unavailable` + `MODEL_UNAVAILABLE` | `errors.unavailable` |
 | ⚠️ **התשובה נקטעה** | `data-loss` + `JSON_PARSE_ERROR` | `errors.parse`. ✅ **82 מאלה אמרו קודם משהו אחר** |
 | הקריאה ארכה זמן רב מדי | `deadline-exceeded` | `errors.tooSlow` |
-| ⚠️ **התשובה תקינה ואינה מערך** | `internal` + `INTERNAL_ERROR` | `errors.internal`, **וזה שגוי. [128](128-an-answer-we-could-not-use-is-reported-as-our-fault.md)** |
+| **התשובה תקינה ואינה מערך** | `data-loss` + `JSON_PARSE_ERROR` | `errors.parse`. ✅ **תוקן ב-[128](128-an-answer-we-could-not-use-is-reported-as-our-fault.md), ואמר קודם "משהו השתבש אצלנו"** |
 | כל כשל אחר של המודל | `internal` + `INTERNAL_ERROR` | `errors.internal` |
 
 ### ⚠️ ומה שנשאר נופל להודעה הכללית, ולמה זה בסדר
@@ -233,8 +233,9 @@ if (error.status === 402 || error.message?.includes("402") || /depleted/i.test(.
 **הטבלה הועברה לסוכן בלתי תלוי אחד שבנה אותה מהקוד בלי לראות אותה.**
 **שורה אחת לא שרדה:** "כל כשל אחר של המודל" כללה בתוכה דרך כשל שמקבלת
 משפט שגוי, **תשובה תקינה שאינה מערך.** נרשמה
-ב-[128](128-an-answer-we-could-not-use-is-reported-as-our-fault.md)
-ולא תוקנה.
+ב-[128](128-an-answer-we-could-not-use-is-reported-as-our-fault.md),
+✅ **ותוקנה באותו יום בבקשת בעל המוצר**, באותו דפוס: סימון במקום מילה
+בהודעה. **הטבלה למעלה כבר מעודכנת.**
 
 **כל השאר שרד**, כולל שלושת הסעיפים שנסגרו כאן ושתי השורות שהן הממצא
 הפתוח של 121.

@@ -43,7 +43,8 @@ $env:FUNCTIONS_DISCOVERY_TIMEOUT=60; firebase deploy --only functions --project 
 npx tsc --noEmit -p tsconfig.app.json
 ```
 
-**קו הבסיס: מאה וארבעים שגיאות קיימות. אסור להוסיף אחת.**
+**קו הבסיס: מאה שלושים ותשע שגיאות קיימות. אסור להוסיף אחת.**
+**נמדד 27/10/2026.** עד אז היה כתוב כאן מאה וארבעים.
 
 ## בדיקות
 
